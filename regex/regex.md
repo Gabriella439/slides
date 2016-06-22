@@ -11,6 +11,9 @@ data Regex i = ...                  -- `i` is for "input"
 
 match :: Regex i -> [i] -> Bool     -- A `Regex i` matches 0 or more `i`s
 
+dot  :: Regex i                     -- Match any symbol
+once :: i -> Regex i                -- Match a specific symbol
+
 instance Num (Regex i) where
     fromInteger 0 = ...             -- Match nothing
     fromInteger 1 = ...             -- Match the empty sequence
@@ -20,9 +23,6 @@ instance Num (Regex i) where
 
 star :: Regex i -> Regex i          -- `star x` means to match 0 or more `x`s
 plus :: Regex i -> Regex i          -- `plus x` means to match 1 or more `x`s
-
-dot  :: Regex i                     -- Match any symbol
-once :: i -> Regex i                -- Match a specific symbol
 ```
 
 ... and I want it to be fast!
@@ -59,7 +59,6 @@ a+           =>  plus "a"
 a?b          =>  ("a" + 1) * "b"               -- Same as: "ab" + "b"
 a{n}         =>  "a" ^ n                       -- Why does this work?
 a(b|c)*d     =>  "a" * star ("b" + "c") * "d"
-(a?){n}a{n}  =>  ("a" + 1) ^ n * "a" ^ n       -- Anybody recognize this?
 ```
 
 # Haskell regular expression libraries
@@ -504,7 +503,7 @@ user	3m15.747s
 sys	0m1.039s
 ````
 
-3.2 ms / element (**E_TOO_MANY_SET_OPERATIONS**)
+3.2 us / element (**E_TOO_MANY_SET_OPERATIONS**)
 
 Can we keep the elegant mathematical approach but still be efficient?
 
