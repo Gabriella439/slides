@@ -93,14 +93,16 @@ Spoiler alert:
 * 50 MB / s in pure Haskell
     * ~15x faster than `regex-applicative`
     * ~4x  slower than `grep`
-* 1.5 GB / s / core using a mix of Haskell and C
+
+Teaser: Sometimes we can get 1.5 GB / s / core using a mix of Haskell and C
+
+See: [Data-Parallel Finite-State Machines](http://research.microsoft.com/pubs/208237/asplos302-mytkowicz.pdf)
 
 # Overview
 
 * **Non-deterministic finite automata**
 * Mathematical API
 * Improving efficiency in pure Haskell
-* Improving efficiency using C
 * Conclusions
 
 # NFAs
@@ -281,7 +283,6 @@ variance introduced by outliers: 19% (moderately inflated)
 * Non-deterministic finite automata
 * **Mathematical API**
 * Improving efficiency in pure Haskell
-* Improving efficiency using C
 * Conclusions
 
 # Thompson's construction
@@ -512,7 +513,6 @@ Can we keep the elegant mathematical approach but still be efficient?
 * Non-deterministic finite automata
 * Mathematical API
 * **Improving efficiency in pure Haskell**
-* Improving efficiency using C
 * Conclusions
 
 # Optimizing `Set` operations
@@ -639,11 +639,11 @@ variance introduced by outliers: 19% (moderately inflated)
 
 **~8x faster**, but still slower than `grep`
 
-# Final optimizations
+# `ByteString`-specific optimizations
 
 * Use a precomputed lookup table for each state transition
 
-* Add matching functions specialized to `ByteString`s
+* Add matching functions specialized to `ByteString`s for tight loops
 
     ```haskell
     hasBytes :: Regex Word8 -> ByteString -> Bool
@@ -1171,12 +1171,20 @@ $ ./haskell-grep '"A" * star ("B" + "C") + "D"' file.txt
 * Non-deterministic finite automata
 * Mathematical API
 * Improving efficiency in pure Haskell
-* **Improving efficiency using C**
-* Conclusions
+* **Conclusions**
+
+# Conclusions
+
+* Typed, elegant, and efficient: pick 3!
+* I'll eventually polish and release this code as a Haskell library
+* Teaser: For more restricted state machines we can go **much** faster
+
+I've included additional slides for the teaser
 
 # We can beat `grep`!
 
-We have the technology: [Data-Parallel Finite-State Machines](http://research.microsoft.com/pubs/208237/asplos302-mytkowicz.pdf)
+We have the technology: [Data-Parallel Finite-State Machines](http://research.mi
+crosoft.com/pubs/208237/asplos302-mytkowicz.pdf)
 
 I've only implemented a subset of the paper:
 
@@ -1197,7 +1205,8 @@ If your machine has N states:
 * Simulate all N starting states for each chunk to build a transition matrix
 * Combine all K transition matrices into a single transition matrix at the end
 
-The hard part is making this efficient when N is greater than the number of cores
+The hard part is making this efficient when N is greater than the number of core
+s
 
 # High-performance state transitions
 
@@ -1391,16 +1400,3 @@ variance introduced by outliers: 16% (moderately inflated)
 ```
 
 Voila!  3+ GB / s on 2 cores for any state machine with <= 16 states
-
-# Questions?
-
-* Non-deterministic finite automata
-* Mathematical API
-* Improving efficiency in pure Haskell
-* Improving efficiency using C
-* **Conclusions**
-
-# Conclusions
-
-* We can build a reasonably fast regex library with a nice API in pure Haskell
-* There is a "next generation `grep`" waiting to be written
