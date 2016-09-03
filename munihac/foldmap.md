@@ -1,6 +1,6 @@
 % Beautiful folds
 % Gabriel Gonzalez
-% September 03, 2015
+% September 03, 2016
 
 # Beautiful folds
 
@@ -146,15 +146,21 @@ print (fold sum [1, 2, 3, 4])
 # More interesting example
 
 ```haskell
-data Pair a b = P !a !b
+{-# LANGUAGE BangPatterns #-}
+
+data Average a = Average { numerator :: !a, denominator :: !Int }
+
+instance Num a => Monoid (Average a) where
+    mempty = Average 0 0
+    mappend (Average xL nL) (Average xR nR) = Average (xL + xR) (nL + nR)
 
 -- Not a numerically stable average, but humor me
 average :: Fractional a => Fold a a
 average = Fold tally summarize
   where
-    tally x = P (Sum x) (Sum (1 :: Int))
+    tally x = Average x 1
 
-    summarize (P (Sum numerator) (Sum denominator)) =
+    summarize (Average numerator denominator) =
         numerator / fromIntegral denominator
 ```
 
@@ -202,92 +208,20 @@ print (fold average [1, 2, 3])
 -- Definition of `map` (skipping a few steps)
 = print (summarize (foldl' (<>) mempty [tally 1, tally 2, tally 3]))
 
--- tally x = (Sum x, Sum 1)
-= print (summarize (mconcat [(Sum 1, Sum 1), (Sum 2, Sum 1), (Sum 3, Sum 1)]))
+-- tally x = Average x 1
+= print (summarize (mconcat [Average 1 1, Average 2 1, Average 3 1]))
 
 -- `foldl' (<>) mempty` (skipping a few steps)
-= print (summarize (mempty <> (Sum 1, Sum 1) <> (Sum 2, Sum 1) <> (Sum 3, Sum 1)))
+= print (summarize (mempty <> Average 1 1 <> Average 2 1 <> Average 3 1))
 
--- mempty = (Sum 0, Sum 0)
-= print (summarize ((Sum 0, Sum 0) <> (Sum 1, Sum 1) <> (Sum 2, Sum 1) <> (Sum 3, Sum 1)))
+-- mempty = Average 0 0
+= print (summarize (Average 0 0 <> Average 1 1 <> Average 2 1 <> Average 3 1))
 
--- (Sum numL, Sum denL) <> (Sum numR, Sum denR) = (Sum (numL + numR), Sum (denL + denR))
-= print (summarize (Sum 6, Sum 3))
+-- Average xL nL <> Average xR nR = Average (xL + xR) (nL + nR)
+= print (summarize (Average 6 3))
 
--- summarize (Sum numerator, Sum denominator) = numerator / denominator
-= print (6 / 3)
-```
-
-
-# The type
-
-```haskell
-{-# LANGUAGE ExistentialQuantification #-}
-
-data Fold i o =   forall m . Monoid m => Fold (i -> m) (m -> o)
---                       ^          ^          ^        ^
---                       |          |          |        |
--- `m` can be any type --+          |          |        |
---                                  |          |        |
---  ... so long as its a `Monoid` --+          |        |
---                                             |        |
---      This field converts an `i` to an `m` --+        |
---                                                      |
---               This field converts an `m` to an `o` --+
-```
-
-# Existential quantification
-
-```haskell
-sum :: Num n => Fold n n
-sum = Fold Sum getSum
--- Sum    :: n -> Sum n
--- getSum :: Sum n -> n
--- 
--- i = n
--- m = Sum n
--- o = n
-```
-
-```haskell
-average :: Fractional n => Fold n n
-average = Fold tally summarize
-  where
-    tally x = (Sum x, Sum 1)
-
-    summarize (Sum numerator, Sum denominator) = numerator / denominator
--- tally     :: n -> (Sum n, Sum n)
--- summarize :: (Sum n, Sum n) -> n
--- 
--- i = n
--- m = (Sum n, Sum n)
--- o = n
-```
-
-`sum` and `average` have similar types, but very different internal `Monoid`s:
-
-# Existential quantification
-
-When we build a `Fold`, we get to choose what the type `m` is
-
-* The only constraint is that the type `m` has to implement the `Monoid` interface
-
-When we pattern match on a `Fold`, we don't get to pick what the type `m` is
-
-* The only thing we know is that the type `m` implements the `Monoid` interface
-
-For example, this code **will not** type-check:
-
-```haskell
-bad :: Fold Double Double -> Double -> Double -> Double
-bad (Fold tally summarize) x y = summarize (tally x + tally y)
-```
-
-... but this code **will** type-check:
-
-```haskell
-good :: Fold Double Double -> Double -> Double -> Double
-good (Fold tally summarize) x y = summarize (tally x <> tally y)
+-- summarize (Average numerator denominator) = numerator / fromIntegral denominator
+= print (6 / fromIntegral 3)
 ```
 
 # Simple `Fold`s
@@ -493,17 +427,7 @@ combine (Fold tallyL summarizeL) (Fold tallyR summarizeR) = Fold tally summarize
     tally x = (tallyL x, tallyR x)
 
     summarize (sL, sR) = (summarizeL sL, summarizeR sR)
-
--- tallyL :: i -> mL
--- tallyR :: i -> mR
--- tally  :: i -> (mL, mR)
--- 
--- summarizeL :: mL -> a
--- summarizeR :: mR -> b
--- summarize  :: (mL, mR) -> (a, b)
 ```
-
-Notice how the internal `Monoid` for all three `Fold`s is different
 
 # Example usage
 
@@ -1038,27 +962,25 @@ focus _Just :: Fold i o -> Fold (Maybe i) o
 ```haskell
 items1 :: [Either Int String]
 items1 = [Left 1, Right "Hey", Right "Foo", Left 4, Left 10]
-
-fold1 :: Fold (Either Int String) (Int, Int)
-fold1 = (,) <$> focus _Left sum <*> focus _Right length
 ```
 
 ```haskell
->>> fold fold1 items1
-(15,2)
+>>> fold (focus _Left sum) items1
+15
+>>> fold (focus _Right length) items1
+2
 ```
 
 ```haskell
 items2 :: [Maybe (Int, String)]
 items2 = [Nothing, Just (1, "Foo"), Just (2, "Bar"), Nothing, Just (5, "Baz")]
-
-fold2 :: Fold (Maybe (Int, String)) Int
-fold2 = focus (_Just . _1) product + focus _Nothing length
 ```
 
 ```haskell
->>> fold fold2 items2
-12
+>>> fold (focus (_Just . _1) product) items2
+10
+>>> fold (focus _Nothing length) items2
+2
 ```
 
 # Questions?
