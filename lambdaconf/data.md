@@ -769,7 +769,7 @@ ea5888fb-40a2-4145-a2ed-4cf395885923,Holothuria,tuberculosa,MCZ,HOL-1587
 
 # A higher-level API
 
-What I would like is are relational operations on in-memory data structures
+My wish: relational operations on in-memory data structures
 
 The second half of this talk covers a prototype implementation I'm working on
 
@@ -798,9 +798,14 @@ Two key differences from conventional tables:
 * We separate the primary key from the rest of the row
 * We also provide an optional `fallback` row if a given `key` is missing
 
+```haskell
+lookup :: Ord k => k -> Table k v -> Maybe v
+lookup k t = Data.Map.Strict.lookup k (rows t) <|> fallback t
+```
+
 # Example tables
 
-We'll be using the following two tables for our example joins
+We'll be using the following tables for our upcoming examples
 
 ```haskell
 >>> let firstNames = fromList [(0, "Gabriel"    ), (1, "Oscar"), (2, "Edgar"    )                  ]
@@ -840,7 +845,173 @@ Nothing
 Just "posco"
 ```
 
-# Inner joins
+The `lookup` function connects `Table` with `Maybe` in interesting ways
+
+These slides will highlight several parallels between `Table` and `Maybe`
+
+# `empty` - `Table`
+
+Every type that implements the `Alternative` interface must implement `empty`:
+
+```haskell
+class Applicative f => Alternative f where
+    empty :: f a
+
+    ...
+```
+
+... and `Table` implements `Alternative`
+
+```haskell
+{-# LANGUAGE InstanceSigs #-}
+
+instance Ord key => Alternative (Table key) where
+    empty :: Table key a
+    empty = Table { rows = Data.Map.Strict.empty, fallback = Nothing }
+
+    ...
+```
+
+An `empty` `Table` is not defined for any key:
+
+```haskell
+>>> empty :: Table Integer String
+Table {rows = fromList [], fallback = Nothing}
+```
+
+# `empty` - `Maybe`
+
+`Maybe` also implements the `Alternative` class:
+
+```haskell
+instance Alternative Maybe where
+    empty :: Maybe a
+    empty = Nothing
+
+    ...
+```
+
+... and `lookup` on an `empty` `Table` returns an `empty` `Maybe`:
+
+```haskell
+lookup k empty = empty
+```
+
+```haskell
+>>> lookup 0 empty
+Nothing
+```
+
+# `pure` - `Table`
+
+Every type that implements the `Applicative` interface must implement `pure`:
+
+```haskell
+class Functor f => Applicative f where
+    pure :: a -> f a
+
+    ...
+```
+
+... and `Table` implements `Applicative`:
+
+```haskell
+instance Ord key => Applicative (Table key) where
+    pure :: a -> Table key a
+    pure row = Table { rows = Data.Map.Strict.empty, fallback = Just row }
+```
+
+A `pure` `Table` is defined for every key:
+
+```haskell
+>>> pure "Gabriel" :: Table Integer String
+Table {rows = fromList [], fallback = Just "Gabriel"}
+```
+
+# `pure` - `Maybe`
+
+`Maybe` also implements `Applicative`:
+
+```haskell
+instance Applicative Maybe where
+    pure :: a -> Maybe a
+    pure x = Just x
+```
+
+... and a `lookup` on a `pure` `Table` returns a `pure` `Maybe`:
+
+```haskell
+lookup k (pure row) = pure row
+```
+
+```haskell
+>>> lookup 0 (pure "Gabriel")
+Just "Gabriel"
+>>> lookup 999 (pure "Gabriel")
+Just "Gabriel"
+```
+
+# `(<|>)` - `Table`
+
+Every type that implements `Alternative` must also implement `(<|>)`:
+
+```haskell
+class Alternative f where
+    ...
+
+    (<|>) :: f a -> f a -> f a
+```
+
+... and `Table` implements `Alternative`:
+
+```haskell
+instance Ord key => Alternative (Table key) where
+    ...
+
+    Table lm lv <|> Table rm rv = Table (Data.Map.Strict.union lm rm) (lv <|> rv)
+```
+
+`(<|>)` combines two `Table`s, preferring the left table if keys collide:
+
+```haskell
+>>> firstNames
+Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
+>>> lastNames
+Table {rows = fromList [(0,"Gonzalez"),(2,"Codd"),(3,"Bryant")], fallback = Nothing}
+>>> firstNames <|> lastNames
+Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar"),(3,"Bryant")], fallback = Nothing}
+```
+
+# `(<|>)` - `pure`
+
+`Maybe` also implements `Alternative`:
+
+```haskell
+instance Alternative Maybe where
+    Nothing <|> x = x
+    x       <|> _ = x
+```
+
+... and `lookup` "distributes over" `(<|>)`:
+
+```haskell
+lookup k (l <|> r) = (lookup k l) <|> (lookup k r)
+```
+
+```haskell
+>>> lookup 3 (firstNames <|> lastNames)
+Just "Bryant"
+>>> (lookup 3 firstNames) <|> (lookup 3 lastNames)
+Just "Bryant"
+```
+
+# `do` - `Table`
+
+Every type that implements `Applicative` must support a subset of `do` notation
+
+I won't explain how this works due to time constraints
+
+For `Table`s, `do` notation behaves like an inner join on a shared key:
 
 ```haskell
 >>> :set -XApplicativeDo  -- This lets use `do` notation for joins
@@ -852,23 +1023,24 @@ Just "posco"
 | 
 >>> example0
 Table {rows = fromList [(0,("Gabriel","Gonzalez")),(2,("Edgar","Codd"))], fallback = Nothing}
->>> lookup 2 example0
-Just ("Edgar","Codd")
 ```
 
-This works because `Table` implements the `Applicative` interface:
+You can join as many tables as you like this way:
 
 ```haskell
-instance Ord key => Applicative (Table key) where ...
+>>> let example1 = do
+|           firstName <- firstNames
+|           lastName  <- lastNames
+|           handles   <- lastNames
+|           return (firstName, lastName, handle)
+| 
+>>> example1
+Table {rows = fromList [(0,("Gabriel","Gonzalez","GabrielG439"))], fallback = Nothing}
 ```
 
-... and `ApplicativeDo` extends `do` notation to work with any `Applicative`
+# `do` - `Maybe`
 
-# `do` notation
-
-`do` notation is overloaded
-
-For example, we can use `do` notation for `Maybe` values, too:
+`Maybe` also implements a `do` notation:
 
 ```haskell
 do x <- Just 1
@@ -886,7 +1058,19 @@ do x <- Nothing
 = Nothing
 ```
 
-This will come in handy very soon
+... and `lookup` distributes over `do` notation:
+
+```haskell
+  lookup k (do x <- xs; y <- ys; return (x, y))
+= do x <- lookup k xs; y <- lookup k ys; return (x, y)
+```
+
+```haskell
+>>> lookup 2 (do x <- firstNames; y <- lastNames; return (x, y))
+Just ("Edgar","Codd")
+>>> do x <- lookup 2 firstNames; y <- lookup 2 lastNames; return (x, y)
+Just ("Edgar","Codd")
+```
 
 # `lookup` laws
 
