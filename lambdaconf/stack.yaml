@@ -1,0 +1,4 @@
+resolver: lts-7.14
+packages: []
+extra-deps:
+- promises-0.3
