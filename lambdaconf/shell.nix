@@ -1,7 +1,20 @@
 let
-  pkgs = import <nixpkgs> { };
+  config = {
+    packageOverrides = pkgs: rec {
+      haskellPackages = pkgs.haskellPackages.override {
+        overrides = haskellPackagesNew: haskellPackgesOld: {
+          bears = haskellPackagesNew.callPackage ./bears.nix { };
+
+          foldl = haskellPackagesNew.callPackage ./foldl.nix { };
+        };
+      };
+    };
+  };
+
+  pkgs = import <nixpkgs> { inherit config; };
 
   ghc = pkgs.haskellPackages.ghcWithPackages (haskellPackages: [
+    haskellPackages.bears
     haskellPackages.bytestring
     haskellPackages.cassava
     haskellPackages.containers
