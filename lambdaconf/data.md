@@ -30,6 +30,8 @@ This exercise is based off of the following "R challenge":
 
 [http://r-bio.github.io/challenges/](http://r-bio.github.io/challenges/)
 
+![](cucumber0.jpeg)
+
 # Download the data
 
 ```bash
@@ -37,7 +39,7 @@ $ wget http://r-bio.github.io/data/holothuriidae-specimens.csv
 $ wget http://r-bio.github.io/data/holothuriidae-nomina-valid.csv
 ```
 
-If you ever want to download files in Haskell, you can use:
+If you want to download the files in Haskell, you can use:
 
 * `http-client`/`http-client-tls` - Low level libraries for HTTP/HTTPS requests
 * `wreq` - High level library for HTTP/HTTPS reqeusts

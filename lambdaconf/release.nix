@@ -11,7 +11,8 @@ in
     data =
       pkgs.runCommand "data.html" {} ''
         mkdir -p $out
-        cp ${./chart0.svg} $out/chart0.svg
+        cp ${./cucumber0.jpeg} $out/cucumber0.jpeg
+        cp ${./chart0.svg}     $out/chart0.svg
         ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./data.md} -o $out/data.html
       '';
   }
