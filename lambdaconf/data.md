@@ -2,33 +2,65 @@
 % Gabriel Gonzalez
 % January ??, 2017
 
-# Preparation
+# Following along
+
+You can use `nix` to follow along with all of the examples
+
+If you don't have `nix` installed, you can run:
 
 ```bash
-$ cat stack.yaml
-resolver: lts-7.14
-packages: []
-extra-deps:
-- promises-0.3
-
-$ stack build cassava diagrams discrimination lens optional-args text vector unordered-containers
+curl https://nixos.org/nix/install | sh
 ```
+
+... and once `nix` is installed, you can run:
+
+```haskell
+$ git clone https://github.com/Gabriel439/slides.git
+$ cd slides/lambdaconf
+$ nix-shell
+```
+
+This sets up a transient and isolated development environment for running code
 
 # My background
 
-I am not a data scientist
+**DISCLAIMER:** I am **NOT** a data scientist
 
 ... but I do know a lot about the Haskell ecosystem
 
 ... and I have some experience with API design
 
-... so I'm going to begin by translate data science tutorials to Haskell
+So I will divide this talk into two halves - one half per area of my expertise:
 
-# Simple end-to-end example
+* The first half will briefly tour the Haskell data science ecosystem
 
-This exercise is based off of the following "R challenge":
+* The second half will demo a new API I'm designing for data science
+
+I hope that everybody will learn something interesting from each half
+
+# Topics
+
+This talk will **NOT** cover:
+
+* database programming (i.e. `mysql`/`postgres` bindings)
+* big data (i.e. `hadoop`/`spark` bindings)
+* numerical programming (i.e. `BLAS`/`LAPACK` bindings)
+
+This talk will mainly cover *data exploration over small in-memory data sets*
+
+If you want to learn more about these other topics, check out this post:
+
+* [State of the Haskell ecosystem](https://github.com/Gabriel439/post-rfc/blob/master/sotu.md)
+
+That is a broad survey of the Haskell ecosystem's suitability for various areas
+
+# A practical data science example
+
+The first half of this talk is based off of the following "R challenge":
 
 [http://r-bio.github.io/challenges/](http://r-bio.github.io/challenges/)
+
+These exercises explore CSVs containing taxonomic information on sea cucumbers
 
 ![](cucumber0.jpeg)
 
@@ -45,6 +77,8 @@ If you want to download the files in Haskell, you can use:
 * `wreq` - High level library for HTTP/HTTPS reqeusts
 
 # Preview files
+
+These are the basic operations for reading and writing bytes:
 
 ```haskell
 -- exercises/00.hs
@@ -130,7 +164,7 @@ fromList [("Status","accepted"),("Genus.orig","Actinopyga"),("Species.orig","alb
 
 # Exercise
 
-How many specimens are included in the data frame `specimens`?
+How many specimens are there?
 
 ```haskell
 -- exercises/02.hs
@@ -158,10 +192,10 @@ main = do
 
 # Exercise
 
-The column `dwc:institutionCode` in the `specimens` data frame lists the
-museum where the specimens are housed:
+The `dwc:institutionCode` column lists the museum where the specimens are
+housed:
 
-* How many institutions house specimens?
+* How many unique institutions house specimens?
 
 ```haskell
 -- exercises/03.hs
@@ -204,12 +238,9 @@ main = do
 
 # Exercise
 
-The column `dwc:institutionCode` in the `specimens` data frame lists the
-museum where the specimens are housed:
+Draw a bar plot that shows how many specimens are housed in each institution
 
-* Draw a bar plot that shows the contribution of each institution
-
-So about the bar plot ...
+So about that ...
 
 # Haskell plotting libraries
 
@@ -217,24 +248,21 @@ I'm not pleased with any Haskell plotting libraries
 
 Probably the most mature is the `Chart` library
 
-However, I personally prefer to use the `diagrams` library directly
+However, I sometimes prefer to use the `diagrams` library directly
 
-You can also output the data as CSV and plot in another language
+You can also output the data as CSV and plot using another tool
 
 I think there is a lot of room for improvement in this area
 
 My wish list:
 
 * A subset of the Diagrams API with simpler types ...
-* ... with a large toolbox of useful primitives for drawing charts ...
+* ... with a large toolbox of useful primitives for assembling charts ...
 * ... and a backend that plots to a window reliably on OS X
 
+I've heard HaskellForMac serves this niche well but I haven't tried it yet
+
 # Exercise
-
-The column `dwc:institutionCode` in the `specimens` data frame lists the
-museum where the specimens are housed:
-
-* Draw a bar plot that shows the contribution of each institution
 
 ```haskell
 -- exercises/04.hs
@@ -371,13 +399,11 @@ main = do
 
 # Exercise
 
-The column `dwc:class` is supposed to contain the Class information for the
-specimens (here they should all be “Holothuroidea”). However, it is missing
-for some. 
+The `dwc:class` column contains the specimen's class (here they should all be
+“Holothuroidea”). However, some specimens are missing this column
 
-* How many specimens do not have the information for class listed?
-* For the specimens where the information is missing, replace it with the
-  information for their class (again, they should all be “Holothuroidea”).
+* How many specimens do not have a listed class?
+* Fix all rows with a missing class by setting the class to "Holothuroidea"
 
 ```haskell
 -- exercises/07.hs
@@ -421,8 +447,9 @@ main = do
 
 # Exercise
 
-Using the `nomina` data frame, and the columns `Subgenus.current` and
-`Genus.current`, which of the genera listed has/have subgenera?
+The `nomina` table has `Genus.current` and `Subgenus.current` columns
+
+Which values of `Genus.current` also come with a `Subgenus.current`?
 
 ```haskell
 -- exercises/08.hs
@@ -469,7 +496,9 @@ main = do
 
 # Exercise
 
-Left join the `specimens` with the `nomina` table on the name of the species:
+Left join the `specimens` table with the `nomina` table on the species name:
+
+The species name is a composite key computed in a different way for each table:
 
 * Concatenate the `dwc:genus` and `dwc:specificEpithet` columns in `specimens`
 * Concatenate the `Genus.current` and `species.current` columns in `nomina`
@@ -765,6 +794,18 @@ e284525e-a5b9-483f-95b4-bb971cba2e06,Holothuria,canaliculata,FLMNH,7643-Echinode
 ea5888fb-40a2-4145-a2ed-4cf395885923,Holothuria,tuberculosa,MCZ,HOL-1587
 ```
 
+# Wishlist
+
+These were the things I struggled with when solving these exercises:
+
+* No anonymous records!!!
+    * The `records` library might help here
+* Heavy syntax for time/date manipulations
+* Losing data in `ghci` after `:reload`
+    * The `ghcid --test=:main` or the `rapid` package might help here
+* No off-the-shelf pure function to sort vectors anywhere on Hackage
+    * Seriously!?!?!
+
 # Questions?
 
 # A higher-level API
@@ -968,6 +1009,7 @@ class Alternative f where
 instance Ord key => Alternative (Table key) where
     ...
 
+    (<|>) :: Table key a -> Table key a -> Table key a
     Table lm lv <|> Table rm rv = Table (Data.Map.Strict.union lm rm) (lv <|> rv)
 ```
 
@@ -1072,13 +1114,111 @@ Just ("Edgar","Codd")
 Just ("Edgar","Codd")
 ```
 
+# `fmap` - `Table`
+
+Every type that implements the `Functor` interface must implement `fmap`
+
+```haskell
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
+```
+
+... and `Table` derives `Functor`:
+
+```haskell
+{-# LANGUAGE DeriveFunctor #-}
+
+data Table key row = ... deriving (..., Functor, ...)
+```
+
+... but we can also manually implement `Functor`, too:
+
+```haskell
+instance Functor (Table key) where
+    fmap :: (a -> b) -> Table key a -> Table key b
+    fmap f t = Table { rows = fmap f (rows t), fallback = fmap f (fallback t) }
+```
+
+`fmap` is a superset of `SELECT`, transforming each row of the `Table`:
+
+```haskell
+>>> example0
+Table {rows = fromList [(0,("Gabriel","Gonzalez")),(2,("Edgar","Codd"))], fallback = Nothing}
+>>> fmap snd example0
+Table {rows = fromList [(0,"Gonzalez"),(2,"Codd")], fallback = Nothing}
+```
+
+# `fmap` - `ApplicativeDo`
+
+We can also express `fmap` with `do` notation thanks to `ApplicativeDo`:
+
+```haskell
+>>> do (firstName, lastName) <- example0
+|      return lastName
+|
+Table {rows = fromList [(0,"Gonzalez"),(2,"Codd")], fallback = Nothing}
+```
+
+`ApplicativeDo` is really also "`FunctorDo`"
+
+# `RecordWildCards`
+
+`RecordWildCards` greatly simplifies picking out specific fields from a record:
+
+```haskell
+data Person = Person
+    { firstName :: String
+    , lastName  :: String
+    , age       :: Integer
+    , handle    :: String
+    }
+
+people :: Table Integer Person
+people = ...
+
+example :: Table Integer (String, Integer)
+example = do
+    Person {..} <- people
+    return (firstName, age)
+```
+
+# `DuplicateRecordFields`
+
+We can also use `DuplicateRecordFields` to store the fields in another record
+
+```haskell
+data Person = Person
+    { firstName :: String
+    , lastName  :: String
+    , age       :: Integer
+    , handle    :: String
+    }
+
+people :: Table Integer Person
+people = ...
+
+data Result = Result
+    { firstName :: String
+    , age       :: Integer
+    }
+
+example :: Table Integer Result
+example = do
+    Person {..} <- people
+    return (Select {..})
+```
+
+This is a nifty trick to project out a subset of record fields in Haskell
+
 # `lookup` laws
 
 In category theory terminology, `lookup` is an "`Alternative` morphism",
 
-`lookup` preserves the structure of `Applicative` and `Alternative` operations:
+`lookup` preserves the structure of `Functor`/`Applicative`/`Alternative`
 
 ```haskell
+lookup k (fmap f x) = fmap f (lookup k x)
+
 lookup k empty = empty
 
 lookup k (pure x) = pure x
@@ -1208,18 +1348,32 @@ Table Integer (Maybe String, String, Maybe String)
 
 # Other SQL operations
 
-* `GROUP BY` + aggregate function => `groupBy` + `fold`
-* `SELECT` => `fmap`
-* `WHERE` => `filter`
-* `LIMIT` => `take`
+* `WHERE` corresponds to `filter`
 
-# Wishlist
+```haskell
+filter :: (row -> Bool) -> Table key row -> Table key row
+```
 
-* Easier syntax for assembling dates
-* Not losing data in ghci
-* Pure algorithm to sort vectors
-* Anonymous records
+* `LIMIT` corresponds to `take`
 
-# TODO
+```haskell
+take :: Int -> Table key row -> Table key row
+```
 
-Teach some example SQL operations
+* `GROUP BY` + aggregate function corresponds to `groupBy` + `fold`
+
+```haskell
+groupBy :: (row -> key) -> Table key' row -> GroupBy key row
+
+fold :: Fold row reslut -> Groups key row -> Table key result
+```
+
+# Conclusions
+
+There is an elegant connection between relational algebra and category theory
+
+`Functor`/`Applicative`/`Alternative` + `ApplicativeDo` provide a slick API
+
+These let us explore typed data without the types getting in the way
+
+I will eventually release this project after more polish and documentation
