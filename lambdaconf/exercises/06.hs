@@ -43,7 +43,7 @@ main = do
     -- [1,91,91,91,91,91,91,1902,1902,1957]
 
     print (minimum (filter (1700 <) years))
-    -- Just 1902
+    -- 1902
 
     let inRange year = 2006 <= year && year <= 2014
     let matches = filter inRange years
