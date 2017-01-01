@@ -22,6 +22,10 @@ $ nix-shell
 
 This sets up a transient and isolated development environment for running code
 
+These slides are also available from the same repository:
+
+[https://github.com/Gabriel439/slides/blob/master/lambdaconf/data.md](https://github.com/Gabriel439/slides/blob/master/lambdaconf/data.md)
+
 # My background
 
 **DISCLAIMER:** I am **NOT** a data scientist
@@ -63,6 +67,18 @@ The first half of this talk is based off of the following "R challenge":
 These exercises explore CSVs containing taxonomic information on sea cucumbers
 
 ![](cucumber0.jpeg)
+
+# Overview
+
+* Practical data science example
+    * Basic input/output and encoding/decoding
+    * Basic data transformations
+    * Advanced tricks
+* A relational algebra library
+    * The `Table` type
+    * Primitive `Table`s
+    * Derived `Table`s
+* Conclusion
 
 # Download the data
 
@@ -117,6 +133,8 @@ Aspidochirotida,Holothuriidae,Mülleria,,Agassizii,Selenka,1867,Actinopyga,,agas
 Aspidochirotida,Holothuriidae,Actinopyga,,albonigra,Cherbonnier & Féral,1984,Actinopyga,,albonigra,yes,yes,accepted
 ```
 
+![](cucumber1.jpg)
+
 # Decode CSV
 
 I highly recommend `cassava` for CSV parsing
@@ -161,6 +179,8 @@ fromList [("dwc:family","Holothuriidae"),("dwc:stateProvince","Hawaiian Islands"
 fromList [("Status","accepted"),("Genus.orig","M\252lleria"),("Species.orig","Agassizii"),("Subgenus.orig",""),("Family.current","Holothuriidae"),("Year","1867"),("Author","Selenka"),("species.current","agassizii"),("Genus.current","Actinopyga"),("Valid","yes"),("Order.current","Aspidochirotida"),("Available","yes"),("Subgenus.current","")]
 fromList [("Status","accepted"),("Genus.orig","Actinopyga"),("Species.orig","albonigra"),("Subgenus.orig",""),("Family.current","Holothuriidae"),("Year","1984"),("Author","Cherbonnier & F\233ral"),("species.current","albonigra"),("Genus.current","Actinopyga"),("Valid","yes"),("Order.current","Aspidochirotida"),("Available","yes"),("Subgenus.current","")]
 ```
+
+![](cucumber2.jpg)
 
 # Exercise
 
@@ -333,6 +353,8 @@ main = do
 # Output
 
 ![](chart0.svg)
+
+![](flmnh.jpg)
 
 # Exercise
 
@@ -1370,10 +1392,16 @@ fold :: Fold row reslut -> Groups key row -> Table key result
 
 # Conclusions
 
+You can do both weakly typed and strongly typed data exploration in Haskell
+
+* All the tools are there, but not yet organized into a cohesive whole
+
+* A relational algebra library could become a focal point for organizing things
+
 There is an elegant connection between relational algebra and category theory
 
-`Functor`/`Applicative`/`Alternative` + `ApplicativeDo` provide a slick API
+* `Functor`/`Applicative`/`Alternative` + `ApplicativeDo` provide a slick API
 
-These let us explore typed data without the types getting in the way
+* These let us explore typed data without the types getting in the way
 
-I will eventually release this project after more polish and documentation
+* I will release these ideas as a library after more polish and documentation
