@@ -6,8 +6,8 @@ mkDerivation {
   version = "1.0.0";
   src = fetchgit {
     url = "https://github.com/Gabriel439/Haskell-Bears-Library.git";
-    sha256 = "1xcj7aszqjn5i26947hxzmkscwrfaxhf7251v1393jgi6bh9wk7i";
-    rev = "88619ae4056f18e9cd11f708e83977fb73ef8e86";
+    sha256 = "1wmb7zzkds353lzb1xmyk5rn6ynkcqhmnfvwv0br9r3g77pzcjml";
+    rev = "65ff68fe02a9375aaf5567a3231eaeb0b028bf8e";
   };
   libraryHaskellDepends = [
     base bytestring cassava containers foldl template-haskell
