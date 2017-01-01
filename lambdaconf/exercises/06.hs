@@ -11,7 +11,6 @@ import Data.Vector (Vector)
 import qualified Data.ByteString.Lazy
 import qualified Data.Csv
 import qualified Data.List
-import qualified Data.Vector
 
 data Specimen = Specimen
     { institutionCode :: Text
@@ -43,10 +42,10 @@ main = do
     print (take 10 (Data.List.sort years))
     -- [1,91,91,91,91,91,91,1902,1902,1957]
 
-    print (Data.Vector.minimum (filter (1700 <) years))
+    print (minimum (filter (1700 <) years))
     -- Just 1902
 
     let inRange year = 2006 <= year && year <= 2014
-    let matches = Data.Vector.filter inRange years
+    let matches = filter inRange years
     print (fromIntegral (length matches) / fromIntegral (length specimens) :: Double)
     -- 0.4932975871313673
