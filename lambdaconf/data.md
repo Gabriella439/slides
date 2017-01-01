@@ -995,13 +995,13 @@ instance Alternative Maybe where
 ... and `lookup` "distributes over" `(<|>)`:
 
 ```haskell
-lookup k (l <|> r) = (lookup k l) <|> (lookup k r)
+lookup k (l <|> r) = lookup k l <|> lookup k r
 ```
 
 ```haskell
 >>> lookup 3 (firstNames <|> lastNames)
 Just "Bryant"
->>> (lookup 3 firstNames) <|> (lookup 3 lastNames)
+>>> lookup 3 firstNames <|> lookup 3 lastNames
 Just "Bryant"
 ```
 
@@ -1074,64 +1074,24 @@ Just ("Edgar","Codd")
 
 # `lookup` laws
 
-`lookup` is an "`Applicative` morphism"
+In category theory terminology, `lookup` is an "`Alternative` morphism",
 
-This means that `lookup` "distributes over" `Applicative` operations:
-
-```haskell
-lookup key (f <*> x) = lookup key f <*> lookup key x
-
-lookup key (pure r) = pure r
-```
-
-This in turn implies that `lookup` distributes over `do` notation:
+`lookup` preserves the structure of `Applicative` and `Alternative` operations:
 
 ```haskell
-lookup key (do x <- xs          -- This `do` notation is overloaded to `Table`
-               y <- ys
-               return (x, y) )
-= do x <- lookup key xs         -- This `do` notation is overloaded to `Maybe`
-     y <- lookup key ys
-     return (x, y)
+lookup k empty = empty
+
+lookup k (pure x) = pure x
+
+lookup k (l <|> r) = lookup k l <|> lookup k r
+
+  lookup k (do x <- xs; y <- ys; return (x, y))
+= do x <- lookup k xs; y <- lookup k ys; return (x, y)
 ```
 
-This means that `lookup` can simplify `Table` operations to `Maybe` operations
+We can use these laws to prove that `lookup` distributes over other operations
 
-# Equational reasoning
-
-```haskell
-lookup 2 (do firstName <- firstNames
-             lastName  <- lastNames
-             return (firstName, lastName) )
-
-= do firstName <- lookup 2 firstNames
-     lastNames <- lookup 2 lastNames
-     return (firstName, lastName)
-
-= do firstName <- Just "Edgar"
-     lastName  <- Just "Codd"
-     return (firstName, lastName)
-
-= Just ("Edgar", "Codd")
-```
-
-```haskell
-lookup 3 (do firstName <- firstNames
-             lastName  <- lastNames
-             return (firstName, lastName) )
-
-= do firstName <- lookup 3 firstNames
-     lastNames <- lookup 3 lastNames
-     return (firstName, lastName)
-
-= do firstName <- Nothing
-     lastName  <- Just "Bryant"
-     return (firstName, lastName)
-
-= Nothing
-```
-
-# `optional`
+# `optional` - `Table`
 
 For left, right, and outer joins we will make use of the `optional` function:
 
@@ -1145,32 +1105,10 @@ This function is provided by Haskell's standard library
 `optional` works for any type that implements `Alternative`, including `Table`:
 
 ```haskell
-instance Ord key => Alternative (Table key) where ...
+optional :: Table key a -> Table key (Maybe a)
 ```
 
-... which means we can think of `optional` as having this type:
-
-```haskell
-optional :: Table key a -> Table key (Maybe a)  -- Replace `f` with `Table key`
-```
-
-# `optional` and `Maybe`
-
-`optional` also works on values of type `Maybe`:
-
-```haskell
-optional :: Alternative f => f a -> f (Maybe a)
-
-optional :: Maybe a -> Maybe (Maybe a)  -- Replace `f` with `Maybe`
-```
-
-... and the behavior of `optional` on values of type `Maybe` is equivalent to:
-
-```haskell
-optional = Just
-```
-
-# Example `optional` use
+`optional` adds a trivial fallback to any `Table`:
 
 ```haskell
 > firstNames
@@ -1179,46 +1117,101 @@ Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar")], fallback = Nothi
 Table {rows = fromList [(0,Just "Gabriel"),(1,Just "Oscar"),(2,Just "Edgar")], fallback = Just Nothing}
 ```
 
-Notice how `optional` enables the `fallback`
+# `optional` - `Maybe`
+
+`optional` also works on `Maybe`:
 
 ```haskell
->>> lookup 0 firstNames
-Just "Gabriel"
->>> lookup 3 firstNames
-Nothing
->>> lookup 0 (optional firstNames)
-Just (Just "Gabriel")
+optional :: Maybe a -> Maybe (Maybe a)
+```
+
+... and the behavior of `optional` on values of type `Maybe` is equivalent to:
+
+```haskell
+optional = Just
+```
+
+`lookup` distributes over `Alternative` operations
+
+Therefore, we can derive "for free" that `lookup` distributes over `optional`:
+
+```haskell
+lookup k (optional t) = optional (lookup k t)
+```
+
+```haskell
+>>> lookup 1 (optional firstNames)
+Just (Just "Oscar")
+>>> optional (lookup 1 firstNames)
+Just (Just "Oscar")
 >>> lookup 3 (optional firstNames)
+Just Nothing
+>>> optional (lookup 3 firstNames)
 Just Nothing
 ```
 
-... or more generally, `lookup` "distributes over `optional`":
+# `optional` joins
+
+Left join:
 
 ```haskell
-lookup (optional t) = optional (lookup t) = Just (lookup t)
+>>> do firstName <-          firstNames
+|      lastName  <- optional lastNames
+|      return (firstName, lastName)
+|
+Table {rows = fromList [(0,("Gabriel",Just "Gonzalez")),(1,("Oscar",Nothing)),(2,("Edgar",Just "Codd"))], fallback = Nothing}
 ```
 
-# Equational reasoning
+Right join:
 
 ```haskell
-lookup 0 (optional firstNames)
+>>> do firstName <- optional firstNames
+|      lastName  <-          lastNames
+|      return (firstName, lastName)
+|
+Table {rows = fromList [(0,(Just "Gabriel","Gonzalez")),(2,(Just "Edgar","Codd")),(3,(Nothing,"Bryant"))], fallback = Nothing}
+```
 
-= optional (lookup 0 firstNames)
+Outer join:
 
-= Just (lookup 0 firstNames)
+```haskell
+>>> do firstName <- optional firstNames
+|      lastName  <- optional lastNames
+|      return (firstName, lastName)
+|
+Table {rows = fromList [(0,(Just "Gabriel",Just "Gonzalez")),(1,(Just "Oscar",Nothing)),(2,(Just "Edgar",Just "Codd")),(3,(Nothing,Just "Bryant"))], fallback = Just (Nothing,Nothing)}
+```
 
-= Just (Just "Gabriel")
+# Multiple `optional` joins
+
+```haskell
+>>> do firstName <-          firstNames
+|      lastName  <- optional lastNames
+|      handle    <- optional handles
+|      return (firstName, lastName)
+|
+Table {rows = fromList [(0,("Gabriel",Just "Gonzalez",Just "GabrielG439")),(1,("Oscar",Nothing,Just "posco")),(2,("Edgar",Just "Codd",Nothing))], fallback = Nothing}
+>>> :type it
+Table Integer (String, Maybe String, Maybe String)
 ```
 
 ```haskell
-lookup 3 (optional firstNames)
-
-= optional (lookup 3 firstNames)
-
-= Just (lookup 3 firstNames)
-
-= Just Nothing
+>>> do firstName <- optional firstNames
+|      lastName  <-          lastNames
+|      handle    <- optional handles
+|      return (firstName, lastName)
+|
+Table {rows = fromList [(0,(Just "Gabriel","Gonzalez",Just "GabrielG439")),(2,(Just "Edgar","Codd",Nothing)),(3,(Nothing,"Bryant",Just "avibryant"))], fallback = Nothing}
+>>> :type it
+Table Integer (Maybe String, String, Maybe String)
 ```
+
+# Other SQL operations
+
+* `GROUP BY` + aggregate function => `groupBy` + `fold`
+* `SELECT` => `fmap`
+* `WHERE` => `filter`
+* `LIMIT` => `take`
 
 # Wishlist
 
