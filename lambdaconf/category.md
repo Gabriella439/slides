@@ -916,18 +916,34 @@ We are literally composing an `Applicative` pipeline
 
 # Conclusion
 
-Abstractions from category theory and abstract algebra help decompose programs
-into composable building blocks
+We began from simple composable functions:
 
-We've talked about programs that are composable in two senses of the word:
+* Composition operator: `(.)`
+* Identity: `id`
+* Composable units: functions
 
-* You can compose anything that implements `Monoid`
-    * Composition operator: `(<>)`
-    * Identity: `mempty`
-    * Composable stages: `Monoid` values
-* You can also build a new `Monoid` by composing `Applicative`s
-    * Composition operator: `O`
-    * Identity: `Identity`
-    * Stages: `Applicative` types
+... then generalized that to other composable values using `Monoid`s:
+
+* Composition operator: `(<>)`
+* Identity: `mempty`
+* Composable units: `Monoid` values
+
+... then generalized that further to composable types using `Applicative`s:
+
+* Composition operator: `O`
+* Identity: `Identity`
+* Composable units: `Applicative` types
+
+Abstractions from category theory (and abstract algebra) help decompose programs
+into simple composable building blocks
 
 # Questions?
+
+You can find these slides at:
+
+[https://github.com/Gabriel439/slides/tree/master/lambdaconf](https://github.com/Gabriel439/slides/tree/master/lambdaconf)
+
+You can also reach me at:
+
+* Email - [Gabriel439@gmail.com](mailto:Gabriel439@gmail.com)
+* Twitter - [GabrielG439](https://twitter.com/GabrielG439)
