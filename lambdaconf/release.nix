@@ -5,6 +5,8 @@ let
         overrides = haskellPackagesNew: haskellPackgesOld: {
           bears = haskellPackagesNew.callPackage ./bears.nix { };
 
+          examples = haskellPackagesNew.callPackage ./examples { };
+
           foldl = haskellPackagesNew.callPackage ./foldl.nix { };
         };
       };
@@ -19,6 +21,8 @@ in
         mkdir -p $out
         ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./category.md} -o $out/category.html
       '';
+
+    examples = pkgs.haskellPackages.examples;
 
     data =
       let

@@ -1,150 +1,76 @@
 % Applied category theory and abstract algebra
 % Gabriel Gonzalez
-% January ??, 2017
+% January 8, 2017
 
-# Equational reasoning
+# Function composition
 
-Purely functional languages promote "equational reasoning"
-
-Equational reasoning means:
-
-* You specify program behavior in terms of equations
-* You reason about code by substituting equals for equals
-
-# Equational reasoning example
-
-```haskell
-twice x = x >> x  -- Same as: twice x = do x; x
-
-main = twice (twice (print 1))
-```
-
-We can reason about what `main` does by substituting equals for equals:
-
-```haskell
-main = twice (twice (print 1))
-
--- twice x = x >> x
-main = twice (print 1 >> print 1)
-
--- twice x = x >> x
-main = (print 1 >> print 1) >> (print 1 >> print 1)
-```
-
-# Question for the audience
-
-Is this `main`:
-
-```haskell
-main = (print 1 >> print 1) >> (print 1 >> print 1)
-```
-
-... equal to this `main`:
-
-```haskell
-main = print 1 >> print 1 >> print 1 >> print 1
-```
-
-# Answer
-
-Yes, because `(>>)` is an associative operator, meaning that:
-
-```haskell
-(x >> y) >> z = x >> (y >> z)
-```
-
-So parentheses don't really matter, but for completeness:
-
-```haskell
->>> :info (>>)
-:info (>>)
-...
-infixl 1 >>
-```
-
-```haskell
-print 1 >> print 1 >> print 1 >> print 1
-
-= ((print 1 >> print 1) >> print 1) >> print 1
-
--- (x >> y) >> z = x >> (y >> z)
--- x = (print 1 >> print 1)
--- y = print 1
--- z = print 1
-= (print 1 >> print 1) >> (print 1 >> print 1)
-```
-
-# Proving properties
-
-We can reason about more than just `main`
-
-We can also prove "properties" about functions or operators that we define
-
-For example, consider the following definitions of `(.)` and `id`:
+You can chain pure functions using Haskell's function composition operator:
 
 ```haskell
 (f . g) x = f (g x)
+```
 
+```haskell
+>>> (not . even . length) [1, 2, 3]
+True
+>>> not (even (length [1, 2, 3]))
+True
+```
+
+You can also define an identity function that does nothing::
+
+```haskell
 id x = x
 ```
 
-We can prove properties like:
+```haskell
+>>> id 4
+4
+```
+
+# Composition laws
+
+Composition and identity obey the following properties:
 
 ```haskell
-f . id = f
+f . id = f                 -- Left identity
 
-id . f = f
+id . f = f                 -- Right identity
 
-(f . g) . h = f . (g . h)
+(f . g) . h = f . (g . h)  -- Associativity
 ```
 
 ... which are true for all possible values of `f`, `g`, and `h`
 
-# Example proof
+# Unix philosophy
+
+Function composition pipelines greatly resemble Unix command line pipelines:
+
+Compare this:
 
 ```haskell
-f . id
-
--- Extensionality: k = \x -> k x
-= \x -> (f . id) x
-
--- (f . g) x = f (g x)
-= \x -> f (id x)
-
--- id x = x
-= \x -> f x
-
--- Extensionality: k = \x -> k x
-= f
+not . length . even
 ```
 
-Caveat: extensionality is not always valid in Haskell 
+... to this:
 
-This talk will assume a hypothetical wart-free and total subset of Haskell
+```bash
+$ ls /tmp | grep foo | wc -l
+```
 
-# Scaling proofs
+* Function composition (i.e. `.`) resembles the Unix pipe (i.e. `|`)
 
-These proofs can become time-consuming as code grows more complex
+* Functions (`not`/`length`/`even`) resemble Unix commands (`ls`/`grep`/`wc`)
 
-We would like to prove high-level properties with ease as our projects grow
+* You create useful programs by decomposing them into simple programs
 
-We can prove complex things by decomposing them into simpler, composable proofs
+* Each simple program "does one thing and does it well"
 
-In other words, we can approach proofs with the "Unix philosophy"
+* We compose simple functions into function pipelines
 
-**Punch line:** Proofs + Unix Philosophy = Category theory (and Abstract algebra)
+**Goal**: We want to extend composability to more complex software architectures
 
-# Goals
-
-Proofs are not the goal; proofs are a means to an end
-
-Fluency in proofs translates into the following goals:
-
-* improved code reasoning skills
-* faster prototyping
-* simpler and more coherent APIs
-* fewer corner cases
-* ease of code maintenance
+**Punch line:** Category theory is about composability
 
 # Overview
 
@@ -153,27 +79,9 @@ Fluency in proofs translates into the following goals:
 * Composable types
 * Conclusion
 
-# Unix philosophy
-
-The Unix philosophy states that programs should:
-
-* do one thing and do it well
-* work together (such as via pipes)
-* use universal interfaces (such as streams of text)
-
-This worked really well for command line tools, but never grew out of that niche
-
-# Universal interfaces
-
-A stream of text is not a universal interface
-
-However, mathematicians have spent decades studying reusable interfaces
-
-We can expand the Unix philosophy to new domains using mathematical interfaces
-
 # `Monoid`
 
-The simplest reusable interface in Haskell is the `Monoid` typeclass:
+The simplest "composable" interface in Haskell is the `Monoid` typeclass:
 
 ```haskell
 class Monoid m where
@@ -195,7 +103,15 @@ x <> mempty = x                -- Right identity
 (x <> y) <> z = x <> (y <> z)  -- Associativity
 ```
 
-The laws are the most important part of the interface!
+Look familiar?
+
+```haskell
+id . f = f                     -- Left identity
+
+f . id = f                     -- Right identity
+
+(f . g) . h = f . (g . h)      -- Associativity
+```
 
 # Example `Monoid` instance
 
@@ -280,7 +196,7 @@ This `mconcat` function works for any type that implements `Monoid`
 
 # `Monoid`-generic instances
 
-We can write `Monoid` instances that are generic over other `Monoid` instances
+We can also write `Monoid` instances generic over other `Monoid` instances
 
 ```haskell
 instance (Monoid a, Monoid b) => Monoid (a, b) where
@@ -300,7 +216,7 @@ instance (Monoid a, Monoid b) => Monoid (a, b) where
 
 # `Monoid`-generic proofs
 
-We can write proofs that are generic over the `Monoid` laws
+We can even write proofs that are generic over the `Monoid` laws
 
 ```haskell
 (xL, xR) <> mempty
@@ -316,15 +232,6 @@ We can write proofs that are generic over the `Monoid` laws
 
 -- mappend x mempty = x
 = (xL, xR)
-```
-
-# Question for the audience
-
-What is the result of this:
-
-```haskell
->>> (([2], [3]), [5]) <> (([7], [11]), [13])
-???
 ```
 
 # Nesting `Monoid`s
@@ -368,13 +275,18 @@ instance Monoid b => Monoid (IO b) where
 This means that these types are legal `Monoid`s:
 
 ```haskell
+>>> getLine
+Hello<Enter>
+"Hello"
 >>> getLine <> getLine :: IO String
-Hello, <Enter>
-world!<Enter>
+Hello<Enter>
+, world!<Enter>
 "Hello, world!"
 ```
 
 ```haskell
+>>> print 1
+1
 >>> print 1 <> print 2 :: IO ()
 1
 2
@@ -432,8 +344,6 @@ main = do
     respond <- promptName <> promptAge
     respond
 ```
-
-# Example run
 
 ```
 >>> main
@@ -498,11 +408,9 @@ mappend putStrLn putStrLn
 * Composable types
 * Conclusion
 
-# Toolbox
+# New `Monoid`: `STM`
 
-Let's expand our toolbox of `Monoid`s and `Applicative`s that we can chain
-
-We'll add a new `Monoid`: `STM`
+Let's add a new `Monoid` to our toolbox:
 
 ```haskell
 newtype Transaction a = Transaction { getTransaction :: STM a }
@@ -513,23 +421,22 @@ instance Monoid (Transaction a) where
     mappend (Transaction l) (Transaction r) = Transaction (l `orElse` r)
 ```
 
-We'll add a new `Applicative`: `Managed`
+A `Transaction` can use `mempty` to block if they are not ready to complete
 
-# `Managed` is an `Applicative` and `Monad`
+`mappend` takes the first transaction that does not block
+
+# New `Monoid`: `Managed`
 
 ```haskell
--- | A managed resource that you acquire using `with`
+-- | A managed resource
 newtype Managed a = Managed { (>>-) :: forall r . (a -> IO r) -> IO r }
 
-instance Functor     Managed where ...
-instance Applicative Managed where ...
-instance Monad       Managed where ...
-
-instance Monoid a => Monoid (Managed a) where
-    mempty = pure mempty
-
-    mappend = liftA2 mappend
+instance Monoid a => Monoid (Managed a) where ...
 ```
+
+`mempty` acquires an empty resource
+
+`mappend` acquires two resources and combines them
 
 # Event streams are `Monoid`s
 
@@ -811,11 +718,12 @@ instance Monoid b => Monoid (a -> b) where
         return (mappend a b)
 ```
 
-This works because there is a `Monad` instance for functions:
+This works because `(a -> b)` is syntactic sugar for `(->) a b`
+
+... and there is a `Monad` instance for `(->) a`:
 
 ```haskell
-instance Monad ((->) a) where
-    ...
+instance Monad ((->) a) where ...
 ```
 
 # Pairs
@@ -832,11 +740,12 @@ instance (Monoid a, Monoid b) => Monoid (a, b) where
         return (mappend a b)
 ```
 
-This works because there is a `Monad` instance for pairs:
+This works because `(a, b)` is syntactic sugar for `(,) a b`
+
+... and there is a `Monad` instance for `(,) a`:
 
 ```haskell
-instance Monoid a => Monad ((,) a) where
-    ...
+instance Monoid a => Monad ((,) a) where ...
 ```
 
 # The pattern
@@ -846,7 +755,7 @@ In theory, we could write the following very general instance:
 ```haskell
 {-# LANGUAGE FlexibleInstances #-}
 
-instance (Monad m, Monoid b) => Monoid (m b) where
+instance (Monad f, Monoid b) => Monoid (f b) where
     mempty = return mempty
 
     mappend mA mB = do
@@ -919,18 +828,18 @@ liftA2 (liftA2 (liftA2 ... (liftA2 mappend) ...))
 # Example chained `Monoid` instance
 
 ```haskell
-newtype Example = Example (F1 (F2 (F3 (... (FN M) ...))))
+newtype Plugin = Plugin ([String], Config -> Managed (Transaction Event))
 
-instance Example where
-    mempty = Example (pure (pure (pure (... (pure mempty) ...))))
+instance Plugin where
+    mempty = Plugin (pure (pure (pure mempty)))
 
-    mappend (Example x) (Example y) =
-        (Example (liftA2 (liftA2 (liftA2 (... (liftA2 mappend) ...))) x y)
+    mappend (Plugin x) (Plugin y) =
+        Plugin (liftA2 (liftA2 (liftA2 mappend)) x y)
 ```
 
-We don't need to prove the `Monoid` laws for `Example`
+We don't need to prove the `Monoid` laws for `Plugin`
 
-`Applicative` laws guarantee that this derived `Monoid` is correct by construction
+`Applicative` laws guarantee that this implementation is correct by construction
 
 (Proof omitted)
 
@@ -974,6 +883,11 @@ instance (Applicative f, Applicative g) => Applicative (f `O` g) where
     pure x = Compose (pure (pure x))
 
     Compose l <*> Compose r = Compose (liftA2 (<*>) l r)
+
+instance (Monoid a, Applicative f, Applicative g) => Monoid (f `O` g) where
+    mempty = pure mempty
+
+    mappend = liftA2 mappend
 ```
 
 ... which has the interesting property that:
@@ -990,13 +904,13 @@ Haskell's standard library gives this type another name (`Data.Functor.Compose`)
 
 # Example `Applicative` composition
 
-The central type of our real-world example could have been written as:
+This means that we could also write `Plugin` as:
 
 ```haskell
-((,) [String] `O` (->) Config `O` Managed) (Transaction Event)
+type Plugin = ((,) [String] `O` (->) Config `O` Managed) (Transaction Event)
 ```
 
-... with appropriate `newtype` wrappers and unwrappers in the right places
+... and it's automatically a `Monoid`!
 
 We are literally composing an `Applicative` pipeline
 

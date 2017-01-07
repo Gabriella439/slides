@@ -1,0 +1,50 @@
+name: examples
+version: 1.0.0
+license: BSD3
+license-file: LICENSE
+cabal-version: >= 1.18
+build-type: Simple
+
+executable example-00
+    build-depends:
+          base < 5
+        , async
+        , bytestring
+        , managed
+        , stm
+        , http-types
+        , wai
+        , warp
+    hs-source-dirs: 00
+    main-is: Main.hs
+    default-language: Haskell2010
+
+executable example-01
+    build-depends:
+          base < 5
+        , async
+        , binary
+        , bytestring
+        , managed
+        , stm
+        , http-types
+        , wai
+        , warp
+    hs-source-dirs: 01
+    main-is: Main.hs
+    default-language: Haskell2010
+
+executable example-02
+    build-depends:
+          base < 5
+        , async
+        , binary
+        , bytestring
+        , managed
+        , stm
+        , http-types
+        , wai
+        , warp
+    hs-source-dirs: 02
+    main-is: Main.hs
+    default-language: Haskell2010
