@@ -146,6 +146,13 @@ Fluency in proofs translates into the following goals:
 * fewer corner cases
 * ease of code maintenance
 
+# Overview
+
+* Composable values
+* Practical example
+* Composable types
+* Conclusion
+
 # Unix philosophy
 
 The Unix philosophy states that programs should:
@@ -156,8 +163,6 @@ The Unix philosophy states that programs should:
 
 This worked really well for command line tools, but never grew out of that niche
 
-Why?
-
 # Universal interfaces
 
 A stream of text is not a universal interface
@@ -165,10 +170,6 @@ A stream of text is not a universal interface
 However, mathematicians have spent decades studying reusable interfaces
 
 We can expand the Unix philosophy to new domains using mathematical interfaces
-
-This will let us "mix and match" new kinds of programming components
-
-# Overview
 
 # `Monoid`
 
@@ -337,6 +338,7 @@ That means that this type is a `Monoid`:
 ```haskell
 (([Integer], [Integer]), [Integer])
 ```
+
 * `[Integer]` is a `Monoid`
 * ... and `(a, b)` is a `Monoid` if `a` and `b` are `Monoid`s ...
 * ... therefore `([Integer], [Integer])` is a `Monoid`
@@ -406,9 +408,7 @@ print 1 <> print 2
 = do print 1; print 2; return ()
 ```
 
-# Question for the audience
-
-What does this program do?
+# Example
 
 ```haskell
 import Data.Monoid
@@ -433,6 +433,18 @@ main = do
     respond
 ```
 
+# Example run
+
+```
+>>> main
+Enter your name:
+Gabriel Gonzalez
+Enter your age:
+31
+Your name is: Gabriel Gonzalez
+Your age is: 31
+```
+
 # Functions
 
 Here's another `Monoid` instance:
@@ -444,11 +456,10 @@ instance Monoid b => Monoid (a -> b) where
     mappend f g = \x -> mappend (f x) (g x)
 ```
 
-What do you think this does?
-
 ```haskell
 >>> (putStrLn <> putStrLn) "Hi"
-???
+Hi
+Hi
 ```
 
 # Chaining different monoids
@@ -482,272 +493,16 @@ mappend putStrLn putStrLn
 
 # Questions?
 
-# Shared patterns
-
-Let's revisit the `Monoid` instance for `IO`:
-
-```haskell
-instance Monoid b => Monoid (IO b) where
-    mempty = return mempty
-
-    mappend mA mB = do
-        a <- mA
-        b <- mB
-        return (mappend a b)
-```
-
-Notice how there's nothing really `IO`-specific about this implementation
-
-We only use `return` and `do`-notation, which work for any `Monad`
-
-Therefore: we can write the exact same `Monoid` instance for any `Monad`
-
-... and Haskell has lots of `Monad`s (in case you didn't notice)
-
-# Functions
-
-Our original `Monoid` instance for functions could have been written this way:
-
-```haskell
-instance Monoid b => Monoid (a -> b) where
-    mempty = return mempty
-
-    mappend mA mB = do
-        a <- mA
-        b <- mB
-        return (mappend a b)
-```
-
-This works because there is a `Monad` instance for functions:
-
-```haskell
-instance Monad ((->) a) where
-    ...
-```
-
-... and `a -> b` is syntactic sugar for `((->) a) b`
-
-# Pairs
-
-Our original `Monoid` instance for pairs could have been written this way:
-
-```haskell
-instance (Monoid a, Monoid b) => Monoid (a, b) where
-    mempty = return mempty
-
-    mappend mA mB = do
-        a <- mA
-        b <- mB
-        return (mappend a b)
-```
-
-This works because there is a `Monad` instance for pairs:
-
-```haskell
-instance Monoid a => Monad ((,) a) where
-    ...
-```
-
-... and `(a, b)` is syntactic sugar for `((,) a) b`
-
-# The pattern
-
-In theory, we could write the following very general instance:
-
-```haskell
-{-# LANGUAGE FlexibleInstances #-}
-
-instance (Monad m, Monoid b) => Monoid (m b) where
-    mempty = return mempty
-
-    mappend mA mB = do
-        a <- pA
-        b <- pB
-        return (mappend a b)
-```
-
-This instance always obeys the `Monoid` laws no matter what `m` and `b` are
-
-In practice, we can't do this because we'd get overlapping instances 😕
-
-# `Applicative`
-
-In fact, we can generalize this to any type that implements `Applicative`:
-
-```haskell
-instance (Applicative f, Monoid m) => Monoid (f m) where
-    mempty = pure mempty
-
-    mappend = liftA2 mappend
-```
-
-Every `Applicative` implements `pure` and (indirectly) `liftA2`:
-
-```haskell
-pure :: Applicative f => a -> f a
-
-liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
-```
-
-```haskell
-mempty  :: Monoid m => m
-
-mappend :: Monoid m => m -> m -> m
-
-pure mempty    :: (Monoid m, Applicative f) => f m
-
-liftA2 mappend :: (Monoid m, Applicative f) => f m -> f m -> f m
-```
-
-# Chaining `Applicative`s
-
-We can keep chaining `pure` and `liftA2`
-
-```haskell
-pure (pure (pure (... (pure mempty) ...)))
-    :: ( Applicative f1
-       , Applicative f2
-       , Applicative f3
-       , ...
-       , Applicative fn
-       , Monoid m
-       )
-    => f1 (f2 (f3 (... (fn m) ...)))
-
-liftA2 (liftA2 (liftA2 ... (liftA2 mappend) ...))
-    :: ( Applicative f1
-       , Applicative f2
-       , Applicative f3
-       , ...
-       , Applicative fn
-       , Monoid m
-       )
-    => f1 (f2 (f3 (... (fn m) ...)))
-    -> f1 (f2 (f3 (... (fn m) ...)))
-    -> f1 (f2 (f3 (... (fn m) ...)))
-```
-
-# Example chained `Monoid` instance
-
-```haskell
-newtype Example = Example (F1 (F2 (F3 (... (FN M) ...))))
-
-instance Example where
-    mempty = Example (pure (pure (pure (... (pure mempty) ...))))
-
-    mappend (Example x) (Example y) =
-        (Example (liftA2 (liftA2 (liftA2 (... (liftA2 mappend) ...))) x y)
-```
-
-We don't need to prove the `Monoid` laws for `Example`
-
-`Applicative` laws guarantee that this derived `Monoid` is correct by construction
-
-(Proof omitted)
-
-You can think of `Applicative`s as "`Monoid` transformers"
-
-# `Applicative` pipelines
-
-This implies that we can automatically derive a `Monoid` instance for any type
-of the form:
-
-```haskell
-( Applicative f1
-, Applicative f2
-, Applicative f3
-, ...
-, Applicative fn
-, Monoid m
-) => f1 (f2 (f3 (... (fn m) ...)))
-```
-
-Think of this as "an `Applicative` pipeline", analogous to a Unix pipeline:
-
-* Each stage is an `Applicative` that "does one thing and does it well"
-* We connect stages together with a "universal interface": `Monoid`
-* The input to each stage is a `Monoid` and the output of each stage is a `Monoid`
-* We can mix and match `Applicatives` just like we mix and match Unix commands
-
-There's no limit to how complex of a pipeline we can build
-
-# Questions?
+* Composable values
+* Practical example
+* Composable types
+* Conclusion
 
 # Toolbox
 
 Let's expand our toolbox of `Monoid`s and `Applicative`s that we can chain
 
 We'll add a new `Monoid`: `STM`
-
-We'll add a new `Applicative`: `Managed`
-
-# `STM` - software transactional memory
-
-```haskell
-data STM a
-
-instance Monad       STM
-instance Alternative STM
-
-newTVarIO :: a -> IO (TVar a)
-
-readTVar :: TVar a -> STM a
-
-writeTVar :: TVar a -> a -> STM ()
-
-atomically :: STM a -> IO a
-```
-
-```haskell
-example :: IO ()
-example = do
-    tvar <- newTVarIO 0
-
-    let transaction :: STM ()
-        transaction = do
-            x <- readTVar tvar
-            writeTVar tvar (x + 1) )
-
-    atomically transaction
-```
-
-# Example use of `STM`
-
-```haskell
-import Control.Applicative ((<|>), empty)
-import Control.Concurrent (forkIO)
-import Control.Monad (replicateM_)
-import Control.Concurrent.STM (STM, atomically)
-import Control.Concurrent.STM.TVar (newTVarIO, readTVar, writeTVar)
-
-main = do
-    balanceRef <- newTVarIO (0 :: Integer)
-
-    let transaction0 :: STM ()
-        transaction0 = do
-            balance <- readTVar balanceRef
-            let newBalance = balance - 10
-            writeTVar balanceRef newBalance
-            if (0 <= newBalance) then return () else empty
-
-    let transaction1 :: STM ()
-        transaction1 = do
-            balance <- readTVar balanceRef
-            let newBalance = balance + 3
-            writeTVar balanceRef newBalance
-
-    replicateM_ 1000 (forkIO (atomically (transaction0 <|> transaction1)))
-    balance <- atomically (readTVar balanceRef)
-    print balance
-```
-
-# `STM` is a `Monoid`
-
-Note that `STM` technically does not implement `Monoid`
-
-`STM` implements `Alternative` (which is basically the same thing as `Monoid`)
-
-We'll wrap `STM` in a `newtype` to provide our own non-orphan `Monoid` instance
 
 ```haskell
 newtype Transaction a = Transaction { getTransaction :: STM a }
@@ -758,15 +513,7 @@ instance Monoid (Transaction a) where
     mappend (Transaction l) (Transaction r) = Transaction (l `orElse` r)
 ```
 
-This instance satisfies the `Monoid` laws because:
-
-```haskell
-retry `orElse` x = x                                   -- mempty <> x = x
-
-x `orElse` retry = x                                   -- x <> mempty = x
-
-(x `orElse` y) `orElse` z = x `orElse` (y `orElse` z)  -- (x <> y) <> z = x <> (y <> z)
-```
+We'll add a new `Applicative`: `Managed`
 
 # `Managed` is an `Applicative` and `Monad`
 
@@ -774,28 +521,9 @@ x `orElse` retry = x                                   -- x <> mempty = x
 -- | A managed resource that you acquire using `with`
 newtype Managed a = Managed { (>>-) :: forall r . (a -> IO r) -> IO r }
 
-instance Functor Managed where
-    fmap f mx = Managed (\return_ ->
-        mx >>- \x ->
-        return_ (f x) )
-
-instance Applicative Managed where
-    pure r    = Managed (\return_ ->
-        return_ r )
-
-    mf <*> mx = Managed (\return_ ->
-        mf >>- \f ->
-        mx >>- \x ->
-        return_ (f x) )
-
-instance Monad Managed where
-    return r = Managed (\return_ ->
-        return_ r )
-
-    ma >>= f = Managed (\return_ ->
-        ma  >>- \a ->
-        f a >>- \b ->
-        return_ b )
+instance Functor     Managed where ...
+instance Applicative Managed where ...
+instance Monad       Managed where ...
 
 instance Monoid a => Monoid (Managed a) where
     mempty = pure mempty
@@ -1042,9 +770,197 @@ main = do
 
 # Questions?
 
-# `Applicative`s are `Composable`
+* Composable values
+* Practical example
+* Composable types
+* Conclusion
 
-Haskell's standard library provides a type for "composing" `Applicative`s:
+# Shared patterns
+
+Let's revisit the `Monoid` instance for `IO`:
+
+```haskell
+instance Monoid b => Monoid (IO b) where
+    mempty = return mempty
+
+    mappend mA mB = do
+        a <- mA
+        b <- mB
+        return (mappend a b)
+```
+
+Notice how there's nothing really `IO`-specific about this implementation
+
+We only use `return` and `do`-notation, which work for any `Monad`
+
+Therefore: we can write the exact same `Monoid` instance for any `Monad`
+
+... and Haskell has lots of `Monad`s (in case you didn't notice)
+
+# Functions
+
+Our original `Monoid` instance for functions could have been written this way:
+
+```haskell
+instance Monoid b => Monoid (a -> b) where
+    mempty = return mempty
+
+    mappend mA mB = do
+        a <- mA
+        b <- mB
+        return (mappend a b)
+```
+
+This works because there is a `Monad` instance for functions:
+
+```haskell
+instance Monad ((->) a) where
+    ...
+```
+
+# Pairs
+
+Our original `Monoid` instance for pairs could have been written this way:
+
+```haskell
+instance (Monoid a, Monoid b) => Monoid (a, b) where
+    mempty = return mempty
+
+    mappend mA mB = do
+        a <- mA
+        b <- mB
+        return (mappend a b)
+```
+
+This works because there is a `Monad` instance for pairs:
+
+```haskell
+instance Monoid a => Monad ((,) a) where
+    ...
+```
+
+# The pattern
+
+In theory, we could write the following very general instance:
+
+```haskell
+{-# LANGUAGE FlexibleInstances #-}
+
+instance (Monad m, Monoid b) => Monoid (m b) where
+    mempty = return mempty
+
+    mappend mA mB = do
+        a <- pA
+        b <- pB
+        return (mappend a b)
+```
+
+This instance always obeys the `Monoid` laws no matter what `m` and `b` are
+
+In practice, we can't do this because we'd get overlapping instances 😕
+
+# `Applicative`
+
+In fact, we can generalize this to any type that implements `Applicative`:
+
+```haskell
+instance (Applicative f, Monoid m) => Monoid (f m) where
+    mempty = pure mempty
+
+    mappend = liftA2 mappend
+```
+
+Every `Applicative` implements `pure` and (indirectly) `liftA2`:
+
+```haskell
+pure :: Applicative f => a -> f a
+
+liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+```
+
+```haskell
+mempty  :: Monoid m => m
+
+mappend :: Monoid m => m -> m -> m
+
+pure mempty    :: (Monoid m, Applicative f) => f m
+
+liftA2 mappend :: (Monoid m, Applicative f) => f m -> f m -> f m
+```
+
+# Chaining `Applicative`s
+
+We can keep chaining `pure` and `liftA2`
+
+```haskell
+pure (pure (pure (... (pure mempty) ...)))
+    :: ( Applicative f1
+       , Applicative f2
+       , Applicative f3
+       , ...
+       , Applicative fn
+       , Monoid m
+       )
+    => f1 (f2 (f3 (... (fn m) ...)))
+
+liftA2 (liftA2 (liftA2 ... (liftA2 mappend) ...))
+    :: ( Applicative f1
+       , Applicative f2
+       , Applicative f3
+       , ...
+       , Applicative fn
+       , Monoid m
+       )
+    => f1 (f2 (f3 (... (fn m) ...)))
+    -> f1 (f2 (f3 (... (fn m) ...)))
+    -> f1 (f2 (f3 (... (fn m) ...)))
+```
+
+# Example chained `Monoid` instance
+
+```haskell
+newtype Example = Example (F1 (F2 (F3 (... (FN M) ...))))
+
+instance Example where
+    mempty = Example (pure (pure (pure (... (pure mempty) ...))))
+
+    mappend (Example x) (Example y) =
+        (Example (liftA2 (liftA2 (liftA2 (... (liftA2 mappend) ...))) x y)
+```
+
+We don't need to prove the `Monoid` laws for `Example`
+
+`Applicative` laws guarantee that this derived `Monoid` is correct by construction
+
+(Proof omitted)
+
+# `Applicative` pipelines
+
+This implies that we can automatically derive a `Monoid` instance for any type
+of the form:
+
+```haskell
+( Applicative f1
+, Applicative f2
+, Applicative f3
+, ...
+, Applicative fn
+, Monoid m
+) => f1 (f2 (f3 (... (fn m) ...)))
+```
+
+Think of this as "an `Applicative` pipeline", analogous to a Unix pipeline:
+
+* Each stage is an `Applicative` that "does one thing and does it well"
+* We connect stages together with a "universal interface": `Monoid`
+* The input to each stage is a `Monoid` and the output of each stage is a `Monoid`
+* We can mix and match `Applicatives` just like we mix and match Unix commands
+
+There's no limit to how complex of a pipeline we can build
+
+# `Applicative` composition
+
+We can define a type to "compose" `Applicative`s:
 
 ```haskell
 {-# LANGUAGE DeriveFunctor #-}
@@ -1070,6 +986,20 @@ Identity `O` f ≅ f                 -- (id . f) = f
 (f `O` g) `O` h ≅ f `O` (g `O` h)  -- (f . g) . h = f . (g . h)
 ```
 
+Haskell's standard library gives this type another name (`Data.Functor.Compose`)
+
+# Example `Applicative` composition
+
+The central type of our real-world example could have been written as:
+
+```haskell
+((,) [String] `O` (->) Config `O` Managed) (Transaction Event)
+```
+
+... with appropriate `newtype` wrappers and unwrappers in the right places
+
+We are literally composing an `Applicative` pipeline
+
 # Conclusion
 
 Abstractions from category theory and abstract algebra help decompose programs
@@ -1077,18 +1007,13 @@ into composable building blocks
 
 We've talked about programs that are composable in two senses of the word:
 
-* You can compose values for any type that implements `Monoid`
+* You can compose anything that implements `Monoid`
     * Composition operator: `(<>)`
     * Identity: `mempty`
-    * Composable elements: values of the type that implements `Monoid`
-* You can build a new `Monoid` by composing `Applicative`s
+    * Composable stages: `Monoid` values
+* You can also build a new `Monoid` by composing `Applicative`s
     * Composition operator: `O`
     * Identity: `Identity`
-    * Composable elements: `Applicative`s
+    * Stages: `Applicative` types
 
-# TODO
-
-* Fewer questions for audience
-* Don't really talk about how monoids are composable
-* STM is an Applicative
-* Reorder STM slides
+# Questions?
