@@ -45,11 +45,40 @@ main = (print 1 >> print 1) >> (print 1 >> print 1)
 main = print 1 >> print 1 >> print 1 >> print 1
 ```
 
+# Answer
+
+Yes, because `(>>)` is an associative operator, meaning that:
+
+```haskell
+(x >> y) >> z = x >> (y >> z)
+```
+
+So parentheses don't really matter, but for completeness:
+
+```haskell
+>>> :info (>>)
+:info (>>)
+...
+infixl 1 >>
+```
+
+```haskell
+print 1 >> print 1 >> print 1 >> print 1
+
+= ((print 1 >> print 1) >> print 1) >> print 1
+
+-- (x >> y) >> z = x >> (y >> z)
+-- x = (print 1 >> print 1)
+-- y = print 1
+-- z = print 1
+= (print 1 >> print 1) >> (print 1 >> print 1)
+```
+
 # Proving properties
 
 We can reason about more than just `main`
 
-We can also prove "properties" about functions we define
+We can also prove "properties" about functions or operators that we define
 
 For example, consider the following definitions of `(.)` and `id`:
 
@@ -101,7 +130,7 @@ We would like to prove high-level properties with ease as our projects grow
 
 We can prove complex things by decomposing them into simpler, composable proofs
 
-This is equivalent to approaching proofs with the Unix philosophy
+In other words, we can approach proofs with the "Unix philosophy"
 
 **Punch line:** Proofs + Unix Philosophy = Category theory (and Abstract algebra)
 
@@ -121,9 +150,9 @@ Fluency in proofs translates into the following goals:
 
 The Unix philosophy states that programs should:
 
-* do one thing and do it well, by ...
-* ... working together ...
-* ... using universal interfaces (such as streams of text)
+* do one thing and do it well
+* work together (such as via pipes)
+* use universal interfaces (such as streams of text)
 
 This worked really well for command line tools, but never grew out of that niche
 
@@ -136,6 +165,8 @@ A stream of text is not a universal interface
 However, mathematicians have spent decades studying reusable interfaces
 
 We can expand the Unix philosophy to new domains using mathematical interfaces
+
+This will let us "mix and match" new kinds of programming components
 
 # Overview
 
@@ -162,6 +193,8 @@ x <> mempty = x                -- Right identity
 
 (x <> y) <> z = x <> (y <> z)  -- Associativity
 ```
+
+The laws are the most important part of the interface!
 
 # Example `Monoid` instance
 
@@ -269,19 +302,19 @@ instance (Monoid a, Monoid b) => Monoid (a, b) where
 We can write proofs that are generic over the `Monoid` laws
 
 ```haskell
-(a, b) <> mempty
+(xL, xR) <> mempty
 
 -- x <> y = mappend x y
-= mappend (a, b) mempty
+= mappend (xL, xR) mempty
 
 -- mempty = (mempty, mempty)
-= mappend (a, b) (mempty, mempty)
+= mappend (xL, xR) (mempty, mempty)
 
 -- mappend (xL, yL) (xR, yR) = (mappend xL xR, mappend yL yR)
-= (mappend a mempty, mappend b mempty)
+= (mappend xL mempty, mappend xR mempty)
 
 -- mappend x mempty = x
-= (a, b)
+= (xL, xR)
 ```
 
 # Question for the audience
@@ -492,6 +525,8 @@ instance Monad ((->) a) where
     ...
 ```
 
+... and `a -> b` is syntactic sugar for `((->) a) b`
+
 # Pairs
 
 Our original `Monoid` instance for pairs could have been written this way:
@@ -512,6 +547,8 @@ This works because there is a `Monad` instance for pairs:
 instance Monoid a => Monad ((,) a) where
     ...
 ```
+
+... and `(a, b)` is syntactic sugar for `((,) a) b`
 
 # The pattern
 
@@ -607,6 +644,8 @@ We don't need to prove the `Monoid` laws for `Example`
 `Applicative` laws guarantee that this derived `Monoid` is correct by construction
 
 (Proof omitted)
+
+You can think of `Applicative`s as "`Monoid` transformers"
 
 # `Applicative` pipelines
 
@@ -1033,28 +1072,23 @@ Identity `O` f ≅ f                 -- (id . f) = f
 
 # Conclusion
 
-
-Let's revisit our original goals:
-
-* improved code reasoning skills
-    * Our program is a modular sum of its parts
-* faster prototyping
-    * We can easily add/remove composable components
-* simpler and more coherent APIs
-    * 
-* fewer corner cases
-    * Our proofs were correct by construction
-* ease of code maintenance
-
 Abstractions from category theory and abstract algebra help decompose programs
 into composable building blocks
 
 We've talked about programs that are composable in two senses of the word:
 
-* You can compose anything that implements `Monoid`
+* You can compose values for any type that implements `Monoid`
+    * Composition operator: `(<>)`
+    * Identity: `mempty`
+    * Composable elements: values of the type that implements `Monoid`
 * You can build a new `Monoid` by composing `Applicative`s
+    * Composition operator: `O`
+    * Identity: `Identity`
+    * Composable elements: `Applicative`s
 
 # TODO
 
-* Talk about how `Applicative`s let you lift other operations, like numeric
-  operations and `IsString`
+* Fewer questions for audience
+* Don't really talk about how monoids are composable
+* STM is an Applicative
+* Reorder STM slides
