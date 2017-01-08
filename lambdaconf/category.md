@@ -936,7 +936,7 @@ into simple composable building blocks
 
 You can find these slides at:
 
-[https://github.com/Gabriel439/slides/tree/master/lambdaconf](https://github.com/Gabriel439/slides/tree/master/lambdaconf)
+[https://github.com/Gabriel439/slides/tree/master/lambdaconf/category.md](https://github.com/Gabriel439/slides/tree/master/lambdaconf/category.md)
 
 You can also reach me at:
 

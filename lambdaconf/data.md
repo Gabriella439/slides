@@ -1,6 +1,6 @@
 % Data science APIs in Haskell
 % Gabriel Gonzalez
-% January ??, 2017
+% January 10, 2017
 
 # Following along
 
@@ -822,7 +822,6 @@ These were the things I struggled with when solving these exercises:
 
 * No anonymous records!!!
     * The `records` library might help here
-* Heavy syntax for time/date manipulations
 * Losing data in `ghci` after `:reload`
     * The `ghcid --test=:main` or the `rapid` package might help here
 * No off-the-shelf pure function to sort vectors anywhere on Hackage
@@ -1104,7 +1103,7 @@ Table {rows = fromList [(0,("Gabriel","Gonzalez","GabrielG439"))], fallback = No
 
 # `do` - `Maybe`
 
-`Maybe` also implements a `do` notation:
+`Maybe` also implements `do` notation:
 
 ```haskell
 do x <- Just 1
@@ -1405,3 +1404,27 @@ There is an elegant connection between relational algebra and category theory
 * These let us explore typed data without the types getting in the way
 
 * I will release these ideas as a library after more polish and documentation
+
+
+# Questions?
+
+You can find these slides at:
+
+[https://github.com/Gabriel439/slides/tree/master/lambdaconf/data.md](https://github.com/Gabriel439/slides/tree/master/lambdaconf/data.md)
+
+You can also reach me at:
+
+* Email - [Gabriel439@gmail.com](mailto:Gabriel439@gmail.com)
+* Twitter - [GabrielG439](https://twitter.com/GabrielG439)
+
+# TODO
+
+Rearrange topics slide
+Relational operations on in-memory data sets
+Overview slide out of place
+More type signatures for `let` bindings
+Move Haskell plotting libraries slide
+"column dwc:year"
+Wish list: join for `Map`s
+Nomina, not Nomen
+Fill out Questions slides
