@@ -885,17 +885,45 @@ instance (Monoid a, Applicative f, Applicative g) => Monoid ((f `O` g) a) where
     mappend = liftA2 mappend
 ```
 
-... which has the interesting property that:
+# `Applicative` identity
 
-```haskell
-f `O` Identity ≅ f                 -- (f . id) = f
+We can also define an `Identity` of this type-level composition operator:
 
-Identity `O` f ≅ f                 -- (id . f) = f
+```
+newtype Identity a = Identity { runIdentity :: a }
 
-(f `O` g) `O` h ≅ f `O` (g `O` h)  -- (f . g) . h = f . (g . h)
+instance Applicative Identity where
+    pure a = Identity a
+
+    Identity f <*> Identity x = Identity (f x)
+
+instance Monoid a => Monoid (Identity a) where
+    mempty = pure mempty
+
+    mappend = liftA2 mappend
 ```
 
-Haskell's standard library gives this type another name (`Data.Functor.Compose`)
+# `Applicative` composition laws
+
+We can even show that `Applicative` composition and identity obey these laws:
+
+```haskell
+Identity `O` f ≅ f                 -- Left identity
+
+f `O` Identity ≅ f                 -- Right identity
+
+(f `O` g) `O` h ≅ f `O` (g `O` h)  -- Associativity
+```
+
+Look familiar?
+
+```haskell
+id . f = f                         -- Left identity
+
+f . id = f                         -- Right identity
+
+(f . g) . h = f . (g . h)          -- Associativity
+```
 
 # Example `Applicative` composition
 
