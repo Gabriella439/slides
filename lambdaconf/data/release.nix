@@ -5,8 +5,6 @@ let
         overrides = haskellPackagesNew: haskellPackgesOld: {
           bears = haskellPackagesNew.callPackage ./bears.nix { };
 
-          examples = haskellPackagesNew.callPackage ./examples { };
-
           exercises = haskellPackagesNew.callPackage ./exercises { };
 
           foldl = haskellPackagesNew.callPackage ./foldl.nix { };
@@ -18,15 +16,7 @@ let
   pkgs = import <nixpkgs> { inherit config; };
 
 in
-  { category =
-      pkgs.runCommand "category-slides" {} ''
-        mkdir -p $out
-        ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./category.md} -o $out/slides.html
-      '';
-
-    examples = pkgs.haskellPackages.examples;
-
-    exercises = pkgs.haskellPackages.exercises;
+  { exercises = pkgs.haskellPackages.exercises;
 
     data =
       let
