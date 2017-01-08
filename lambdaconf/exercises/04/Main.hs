@@ -1,4 +1,4 @@
--- exercises/04.hs
+-- exercises/04/Main.hs
 
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}

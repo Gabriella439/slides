@@ -1,4 +1,4 @@
--- exercises/08.hs
+-- exercises/07/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -34,7 +34,12 @@ process file = do
 main :: IO ()
 main = do
     nomina <- process "holothuriidae-nomina-valid.csv"
-    let hasSubgenus (Nomen {..}) = subgenus /= ""
-    let genera = fmap genus (Data.Vector.filter hasSubgenus nomina)
+
+    let hasSubgenus :: Nomen -> Bool
+        hasSubgenus (Nomen {..}) = subgenus /= ""
+
+    let genera :: Vector Text
+        genera = fmap genus (Data.Vector.filter hasSubgenus nomina)
+
     print (Data.List.nub (toList genera))
     -- ["Holothuria"]

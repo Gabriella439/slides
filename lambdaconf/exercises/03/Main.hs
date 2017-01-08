@@ -1,4 +1,4 @@
--- exercises/03.hs
+-- exercises/03/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -31,6 +31,7 @@ process file = do
 main :: IO ()
 main = do
     specimens <- process "holothuriidae-specimens.csv"
-    let institutions = fmap institutionCode specimens
+    let institutions :: Vector Text
+        institutions = fmap institutionCode specimens
     print (Data.List.nub (toList institutions))
     -- ["FLMNH","CAS","MCZ","YPM"]

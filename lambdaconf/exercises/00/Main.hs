@@ -1,4 +1,4 @@
--- exercises/00.hs
+-- exercises/00/Main.hs
 
 import Data.ByteString.Lazy (ByteString)
 

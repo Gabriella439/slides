@@ -1,9 +1,10 @@
--- exercises/09.hs
+-- exercises/08/Main.hs
 
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 
+import Data.ByteString.Lazy (ByteString)
 import Data.Csv
     (DefaultOrdered(..), FromNamedRecord(..), ToNamedRecord(..), (.:), (.=))
 import Data.Foldable (toList)
@@ -79,10 +80,14 @@ main = do
     specimens <- process "holothuriidae-specimens.csv"
     nomina    <- process "holothuriidae-nomina-valid.csv"
 
-    let leftKey  (Specimen {..}) = Data.Text.unwords [genus, specificEpithet]
-    let rightKey (Nomina   {..}) = Data.Text.unwords [genus, species        ]
+    let leftKey :: Specimen -> Text
+        leftKey  (Specimen {..}) = Data.Text.unwords [genus, specificEpithet]
 
-    let joinedGroups =
+    let rightKey :: Nomina -> Text
+        rightKey (Nomina {..}) = Data.Text.unwords [genus, species]
+
+    let joinedGroups :: [[(Specimen, Maybe Text)]]
+        joinedGroups =
             Data.Discrimination.leftOuter
                 Data.Discrimination.Grouping.hashing
                 (\specimen (Nomina {..}) -> (specimen, Just status))
@@ -92,10 +97,18 @@ main = do
                 (toList specimens)
                 (toList nomina   )
 
-    let joined               = concat joinedGroups
-    let pending (_, status)  = status /= Just "accepted"
-    let select (specimen, _) = specimen
-    let output               = map select (filter pending joined)
+    let joined :: [(Specimen, Maybe Text)]
+        joined = concat joinedGroups
 
-    let bytes = Data.Csv.encodeDefaultOrderedByName output
+    let pending :: (Specimen, Maybe Text) -> Bool
+        pending (_, status)  = status /= Just "accepted"
+
+    let select :: (Specimen, Maybe Text) -> Specimen
+        select (specimen, _) = specimen
+
+    let output :: [Specimen]
+        output = map select (filter pending joined)
+
+    let bytes :: ByteString
+        bytes = Data.Csv.encodeDefaultOrderedByName output
     Data.ByteString.Lazy.writeFile "holothuriidae-pending.csv" bytes

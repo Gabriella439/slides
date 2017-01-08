@@ -1,4 +1,4 @@
--- exercises/06.hs
+-- exercises/05/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -34,7 +34,8 @@ main :: IO ()
 main = do
     specimens <- process "holothuriidae-specimens.csv"
 
-    let years = do
+    let years :: [Integer]
+        years = do
             specimen <- toList specimens
             Just y   <- return (year specimen)
             return y
@@ -45,7 +46,11 @@ main = do
     print (minimum (filter (1700 <) years))
     -- 1902
 
-    let inRange year = 2006 <= year && year <= 2014
-    let matches = filter inRange years
+    let inRange :: Integer -> Bool
+        inRange year = 2006 <= year && year <= 2014
+
+    let matches :: [Integer]
+        matches = filter inRange years
+
     print (fromIntegral (length matches) / fromIntegral (length specimens) :: Double)
     -- 0.4932975871313673

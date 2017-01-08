@@ -44,29 +44,19 @@ I hope that everybody will learn something interesting from each half
 
 # Topics
 
+This talk will mainly cover *relational operations over in-memory data sets*
+
 This talk will **NOT** cover:
 
 * database programming (i.e. `mysql`/`postgres` bindings)
 * big data (i.e. `hadoop`/`spark` bindings)
 * numerical programming (i.e. `BLAS`/`LAPACK` bindings)
 
-This talk will mainly cover *data exploration over small in-memory data sets*
-
 If you want to learn more about these other topics, check out this post:
 
 * [State of the Haskell ecosystem](https://github.com/Gabriel439/post-rfc/blob/master/sotu.md)
 
 That is a broad survey of the Haskell ecosystem's suitability for various areas
-
-# A practical data science example
-
-The first half of this talk is based off of the following "R challenge":
-
-[http://r-bio.github.io/challenges/](http://r-bio.github.io/challenges/)
-
-These exercises explore CSVs containing taxonomic information on sea cucumbers
-
-![](cucumber0.jpeg)
 
 # Overview
 
@@ -79,6 +69,16 @@ These exercises explore CSVs containing taxonomic information on sea cucumbers
     * Primitive `Table`s
     * Derived `Table`s
 * Conclusion
+
+# A practical data science example
+
+The first half of this talk is based off of the following "R challenge":
+
+[http://r-bio.github.io/challenges/](http://r-bio.github.io/challenges/)
+
+These exercises explore CSVs containing taxonomic information on sea cucumbers
+
+![](cucumber0.jpeg)
 
 # Download the data
 
@@ -97,7 +97,7 @@ If you want to download the files in Haskell, you can use:
 These are the basic operations for reading and writing bytes:
 
 ```haskell
--- exercises/00.hs
+-- exercises/00/Main.hs
 
 import Data.ByteString.Lazy (ByteString)
 
@@ -140,7 +140,7 @@ Aspidochirotida,Holothuriidae,Actinopyga,,albonigra,Cherbonnier & Féral,1984,Ac
 I highly recommend `cassava` for CSV parsing
 
 ```haskell
--- exercises/01.hs
+-- exercises/01/Main.hs
 
 import Data.Map (Map)
 import Data.Text (Text)
@@ -187,7 +187,7 @@ fromList [("Status","accepted"),("Genus.orig","Actinopyga"),("Species.orig","alb
 How many specimens are there?
 
 ```haskell
--- exercises/02.hs
+-- exercises/02/Main.hs
 
 import Data.Map (Map)
 import Data.Text (Text)
@@ -218,7 +218,7 @@ housed:
 * How many unique institutions house specimens?
 
 ```haskell
--- exercises/03.hs
+-- exercises/03/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -251,7 +251,8 @@ process file = do
 main :: IO ()
 main = do
     specimens <- process "holothuriidae-specimens.csv"
-    let institutions = fmap institutionCode specimens
+    let institutions :: Vector Text
+        institutions = fmap institutionCode specimens
     print (Data.List.nub (toList institutions))
     -- ["FLMNH","CAS","MCZ","YPM"]
 ```
@@ -285,7 +286,7 @@ I've heard HaskellForMac serves this niche well but I haven't tried it yet
 # Exercise
 
 ```haskell
--- exercises/04.hs
+-- exercises/04/Main.hs
 
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -366,7 +367,7 @@ The column `dwc:year` indicates when the specimen was collected:
   the years 2006 and 2014 (included)?
 
 ```haskell
--- exercises/06.hs
+-- exercises/05/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -402,7 +403,8 @@ main :: IO ()
 main = do
     specimens <- process "holothuriidae-specimens.csv"
 
-    let years = do
+    let years :: [Integer]
+        years = do
             specimen <- toList specimens
             Just y   <- return (year specimen)
             return y
@@ -411,10 +413,14 @@ main = do
     -- [1,91,91,91,91,91,91,1902,1902,1957]
 
     print (minimum (filter (1700 <) years))
-    -- Just 1902
+    -- 1902
 
-    let inRange year = 2006 <= year && year <= 2014
-    let matches = filter inRange years
+    let inRange :: Integer -> Bool
+        inRange year = 2006 <= year && year <= 2014
+
+    let matches :: [Integer]
+        matches = filter inRange years
+
     print (fromIntegral (length matches) / fromIntegral (length specimens) :: Double)
     -- 0.4932975871313673
 ```
@@ -428,7 +434,7 @@ The `dwc:class` column contains the specimen's class (here they should all be
 * Fix all rows with a missing class by setting the class to "Holothuroidea"
 
 ```haskell
--- exercises/07.hs
+-- exercises/06/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -457,8 +463,11 @@ main = do
     print (lengthOf (traverse . ix "dwc:class" . only "Holothuroidea") specimens)
     -- 2934
 
-    let modify c = if c == "" then "Holothuroidea" else c
-    let specimens2 = over (traverse . ix "dwc:class") modify specimens
+    let modify :: Text -> Text
+        modify c = if c == "" then "Holothuroidea" else c
+
+    let specimens2 :: Vector (Map Text Text)
+        specimens2 = over (traverse . ix "dwc:class") modify specimens
 
     print (lengthOf (traverse . ix "dwc:class" . only "") specimens2)
     -- 0
@@ -474,7 +483,7 @@ The `nomina` table has `Genus.current` and `Subgenus.current` columns
 Which values of `Genus.current` also come with a `Subgenus.current`?
 
 ```haskell
--- exercises/08.hs
+-- exercises/07/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -510,8 +519,13 @@ process file = do
 main :: IO ()
 main = do
     nomina <- process "holothuriidae-nomina-valid.csv"
-    let hasSubgenus (Nomen {..}) = subgenus /= ""
-    let genera = fmap genus (Data.Vector.filter hasSubgenus nomina)
+
+    let hasSubgenus :: Nomen -> Bool
+        hasSubgenus (Nomen {..}) = subgenus /= ""
+
+    let genera :: Vector Text
+        genera = fmap genus (Data.Vector.filter hasSubgenus nomina)
+
     print (Data.List.nub (toList genera))
     -- ["Holothuria"]
 ```
@@ -536,12 +550,13 @@ Save the following columns to "holothuriidae-pending.csv":
 * `dwc:catalogNumber`
 
 ```haskell
--- exercises/09.hs
+-- exercises/08/Main.hs
 
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 
+import Data.ByteString.Lazy (ByteString)
 import Data.Csv
     (DefaultOrdered(..), FromNamedRecord(..), ToNamedRecord(..), (.:), (.=))
 import Data.Foldable (toList)
@@ -617,10 +632,14 @@ main = do
     specimens <- process "holothuriidae-specimens.csv"
     nomina    <- process "holothuriidae-nomina-valid.csv"
 
-    let leftKey  (Specimen {..}) = Data.Text.unwords [genus, specificEpithet]
-    let rightKey (Nomina   {..}) = Data.Text.unwords [genus, species        ]
+    let leftKey :: Specimen -> Text
+        leftKey  (Specimen {..}) = Data.Text.unwords [genus, specificEpithet]
 
-    let joinedGroups =
+    let rightKey :: Nomina -> Text
+        rightKey (Nomina {..}) = Data.Text.unwords [genus, species]
+
+    let joinedGroups :: [[(Specimen, Maybe Text)]]
+        joinedGroups =
             Data.Discrimination.leftOuter
                 Data.Discrimination.Grouping.hashing
                 (\specimen (Nomina {..}) -> (specimen, Just status))
@@ -630,12 +649,20 @@ main = do
                 (toList specimens)
                 (toList nomina   )
 
-    let joined               = concat joinedGroups
-    let pending (_, status)  = status /= Just "accepted"
-    let select (specimen, _) = specimen
-    let output               = map select (filter pending joined)
+    let joined :: [(Specimen, Maybe Text)]
+        joined = concat joinedGroups
 
-    let bytes = Data.Csv.encodeDefaultOrderedByName output
+    let pending :: (Specimen, Maybe Text) -> Bool
+        pending (_, status)  = status /= Just "accepted"
+
+    let select :: (Specimen, Maybe Text) -> Specimen
+        select (specimen, _) = specimen
+
+    let output :: [Specimen]
+        output = map select (filter pending joined)
+
+    let bytes :: ByteString
+        bytes = Data.Csv.encodeDefaultOrderedByName output
     Data.ByteString.Lazy.writeFile "holothuriidae-pending.csv" bytes
 ```
 
@@ -1419,9 +1446,6 @@ You can also reach me at:
 
 # TODO
 
-Rearrange topics slide
-Relational operations on in-memory data sets
-Overview slide out of place
 More type signatures for `let` bindings
 Move Haskell plotting libraries slide
 "column dwc:year"

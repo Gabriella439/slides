@@ -7,6 +7,8 @@ let
 
           examples = haskellPackagesNew.callPackage ./examples { };
 
+          exercises = haskellPackagesNew.callPackage ./exercises { };
+
           foldl = haskellPackagesNew.callPackage ./foldl.nix { };
         };
       };
@@ -23,6 +25,8 @@ in
       '';
 
     examples = pkgs.haskellPackages.examples;
+
+    exercises = pkgs.haskellPackages.exercises;
 
     data =
       let

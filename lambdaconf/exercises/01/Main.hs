@@ -1,4 +1,4 @@
--- exercises/01.hs
+-- exercises/01/Main.hs
 
 import Data.Map (Map)
 import Data.Text (Text)

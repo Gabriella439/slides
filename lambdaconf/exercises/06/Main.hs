@@ -1,4 +1,4 @@
--- exercises/07.hs
+-- exercises/06/Main.hs
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -27,8 +27,11 @@ main = do
     print (lengthOf (traverse . ix "dwc:class" . only "Holothuroidea") specimens)
     -- 2934
 
-    let modify c = if c == "" then "Holothuroidea" else c
-    let specimens2 = over (traverse . ix "dwc:class") modify specimens
+    let modify :: Text -> Text
+        modify c = if c == "" then "Holothuroidea" else c
+
+    let specimens2 :: Vector (Map Text Text)
+        specimens2 = over (traverse . ix "dwc:class") modify specimens
 
     print (lengthOf (traverse . ix "dwc:class" . only "") specimens2)
     -- 0
