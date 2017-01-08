@@ -19,7 +19,7 @@ in
   { category =
       pkgs.runCommand "category-slides" {} ''
         mkdir -p $out
-        ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./category.md} -o $out/category.html
+        ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./category.md} -o $out/slides.html
       '';
 
     examples = pkgs.haskellPackages.examples;
@@ -38,7 +38,7 @@ in
           ln -s ${./cucumber2.jpg}  $out/cucumber2.jpg
           ln -s ${flmnhSmall}       $out/flmnh.jpg
           ln -s ${./chart0.svg}     $out/chart0.svg
-          ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./data.md} -o $out/data.html
+          ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./data.md} -o $out/slides.html
         '';
 
     bears = pkgs.runCommand "bears-haddocks" {} ''
