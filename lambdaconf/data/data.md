@@ -12,19 +12,23 @@ If you don't have `nix` installed, you can run:
 curl https://nixos.org/nix/install | sh
 ```
 
-... and once `nix` is installed, you can run:
+... and once `nix` is installed, you can build these slides and examples using:
 
 ```haskell
 $ git clone https://github.com/Gabriel439/slides.git
-$ cd slides/lambdaconf
+$ cd slides/lambdaconf/data
+$ nix-build release.nix
+```
+
+... or you can open up a Nix shell for running code in the REPL like this:
+
+```haskell
 $ nix-shell
 ```
 
-This sets up a transient and isolated development environment for running code
-
 These slides are also available from the same repository:
 
-[https://github.com/Gabriel439/slides/blob/master/lambdaconf/data.md](https://github.com/Gabriel439/slides/blob/master/lambdaconf/data.md)
+[https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md](https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md)
 
 # My background
 
