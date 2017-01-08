@@ -33,9 +33,9 @@ id x = x
 Composition and identity obey the following properties:
 
 ```haskell
-f . id = f                 -- Left identity
+id . f = f                 -- Left identity
 
-id . f = f                 -- Right identity
+f . id = f                 -- Right identity
 
 (f . g) . h = f . (g . h)  -- Associativity
 ```
@@ -141,8 +141,6 @@ x ++ [] = x                    -- x <> mempty = x
 [7, 11]
 >>> mempty :: [Integer]
 []
->>> ([7, 11] <> []) <> [13]
-[7, 11, 13]
 >>> "ABC" <> "DEF"  -- type String = [Char]
 "ABCDEF"
 >>> ['A', 'B', 'C'] <> ['D', 'E', 'F']
@@ -186,11 +184,7 @@ This `mconcat` function works for any type that implements `Monoid`
 ```haskell
 >>> mconcat [[7, 11], [], [13]]
 [7, 11, 13]
->>> mconcat [] :: [Integer]
-[]
 >>> mconcat [(), (), ()]
-()
->>> mconcat [] :: ()
 ()
 ```
 
@@ -275,7 +269,7 @@ instance Monoid b => Monoid (IO b) where
 This means that these types are legal `Monoid`s:
 
 ```haskell
->>> getLine
+>>> getLine :: IO String
 Hello<Enter>
 "Hello"
 >>> getLine <> getLine :: IO String
@@ -285,7 +279,7 @@ Hello<Enter>
 ```
 
 ```haskell
->>> print 1
+>>> print 1 :: IO ()
 1
 >>> print 1 <> print 2 :: IO ()
 1
@@ -367,6 +361,8 @@ instance Monoid b => Monoid (a -> b) where
 ```
 
 ```haskell
+>>> putStrLn "Hi"
+Hi
 >>> (putStrLn <> putStrLn) "Hi"
 Hi
 Hi
@@ -408,7 +404,7 @@ mappend putStrLn putStrLn
 * Composable types
 * Conclusion
 
-# New `Monoid`: `STM`
+# New `Monoid`: `Transaction`
 
 Let's add a new `Monoid` to our toolbox:
 
@@ -755,7 +751,7 @@ In theory, we could write the following very general instance:
 ```haskell
 {-# LANGUAGE FlexibleInstances #-}
 
-instance (Monad f, Monoid b) => Monoid (f b) where
+instance (Monad f, Monoid m) => Monoid (f m) where
     mempty = return mempty
 
     mappend mA mB = do
@@ -830,7 +826,7 @@ liftA2 (liftA2 (liftA2 ... (liftA2 mappend) ...))
 ```haskell
 newtype Plugin = Plugin ([String], Config -> Managed (Transaction Event))
 
-instance Plugin where
+instance Monoid Plugin where
     mempty = Plugin (pure (pure (pure mempty)))
 
     mappend (Plugin x) (Plugin y) =
@@ -845,8 +841,7 @@ We don't need to prove the `Monoid` laws for `Plugin`
 
 # `Applicative` pipelines
 
-This implies that we can automatically derive a `Monoid` instance for any type
-of the form:
+A type like this:
 
 ```haskell
 ( Applicative f1
@@ -858,7 +853,7 @@ of the form:
 ) => f1 (f2 (f3 (... (fn m) ...)))
 ```
 
-Think of this as "an `Applicative` pipeline", analogous to a Unix pipeline:
+... is "an `Applicative` pipeline", analogous to a Unix pipeline:
 
 * Each stage is an `Applicative` that "does one thing and does it well"
 * We connect stages together with a "universal interface": `Monoid`
@@ -884,7 +879,7 @@ instance (Applicative f, Applicative g) => Applicative (f `O` g) where
 
     Compose l <*> Compose r = Compose (liftA2 (<*>) l r)
 
-instance (Monoid a, Applicative f, Applicative g) => Monoid (f `O` g) where
+instance (Monoid a, Applicative f, Applicative g) => Monoid ((f `O` g) a) where
     mempty = pure mempty
 
     mappend = liftA2 mappend
