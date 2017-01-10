@@ -1453,7 +1453,7 @@ There is an elegant connection between relational algebra and category theory
 
 You can find these slides at:
 
-[https://github.com/Gabriel439/slides/tree/master/lambdaconf/data.md](https://github.com/Gabriel439/slides/tree/master/lambdaconf/data.md)
+[https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md](https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md)
 
 You can also reach me at:
 
