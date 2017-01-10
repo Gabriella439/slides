@@ -55,6 +55,7 @@ This talk will **NOT** cover:
 * database programming (i.e. `mysql`/`postgres` bindings)
 * big data (i.e. `hadoop`/`spark` bindings)
 * numerical programming (i.e. `BLAS`/`LAPACK` bindings)
+* machine learning
 
 If you want to learn more about these other topics, check out this post:
 
@@ -363,7 +364,7 @@ main = do
 
 # Exercise
 
-The column `dwc:year` indicates when the specimen was collected:
+The `dwc:year` column indicates when the specimen was collected:
 
 * When was the oldest specimen included in this data frame collected?
   (hint: It was not in year 1)
@@ -611,18 +612,18 @@ instance DefaultOrdered Specimen where
              , "dwc:genus"
              ]
 
-data Nomina = Nomina
+data Nomen = Nomen
     { status  :: Text
     , genus   :: Text
     , species :: Text
     } deriving (Show)
 
-instance FromNamedRecord Nomina where
+instance FromNamedRecord Nomen where
     parseNamedRecord m = do
         status  <- m .: "Status"
         genus   <- m .: "Genus.current"
         species <- m .: "species.current"
-        return (Nomina {..})
+        return (Nomen {..})
 
 process :: FromNamedRecord a => FilePath -> IO (Vector a)
 process file = do
@@ -639,14 +640,14 @@ main = do
     let leftKey :: Specimen -> Text
         leftKey  (Specimen {..}) = Data.Text.unwords [genus, specificEpithet]
 
-    let rightKey :: Nomina -> Text
-        rightKey (Nomina {..}) = Data.Text.unwords [genus, species]
+    let rightKey :: Nomen -> Text
+        rightKey (Nomen {..}) = Data.Text.unwords [genus, species]
 
     let joinedGroups :: [[(Specimen, Maybe Text)]]
         joinedGroups =
             Data.Discrimination.leftOuter
                 Data.Discrimination.Grouping.hashing
-                (\specimen (Nomina {..}) -> (specimen, Just status))
+                (\specimen (Nomen {..}) -> (specimen, Just status))
                 (\specimen -> (specimen, Nothing))
                 leftKey
                 rightKey
@@ -857,8 +858,19 @@ These were the things I struggled with when solving these exercises:
     * The `ghcid --test=:main` or the `rapid` package might help here
 * No off-the-shelf pure function to sort vectors anywhere on Hackage
     * Seriously!?!?!
+* `join` for `Data.Map`
 
 # Questions?
+
+* Practical data science example
+    * Basic input/output and encoding/decoding
+    * Basic data transformations
+    * Advanced tricks
+* A relational algebra library
+    * The `Table` type
+    * Primitive `Table`s
+    * Derived `Table`s
+* Conclusion
 
 # A higher-level API
 
@@ -1447,12 +1459,3 @@ You can also reach me at:
 
 * Email - [Gabriel439@gmail.com](mailto:Gabriel439@gmail.com)
 * Twitter - [GabrielG439](https://twitter.com/GabrielG439)
-
-# TODO
-
-More type signatures for `let` bindings
-Move Haskell plotting libraries slide
-"column dwc:year"
-Wish list: join for `Map`s
-Nomina, not Nomen
-Fill out Questions slides

@@ -35,7 +35,7 @@ in
           ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./data.md} -o $out/slides.html
         '';
 
-    bears = pkgs.runCommand "bears-haddocks" {} ''
+    bears-doc = pkgs.runCommand "bears-doc" {} ''
       ln -s ${pkgs.haskellPackages.bears}/share/doc/x86_64-linux-ghc-8.0.1/bears-1.0.0/html $out
     '';
   }
