@@ -49,7 +49,7 @@ Function composition pipelines greatly resemble Unix command line pipelines:
 Compare this:
 
 ```haskell
-not . length . even
+not . even . length
 ```
 
 ... to this:
