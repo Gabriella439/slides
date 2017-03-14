@@ -12,10 +12,11 @@ Goal: Haskell-native spreadsheets
 
 # Overview
 
-* Basics
+* **Basics**
 * Advanced usage
 * Diagrams and charts
 * In the browser
+* Conclusion
 
 # Example #0 - Code
 
@@ -165,7 +166,7 @@ instance Applicative Updatable where ...
 This means you can combine `Updatable` values using `Applicative` operators:
 
 ```haskell
-(==) <$> checkbox "a" <*> checkbox "b" :: Updatable (Bool, Bool)
+(==) <$> checkbox "a" <*> checkbox "b" :: Updatable Bool
 ```
 
 ... or you can use `do` notation if you enable `ApplicativeDo`:
@@ -205,6 +206,14 @@ main = textUI "Example program" $ do
 # Combination example - Screenshot
 
 ![](./combine.png)
+
+# Questions?
+
+* Basics
+* **Advanced usage**
+* Diagrams and charts
+* In the browser
+* Conclusion
 
 # `traverse`
 
@@ -421,6 +430,14 @@ main = textUI "Mad libs" example
 
 ![](./madlibs.png)
 
+# Questions?
+
+* Basics
+* Advanced usage
+* **Diagrams and charts**
+* In the browser
+* Conclusion
+
 # Diagrams - Code
 
 ```haskell
@@ -549,10 +566,34 @@ main = graphicalUI "Example program" (bars 5)
 
 ![](./charts.png)
 
+# Questions?
+
+* Basics
+* Advanced usage
+* Diagrams and charts
+* **In the browser**
+* Conclusion
+
 # Purescript `flare`
 
 [Try Flare](http://try.purescript.org/?backend=flare)
 
 ![](./flare.png)
 
+# Questions?
+
+* Basics
+* Advanced usage
+* Diagrams and charts
+* In the browser
+* **Conclusion**
+
 # Conclusion
+
+Haskell-native spreadsheets can be simple, useful, and elegant
+
+The API can be ported to any language with support for `Applicative`s
+
+You can use this in the browser using Purescript's `flare` library
+
+You can quickly build simple interactive apps for non-technical users
