@@ -81,7 +81,7 @@ The library provides a few primitive `Updatable` values:
 ```haskell
 checkBox
     :: Text    -- Label
-    -> Updatable Text
+    -> Updatable Bool
 
 spinButton
     :: Text    -- Label
@@ -174,7 +174,7 @@ This means you can combine `Updatable` values using `Applicative` operators:
 ```haskell
 {-# LANGUAGE ApplicativeDo #-}
 
-example :: Updatable (Bool, Bool)
+example :: Updatable Bool
 exampe = do
     a <- checkbox "a"
     b <- checkbox "b"
@@ -206,6 +206,36 @@ main = textUI "Example program" $ do
 # Combination example - Screenshot
 
 ![](./combine.png)
+
+# Niche - Small interactive applications
+
+```haskell
+{-# LANGUAGE ApplicativeDo     #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+import Data.Monoid ((<>))
+import Data.Text (Text)
+import Typed.Spreadsheet
+
+computePayment :: Double -> Double -> Double -> Text
+computePayment mortgageAmount numberOfYears yearlyInterestRate =
+    "Monthly payment: $" <> display payment
+  where
+    n       = truncate (numberOfYears * 12)
+    i       = yearlyInterestRate / 12 / 100
+    payment = mortgageAmount * (i * (1 + i) ^ n) / ((1 + i) ^ n - 1)
+
+main :: IO ()
+main = textUI "Mortgage payment" $ do
+    mortgageAmount     <- spinButton "Mortgage Amount"          1000
+    numberOfYears      <- spinButton "Number of years"             1
+    yearlyInterestRate <- spinButton "Yearly interest rate (%)"    0.01
+    return (computePayment mortgageAmount numberOfYears yearlyInterestRate)
+```
+
+# Mortgage calculator - Screenshot
+
+![](./mortgage.png)
 
 # Questions?
 
@@ -441,6 +471,7 @@ main = textUI "Mad libs" example
 # Diagrams - Code
 
 ```haskell
+{-# LANGUAGE ApplicativeDo     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 import Diagrams.Prelude
@@ -491,6 +522,7 @@ buildGraph amplitude frequency phase = strokeP (fromVertices points) <> axes
     f x = amplitude * cos (frequency * x + phase * pi / 180)
 
     points = map (\x -> p2 (x, f x)) [-100, -99 .. 100]
+
 main :: IO ()
 main = graphicalUI "Example program" $ do
     amplitude <- spinButtonAt 50  "Amplitude (Pixels)"   0.1
