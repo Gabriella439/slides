@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="Gabriel Gonzalez" />
+  <title>How to create a new Haskell project</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" type="text/css" media="screen, projection, print"
+    href="http://www.w3.org/Talks/Tools/Slidy2/styles/slidy.css" />
+  <script src="http://www.w3.org/Talks/Tools/Slidy2/scripts/slidy.js"
+    charset="utf-8" type="text/javascript"></script>
+</head>
+<body>
+<div class="slide titlepage">
+  <h1 class="title">How to create a new Haskell project</h1>
+  <p class="author">
+Gabriel Gonzalez
+  </p>
+  <p class="date">April 8, 2017</p>
+</div>
+<div id="goal" class="slide section level1">
+<h1>Goal</h1>
+<p>This talk will cover:</p>
+<ul>
+<li>How to bootstrap a package for private use</li>
+<li>How to set up an open source project on Github</li>
+<li>How to publish your package (to both Hackage and Stackage)</li>
+</ul>
+</div>
+<div id="download-stack" class="slide section level1">
+<h1>Download <code>stack</code></h1>
+<p>Go to <a href="http://haskellstack.org">haskellstack.org</a></p>
+<p>The landing page tells you how to download <code>stack</code>:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">curl</span> -sSL https://get.haskellstack.org/ <span class="kw">|</span> <span class="kw">sh</span></code></pre></div>
+</div>
+<div id="create-a-new-project---manual" class="slide section level1">
+<h1>Create a new project - Manual</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Main.hs</span>
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> putStrLn <span class="st">&quot;Hello, world!&quot;</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- example.cabal</span>
+name<span class="fu">:</span> example
+version<span class="fu">:</span> <span class="fl">1.0</span><span class="fu">.</span><span class="dv">0</span>
+build<span class="fu">-</span><span class="kw">type</span><span class="fu">:</span> <span class="dt">Simple</span>
+
+executable hello
+    build<span class="fu">-</span>depends<span class="fu">:</span> base <span class="fu">&lt;</span> <span class="dv">5</span>
+    main<span class="fu">-</span>is<span class="fu">:</span> Main.hs</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Setup.hs</span>
+<span class="kw">import </span><span class="dt">Distribution.Simple</span>
+main <span class="fu">=</span> defaultMain</code></pre></div>
+</div>
+<div id="cabal-install-vs-stack" class="slide section level1">
+<h1><code>cabal-install</code> vs <code>stack</code></h1>
+<p>If you prefer to use <code>stack</code>, then add this file to your project:</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># stack.yaml</span>
+<span class="fu">resolver:</span> lts-8.6</code></pre></div>
+<p>If you prefer to use <code>cabal-install</code>, then do this:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">wget</span> https://www.stackage.org/lts-8.6/cabal.config</code></pre></div>
+<p>This instructs <code>cabal</code> to pick the same package versions that <code>stack</code> would</p>
+</div>
+<div id="stack" class="slide section level1">
+<h1><code>stack</code></h1>
+<p>This talk will focus on <code>stack</code>-based workflows, mainly because:</p>
+<ul>
+<li><code>stack</code> is much easier for projects spanning multiple repositories</li>
+<li><code>stack</code> manages and isolates the Haskell compiler for you</li>
+<li><code>stack</code> command line API is nicer and more featureful than <code>cabal</code></li>
+</ul>
+<p>I use Nix + <code>cabal-install</code> for Haskell development, but not beginner-friendly:</p>
+<ul>
+<li><a href="https://github.com/Gabriel439/haskell-nix" class="uri">https://github.com/Gabriel439/haskell-nix</a></li>
+</ul>
+</div>
+<div id="build-and-run-the-executable" class="slide section level1">
+<h1>Build and run the executable</h1>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">stack</span> setup  <span class="co"># One-time setup if you&#39;ve never used `stack` before</span>
+$ <span class="kw">stack</span> build
+<span class="kw">...</span>
+$ <span class="kw">stack</span> exec hello
+<span class="kw">Hello</span>, world!</code></pre></div>
+<p>Install the executable in a global path:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">stack</span> install
+<span class="kw">Copying</span> from /private/.../bin/hello to /Users/gabriel/.local/bin/hello
+
+<span class="kw">Copied</span> executables to /Users/gabriel/.local/bin:
+<span class="kw">-</span> hello</code></pre></div>
+<p>Consider adding <code>~/.local/bin</code> to your <code>$PATH</code></p>
+</div>
+<div id="create-a-new-project---generated" class="slide section level1">
+<h1>Create a new project - Generated</h1>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">stack</span> new example
+<span class="kw">...</span>
+$ <span class="kw">cd</span> example</code></pre></div>
+<p>Explore the generated project</p>
+</div>
+<div id="use-stack-templates" class="slide section level1">
+<h1>Use <code>stack</code> templates</h1>
+<p><code>stack</code> provides several predefined project templates</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">stack</span> templates
+<span class="kw">Template</span>                    Description
+<span class="kw">chrisdone</span>                 
+<span class="kw">foundation</span>                - Project based on an alternative prelude with batteries and no dependencies.
+<span class="kw">franklinchen</span>              
+<span class="kw">ghcjs</span>                     - Haskell to JavaScript compiler, based on GHC
+<span class="kw">ghcjs-old-base</span>            
+<span class="kw">hakyll-template</span>           - a static website compiler library
+<span class="kw">haskeleton</span>                - a project skeleton for Haskell packages
+<span class="kw">hspec</span>                     - a testing framework for Haskell inspired by the Ruby library RSpec
+<span class="kw">new-template</span>              
+<span class="kw">protolude</span>                 - Project using a custom Prelude based on the Protolude library
+<span class="kw">quickcheck-test-framework</span> - a library for random testing of program properties
+<span class="kw">readme-lhs</span>                - small scale, quick start, literate haskell projects
+<span class="kw">rubik</span>                     
+<span class="kw">scotty-hello-world</span>        
+<span class="kw">scotty-hspec-wai</span>          
+<span class="kw">servant</span>                   - a set of packages for declaring web APIs at the type-level
+<span class="kw">servant-docker</span>            
+<span class="kw">simple</span>                    
+<span class="kw">simple-hpack</span>              
+<span class="kw">simple-library</span>            
+<span class="kw">spock</span>                     - a lightweight web framework
+<span class="kw">tasty-discover</span>            - a project with tasty-discover with setup
+<span class="kw">tasty-travis</span>              
+<span class="kw">unicode-syntax-exe</span>        
+<span class="kw">unicode-syntax-lib</span>        
+<span class="kw">yesod-minimal</span>             
+<span class="kw">yesod-mongo</span>               
+<span class="kw">yesod-mysql</span>               
+<span class="kw">yesod-postgres</span>            
+<span class="kw">yesod-postgres-fay</span>        
+<span class="kw">yesod-simple</span>              
+<span class="kw">yesod-sqlite</span>              </code></pre></div>
+</div>
+<div id="use---file-watch" class="slide section level1">
+<h1>Use <code>--file-watch</code></h1>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">stack</span> build --file-watch
+<span class="kw">Warning</span>: File listed in example.cabal file does not exist: README.md
+<span class="kw">ExitSuccess</span>
+<span class="kw">Type</span> help for available commands. Press enter to force a rebuild.</code></pre></div>
+<p>Now edit <code>src/Lib.hs</code> in another window and save the file</p>
+</div>
+<div id="doctests" class="slide section level1">
+<h1>Doctests</h1>
+<p>You can use the <code>doctest</code> library to add tests inline within documentation</p>
+<p>The <code>doctest</code> library automatically detects and runs these tests</p>
+</div>
+<div id="useful-testing-links" class="slide section level1">
+<h1>Useful testing links</h1>
+<p>Up-front unit testing in Haskell:</p>
+<ul>
+<li><a href="https://github.com/kazu-yamamoto/unit-test-example/blob/master/markdown/en/tutorial.md" class="uri">https://github.com/kazu-yamamoto/unit-test-example/blob/master/markdown/en/tutorial.md</a></li>
+</ul>
+</div>
+<div id="versioning" class="slide section level1">
+<h1>Versioning</h1>
+<p>Package versioning policy (PVP):</p>
+<pre><code>        +-- Major release, breaking changes
+        |
+        | +-- Minor release, breaking changes
+        | |
+        | | +-- Minor release, no breaking changes
+        | | |
+        v v v
+Version X.Y.Z</code></pre>
+<p>This convention differs from other language ecosystems</p>
+</div>
+<div id="dependency-version-ranges-a.k.a.-bounds" class="slide section level1">
+<h1>Dependency version ranges (a.k.a. &quot;bounds&quot;)</h1>
+<p>You don't need to specify version ranges for private projects</p>
+<p>You should at least specify lower bounds for dependencies for public projects</p>
+<p>Whether or not to specify upper bounds on dependencies is a topic of controversy</p>
+<ul>
+<li>Upper bounds on all dependencies = harder on maintainers, easier on users</li>
+<li>Upper bounds on no/few dependencies = easier on maintainers, harder on users</li>
+</ul>
+<p>I personally err on the side of making things easier for users, because:</p>
+<ul>
+<li>Users greatly outnumber maintainers</li>
+<li>The Haskell ecosystem is large and no longer desperate for contributions</li>
+</ul>
+<p>Example of mass upper bounds update:</p>
+<ul>
+<li><a href="https://github.com/fpco/stackage/issues/2393" class="uri">https://github.com/fpco/stackage/issues/2393</a></li>
+</ul>
+</div>
+<div id="add-a-readme.md" class="slide section level1">
+<h1>Add a <code>README.md</code></h1>
+<p>Github will render the <code>README.md</code> on your project's landing page:</p>
+<ul>
+<li><a href="https://github.com/ekmett/lens" class="uri">https://github.com/ekmett/lens</a></li>
+</ul>
+<p>The default <code>stack</code> template will also include your <code>README.md</code> on Hackage</p>
+<p>Good things to include in your <code>README.md</code>:</p>
+<ul>
+<li>Project title and current version</li>
+<li>Brief summary of the project</li>
+<li>Quick start instructions</li>
+<li>Link to documentation</li>
+<li>How to contribute</li>
+<li>License</li>
+</ul>
+</div>
+<div id="upload-to-github" class="slide section level1">
+<h1>Upload to GitHub</h1>
+<p>Demonstrate how to:</p>
+<ul>
+<li>Create a GitHub repository</li>
+<li>Upload project to GitHub</li>
+</ul>
+</div>
+<div id="add-a-changelog.md" class="slide section level1">
+<h1>Add a <code>CHANGELOG.md</code></h1>
+<p>Example:</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/lens-4.15.1/changelog" class="uri">https://hackage.haskell.org/package/lens-4.15.1/changelog</a></li>
+</ul>
+<p>Useful things to include:</p>
+<ul>
+<li>New functionality added</li>
+<li>Breaking changes</li>
+</ul>
+<p>Bonus: document the version when each new function was added:</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/http-client-0.5.6.1/docs/Network-HTTP-Client.html" class="uri">https://hackage.haskell.org/package/http-client-0.5.6.1/docs/Network-HTTP-Client.html</a></li>
+</ul>
+<p>This makes it easier for people to figure out their lower bounds</p>
+</div>
+<div id="travis-instructions" class="slide section level1">
+<h1>Travis instructions</h1>
+<p>Do people want me to explain how to set up Travis?</p>
+</div>
+<div id="ci" class="slide section level1">
+<h1>CI</h1>
+<p>I'm only familiar with Travis for open source projects</p>
+<p>Shout out to the <code>multi-ghc-travis</code> project:</p>
+<ul>
+<li><a href="https://github.com/hvr/multi-ghc-travis" class="uri">https://github.com/hvr/multi-ghc-travis</a></li>
+</ul>
+<p>Let's add this line to our <code>*.cabal</code> file:</p>
+<pre><code>Tested-With: GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.2</code></pre>
+<p>... then run:</p>
+<pre><code>path/to/make_travis_yml.hs example.cabal &gt; .travis.yml</code></pre>
+<p>... then check in the <code>.travis.yml</code> file and enable Travis for your repository</p>
+</div>
+<div id="examples" class="slide section level1">
+<h1>Examples</h1>
+<p><strong>ADD AT LEAST ONE END-TO-END EXAMPLE TO YOUR HADDOCKS!!!!!!!!!!!!!!!!!!!!!!!!!!</strong></p>
+<p>If the example is in your <code>README.md</code>, included it in the Haddocks</p>
+<p>This takes 5 minutes of your time and saves each one of your users much more time</p>
+</div>
+<div id="documentation-checklist" class="slide section level1">
+<h1>Documentation checklist</h1>
+<p>Things that I believe you should do for all projects:</p>
+<ul>
+<li>Browse your project's haddocks</li>
+<li>Haddock coverage close to 100%</li>
+<li>One end-to-end example</li>
+<li><code>README.md</code></li>
+</ul>
+<p>Things that I consider optional:</p>
+<ul>
+<li>Tutorial</li>
+<li>Blog post to announce the library</li>
+</ul>
+<p>Do not publicly announce a package if you haven't written any documentation</p>
+</div>
+<div id="publishing-to-hackage" class="slide section level1">
+<h1>Publishing to Hackage</h1>
+<p>First you need to request a Hackage account (i.e. username/password):</p>
+<ul>
+<li><a href="https://hackage.haskell.org/users/register-request" class="uri">https://hackage.haskell.org/users/register-request</a></li>
+</ul>
+<p>Once you have that, you can run:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">stack</span> upload .</code></pre></div>
+<p><code>stack</code> will prompt you for your Hackage username and password</p>
+<p><code>stack</code> will reuse your credentials for subsequent uploads</p>
+</div>
+<div id="help-i-dont-see-the-latest-version-of-my-package" class="slide section level1">
+<h1><strong>HELP!</strong> I don't see the latest version of my package</h1>
+<p>For example, suppose I upload a new version of <code>pipes</code> and I don't see the uploaded version here:</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/pipes" class="uri">https://hackage.haskell.org/package/pipes</a></li>
+</ul>
+<p>This is usually because your browser cached the package landing page</p>
+<p>You can either invalidate your cache or visit the specific package version at:</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/pipes-4.3.3" class="uri">https://hackage.haskell.org/package/pipes-4.3.3</a></li>
+</ul>
+</div>
+<div id="help-my-documentation-doesnt-render" class="slide section level1">
+<h1><strong>HELP!</strong> My documentation doesn't render</h1>
+<p>If your documentation doesn't render after you upload:</p>
+<ul>
+<li><p>Wait 1 hour for Hackage to build the documentation for your package</p>
+<p>Example for <code>turtle</code>:</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/turtle" class="uri">https://hackage.haskell.org/package/turtle</a></li>
+<li><a href="https://hackage.haskell.org/package/turtle-1.3.2/reports/1" class="uri">https://hackage.haskell.org/package/turtle-1.3.2/reports/1</a></li>
+</ul></li>
+<li><p>If that still fails, then:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> upload --doc</code></pre></div>
+<p>... which will bypass Hackage and explicitly build and upload docs locally</p>
+<p>The downside is that some links to other packages might not exactly work</p></li>
+</ul>
+</div>
+<div id="before-you-open-source" class="slide section level1">
+<h1>Before you open source</h1>
+<p><strong>DO:</strong></p>
+<ul>
+<li>Open source a package with doc Don't expect other people to finish your work in progress</li>
+</ul>
+</div>
+<div id="lower-maintenance-burden" class="slide section level1">
+<h1>Lower maintenance burden</h1>
+<ul>
+<li>Don't release works in progress</li>
+</ul>
+</div>
+</body>
+</html>
