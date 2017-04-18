@@ -65,8 +65,9 @@ Gabriel Gonzalez
 <ul>
 <li>How to bootstrap a package for private use</li>
 <li>How to set up an open source project on Github</li>
-<li>How to publish your package (to both Hackage and Stackage)</li>
+<li>How to publish your package to Hackage and Stackage</li>
 </ul>
+<p>... and assorted useful tips for maintaining packages</p>
 </div>
 <div id="download-stack" class="slide section level1">
 <h1>Download <code>stack</code></h1>
@@ -206,25 +207,6 @@ $ <span class="kw">cd</span> example</code></pre></div>
 Version X.Y.Z</code></pre>
 <p>This convention differs from other language ecosystems</p>
 </div>
-<div id="dependency-version-ranges-a.k.a.-bounds" class="slide section level1">
-<h1>Dependency version ranges (a.k.a. &quot;bounds&quot;)</h1>
-<p>You don't need to specify version ranges for private projects</p>
-<p>You should at least specify lower bounds for dependencies for public projects</p>
-<p>Whether or not to specify upper bounds on dependencies is a topic of controversy</p>
-<ul>
-<li>Upper bounds on all dependencies = harder on maintainers, easier on users</li>
-<li>Upper bounds on no/few dependencies = easier on maintainers, harder on users</li>
-</ul>
-<p>I personally err on the side of making things easier for users, because:</p>
-<ul>
-<li>Users greatly outnumber maintainers</li>
-<li>The Haskell ecosystem is large and no longer desperate for contributions</li>
-</ul>
-<p>Example of mass upper bounds update:</p>
-<ul>
-<li><a href="https://github.com/fpco/stackage/issues/2393" class="uri">https://github.com/fpco/stackage/issues/2393</a></li>
-</ul>
-</div>
 <div id="add-a-readme.md" class="slide section level1">
 <h1>Add a <code>README.md</code></h1>
 <p>Github will render the <code>README.md</code> on your project's landing page:</p>
@@ -240,14 +222,6 @@ Version X.Y.Z</code></pre>
 <li>Link to documentation</li>
 <li>How to contribute</li>
 <li>License</li>
-</ul>
-</div>
-<div id="upload-to-github" class="slide section level1">
-<h1>Upload to GitHub</h1>
-<p>Demonstrate how to:</p>
-<ul>
-<li>Create a GitHub repository</li>
-<li>Upload project to GitHub</li>
 </ul>
 </div>
 <div id="add-a-changelog.md" class="slide section level1">
@@ -266,10 +240,6 @@ Version X.Y.Z</code></pre>
 <li><a href="https://hackage.haskell.org/package/http-client-0.5.6.1/docs/Network-HTTP-Client.html" class="uri">https://hackage.haskell.org/package/http-client-0.5.6.1/docs/Network-HTTP-Client.html</a></li>
 </ul>
 <p>This makes it easier for people to figure out their lower bounds</p>
-</div>
-<div id="travis-instructions" class="slide section level1">
-<h1>Travis instructions</h1>
-<p>Do people want me to explain how to set up Travis?</p>
 </div>
 <div id="ci" class="slide section level1">
 <h1>CI</h1>
@@ -304,7 +274,6 @@ Version X.Y.Z</code></pre>
 <li>Tutorial</li>
 <li>Blog post to announce the library</li>
 </ul>
-<p>Do not publicly announce a package if you haven't written any documentation</p>
 </div>
 <div id="publishing-to-hackage" class="slide section level1">
 <h1>Publishing to Hackage</h1>
@@ -345,18 +314,29 @@ Version X.Y.Z</code></pre>
 <p>The downside is that some links to other packages might not exactly work</p></li>
 </ul>
 </div>
-<div id="before-you-open-source" class="slide section level1">
-<h1>Before you open source</h1>
-<p><strong>DO:</strong></p>
+<div id="publish-to-stackage" class="slide section level1">
+<h1>Publish to Stackage</h1>
+<p>You can find instructions on how to add a package to Stackage here:</p>
 <ul>
-<li>Open source a package with doc Don't expect other people to finish your work in progress</li>
+<li><a href="https://github.com/fpco/stackage#add-your-package" class="uri">https://github.com/fpco/stackage#add-your-package</a></li>
+</ul>
+<p>The main part is just adding your package to this file:</p>
+<ul>
+<li><a href="https://github.com/fpco/stackage/blob/master/build-constraints.yaml" class="uri">https://github.com/fpco/stackage/blob/master/build-constraints.yaml</a></li>
+</ul>
+<p>Then every once in a while you'll get an e-mail like this:</p>
+<ul>
+<li><a href="https://github.com/fpco/stackage/issues/2393" class="uri">https://github.com/fpco/stackage/issues/2393</a></li>
 </ul>
 </div>
-<div id="lower-maintenance-burden" class="slide section level1">
-<h1>Lower maintenance burden</h1>
+<div id="conclusion" class="slide section level1">
+<h1>Conclusion</h1>
+<p>I hope this inspires some people at BayHac to start their own projects!</p>
+<p>You can find these slides at</p>
 <ul>
-<li>Don't release works in progress</li>
+<li><a href="https://github.com/Gabriel439/slides/tree/master/bayhac2017" class="uri">https://github.com/Gabriel439/slides/tree/master/bayhac2017</a></li>
 </ul>
+<p>If you ever have questions, hit me up at <span class="citation">@GabrielG439</span> on Twitter</p>
 </div>
 </body>
 </html>

@@ -10,6 +10,8 @@ This talk will cover:
 * How to set up an open source project on Github
 * How to publish your package to Hackage and Stackage
 
+... and assorted useful tips for maintaining packages
+
 # Download `stack`
 
 Go to [haskellstack.org](http://haskellstack.org)
@@ -187,26 +189,6 @@ Version X.Y.Z
 
 This convention differs from other language ecosystems
 
-# Dependency version ranges (a.k.a. "bounds")
-
-You don't need to specify version ranges for private projects
-
-You should at least specify lower bounds for dependencies for public projects
-
-Whether or not to specify upper bounds on dependencies is a topic of controversy
-
-* Upper bounds on all    dependencies = harder on maintainers, easier on users
-* Upper bounds on no/few dependencies = easier on maintainers, harder on users
-
-I personally err on the side of making things easier for users, because:
-
-* Users greatly outnumber maintainers
-* The Haskell ecosystem is large and no longer desperate for contributions
-
-Example of mass upper bounds update:
-
-* [https://github.com/fpco/stackage/issues/2393](https://github.com/fpco/stackage/issues/2393)
-
 # Add a `README.md`
 
 Github will render the `README.md` on your project's landing page:
@@ -224,13 +206,6 @@ Good things to include in your `README.md`:
 * How to contribute
 * License
 
-# Upload to GitHub
-
-Demonstrate how to:
-
-* Create a GitHub repository
-* Upload project to GitHub
-
 # Add a `CHANGELOG.md`
 
 Example:
@@ -247,10 +222,6 @@ Bonus: document the version when each new function was added:
 * [https://hackage.haskell.org/package/http-client-0.5.6.1/docs/Network-HTTP-Client.html](https://hackage.haskell.org/package/http-client-0.5.6.1/docs/Network-HTTP-Client.html)
 
 This makes it easier for people to figure out their lower bounds
-
-# Travis instructions
-
-Do people want me to explain how to set up Travis?
 
 # CI
 
@@ -295,8 +266,6 @@ Things that I consider optional:
 
 * Tutorial
 * Blog post to announce the library
-
-Do not publicly announce a package if you haven't written any documentation
 
 # Publishing to Hackage
 
