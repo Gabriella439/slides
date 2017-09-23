@@ -1153,25 +1153,3 @@ You can follow my work on:
 * GitHub - [Gabriel439](https://github.com/Gabriel439)
 
 Also, [we're hiring Haskell interns](https://jobs.lever.co/awake-security)
-
-# TODO
-
-* Talk about how to contribute
-    * Report issues!
-    * Add new refinements to Liquid Haskell prelude
-        * `Data.Vector` module
-    * Fix bugs
-* Link to Twitter and Awake Security
-* Show examples of how to integrate Liquid Haskell into a `cabal` or `stack`
-  project
-* Talk about how to read liquid type errors
-
-Compare to:
-
-* `NonEmpty`
-* The `refined` library
-* Dependent types
-
-Some examples:
-
-* `(!)`
