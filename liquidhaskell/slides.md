@@ -45,47 +45,61 @@ Pushing the requirement upstream:
 head :: [a] -> a
 ```
 
-# Getting started
+# Getting started - Stack
 
 Create this `stack.yaml` file:
 
 ```yaml
-resolver: lts-5.15
+resolver: lts-9.5
 packages: []
 extra-deps:
-- daemons-0.2.1
-- liquid-fixpoint-0.5.0.1
-- located-base-0.1.0.0
+- aeson-0.11.3.0
 - dotgen-0.4.2
 - fgl-visualize-0.1.0.1
 - intern-0.9.1.4
-- aeson-0.11.2.0
+- liquid-fixpoint-0.6.0.1
+- liquid-haskell-0.8.0.1
+- located-base-0.1.1.1
 ```
 
-... then run:
+... then in the same directory run:
 
 ```bash
 $ stack install liquidhaskell
 ```
 
-Now the `liquid` executable will be on your `$PATH`
+Now the `liquid` executable will installed at `~/.local/bin/liquid`
 
-# How did I create that `stack.yaml` file?
+# Getting started - Nix
 
-I began with this `stack.yaml` file:
-
-```yaml
-resolver: lts-5.15
-packages: []
+```
+$ nix-env --install --file liquid.nix
 ```
 
-... then just kept running:
+... using the following `liquid.nix` file:
 
-```bash
-$ stack install liquidhaskell
+```nix
+let
+  inherit (import <nixpkgs> { }) fetchFromGitHub;
+
+  nixpkgs = fetchFromGitHub {
+    owner = "NixOS";
+
+    repo = "nixpkgs";
+
+    rev = "1715436b75696d9885b345dd8159e12244d0f7f5";
+    sha256 = "18qp76cppm1yxmzdaak9kcllbypvv22c9g7iaycq2wz0qkka6rx5";
+  };
+
+  pkgs = import nixpkgs { };
+
+in
+  pkgs.runCommand "liquidhaskell" { buildInputs = [ pkgs.makeWrapper ]; } ''
+    mkdir -p $out/bin
+    ln -s ${pkgs.haskellPackages.liquidhaskell}/bin/liquid $out/bin
+    wrapProgram $out/bin/liquid --prefix PATH : ${pkgs.z3}/bin
+  ''
 ```
-
-Each time I follow `stack`'s recommendation for how to fix the file.
 
 # Test drive
 
@@ -115,13 +129,10 @@ $ liquid --totality example.hs
 
 # Overview
 
-* Part 1 - Liquid Haskell 101
-* Part 2 - High-performance parsing
-* Part 3 - Succinct vectors
-
-# Questions?
-
-* Next: Liquid Haskell 101
+* **Liquid Haskell 101**
+* High-performance parsing
+* Ways to contribute
+* Conclusion
 
 # Types + Predicates
 
@@ -254,8 +265,8 @@ You have to bootstrap the system by assuming some postconditions
 For example, Liquid Haskell has a built-in "Prelude" of assumptions, such as:
 
 ```haskell
-{-@ assume (-) :: x : Int -> y : Int -> { z : Int | z == x - y } @-}
 {-@ assume (<) :: x : Int -> y : Int -> { z : Int | z == x < y } @-}
+{-@ assume (-) :: x : Int -> y : Int -> { z : Int | z == x - y } @-}
 ```
 
 ... which Liquid Haskell uses to verify postconditions:
@@ -345,6 +356,8 @@ Liquid Haskell uses an SMT solver (such as Z3) to check these subtype relations
 Think of Liquid Haskell as a more user-friendly subset of dependent types
 
 # Informative types
+
+Can you guess what this function does just from the type?
 
 ```haskell
 mysteryFunction
@@ -447,8 +460,6 @@ import Data.Word (Word8)
 
 import qualified Data.ByteString as ByteString
 
-{-@ measure bslen :: ByteString -> Int @-}
-
 {-@ assume ByteString.length :: bs : ByteString -> { n : Int | n == bslen bs } @-}
 
 {-@ ByteString.head :: { bs : ByteString | 1 <= bslen bs } -> Word8 @-}
@@ -470,8 +481,6 @@ import Data.Word (Word8)
 
 import qualified Data.ByteString as ByteString
 
-{-@ measure bslen :: ByteString -> Int @-}
-
 {-@ assume ByteString.pack :: [Char] -> { bs : ByteString | bslen bs == len w8s } @-}
 
 {-@ ByteString.head :: { bs : ByteString | 1 <= bslen bs } -> Char @-}
@@ -479,12 +488,6 @@ import qualified Data.ByteString as ByteString
 staticCheck :: Char
 staticCheck = head "Hello, world!"
 ```
-
-# Type-annotated source code
-
-When you type-check a file you get HTML source showing inferred types:
-
-[Click to view example](.liquid/example.hs.html)
 
 # Learning Liquid Haskell
 
@@ -510,9 +513,40 @@ Most other alternatives are either:
 * Brittle (i.e. can't scale because the type checker can't solve arithmetic)
 * Unreadable (i.e. types are hairy and you have to butcher your code)
 
+# Scrap your bounds checks
+
+```haskell
+import Data.Vector (Vector)
+
+import qualified Data.Vector
+
+{-@
+search
+    :: Ord a
+    => element : a
+    -> vector : Vector a
+    -> minIndex : { minIndex : Int | 0  <= minIndex && minIndex <  vlen vector }
+    -> maxIndex : { maxIndex : Int | minIndex <  maxIndex && maxIndex <= vlen vector }
+    ->            {    index : Int | minIndex <= index && index < maxIndex }
+    /  [maxIndex - minIndex]
+@-}
+search :: Ord a => a -> Vector a -> Int -> Int -> Int
+search element vector minIndex maxIndex
+    | minIndex + 1 == maxIndex = minIndex
+    | element < testElement    = search element vector minIndex testIndex
+    | otherwise                = search element vector testIndex maxIndex
+  where
+    testIndex = (minIndex + maxIndex) `div` 2
+
+    testElement = Data.Vector.unsafeIndex vector testIndex
+```
+
 # Questions?
 
-* Next: High-performance parsing
+* Liquid Haskell 101
+* **High-performance parsing**
+* Ways to contribute
+* Conclusion
 
 # Packet header parsing
 
@@ -739,8 +773,6 @@ Documentation is not machine-checked
 We can teach Liquid Haskell to enforce those preconditions at compile-time:
 
 ```haskell
-{-@ measure bslen :: ByteString -> Int @-}
-
 {-@
 assume ByteString.length :: bs : ByteString -> { n : Int | n == bslen bs }
 @-}
@@ -1040,115 +1072,74 @@ We upstreamed a very large number of `ByteString` refinements
 
 # Questions?
 
-Next: Succinct vectors
+* Liquid Haskell 101
+* High-performance parsing
+* **Ways to contribute**
+* Conclusion
 
-# Succinct vectors
+# Liquid Haskell Prelude
 
-One of my pet projects is a high-performance succinct vector library:
+Liquid Haskell has a "Prelude" of refined types for common libraries
 
-* [Haskell-Succinct-Vector-Library](https://github.com/Gabriel439/Haskell-Succinct-Vector-Library)
+* [Liquid Haskell Prelude](https://github.com/ucsd-progsys/liquidhaskell/tree/develop/include)
 
-The library implements [this paper](https://www.cs.cmu.edu/~dga/papers/zhou-sea2013.pdf)
+The easiest way to contribute to Liquid Haskell is to add new refinements!
 
-This is a tricky algorithm prove correct:
+Low-hanging fruit:
 
-* Full of corner cases
-* Very non-trivial arithmetic to prove correctness at edge cases
+* [Data/Vector.spec](https://github.com/ucsd-progsys/liquidhaskell/blob/develop/include/Data/Vector.spec)
 
-Liquid Haskell clarified the algorithm in a way that the paper never could
+Let's create a pull request to show how easy it is!
 
-# QuickCheck is not enough
+# Report bugs
 
-QuickCheck is not good at sampling numbers far from 0 unless you tell it to:
+You **will** run into bugs if you use Liquid Haskell for any non-trivial project
 
-```haskell
->>> quickCheck (\x -> x < 1000)
-+++ OK, passed 100 tests.
->>> quickCheck (\(Large x) -> x < (1000 :: Int))
-*** Failed! Falsifiable (after 19 tests and 6 shrinks):     
-Large {getLarge = 1000}
-```
+Reporting bugs is a valuable contribution!
 
-Even then, `QuickCheck` still fails if the counter-example is rare:
+# Add `liquidhaskell` to Stackage
 
-```haskell
->>> quickCheck (\x -> x /= 1000)
-+++ OK, passed 100 tests.
->>> quickCheck (\(Large x) -> x /= (1000 :: Int))
-+++ OK, passed 100 tests.
-```
+The maintainers can use your help getting `liquidhaskell` on Stackage
 
-# Real example
+* Upgrading `liquidhaskell` to use newer versions of libraries (like `aeson`)
+* Getting dependencies on Hackage (like `liquid-fixpoint`)
 
-Unfortunately, the counterexamples I care about tend to be large and rare.
+# Improve distribution
 
-The algorithm requires working with blocks of dramatically different sizes:
+Create a `liquidhaskell` package for your favorite package manager
 
-* Level 0 block size is 2³² bits
-* Level 1 block size is 2¹¹ bits
+Bonus: the package can bundle `liquidhaskell` with an SMT solver (like `z3`)
 
-Counter examples are large (~ 2³²) and rare (~ 1 in 2²¹)
+# Triage or fix issues
 
-# Symbolic reasoning
+At the time of this writing, Liquid Haskell has 238 open issues
 
-Only symbolic reasoning can catch these mistakes:
+* Turn bug reports into failing test (way more useful than you think!)
+* Identify stale issues that are already fixed
+* Fix issues if you can!
 
-```haskell
-{-@
-test
-    :: x : { x : Int | x <= 1000 }
-    ->     { x : Int | x <  1000 }
-@-}
-test :: Int -> Int
-test x = x
-```
+# Improve performance
 
-```
- 7 | test x = x
-     ^^^^
- 
-   Inferred type
-     VV : {VV : GHC.Types.Int | VV == x}
-  
-   not a subtype of Required type
-     VV : {VV : GHC.Types.Int | VV < 1000}
-  
-   In Context
-     x := {v : GHC.Types.Int | v <= 1000}
-```
+Liquid Haskell can take a while to type-check certain programs
 
-# Binary search in a vector
+Improving performance allows Liquid Haskell to scale to larger codebases
 
-```haskell
-{-@
-search
-    :: (Prim e, Ord a)
-    => x  : a
-    -> f  : (e -> a)
-    -> v  : Data.Vector.Primitive.Vector e
-    -> lo : { lo : Int | 0  <= lo && lo <  plen v }
-    -> hi : { hi : Int | lo <  hi && hi <= plen v }
-    ->      { r  : Int | lo <= r  && r  <  hi     }
-    /  [hi - lo]
-@-}
-search
-    :: (Ord a, Prim e)
-    => a -> (e -> a) -> Data.Vector.Primitive.Vector e -> Int -> Int -> Int
-search x f v lo hi = do
-    if lo + 1 == hi
-    then lo
-    else do
-        let mid = lo + (hi - lo) `div` 2
-        let x' = f (Data.Vector.Primitive.unsafeIndex v mid)
-        if x < x'
-        then search x f v lo  mid
-        else search x f v mid hi
-```
+# GHC integration
 
-# Example of `stack` integration
+One long-term goal of Liquid Haskell is direct integration with `ghc`
 
-* Add `liquidhaskell` and dependencies to your `stack.yaml` file
-* Run `stack exec liquid` on each source file you want to test
+This is a challenging, but highly worthwhile project
+
+* Drafting a proposal
+* Reconciling Liquid Haskell's types with upcoming dependent types
+* Optionally packaging an SMT solver with `ghc`
+
+# Questions?
+
+* Liquid Haskell 101
+* High-performance parsing
+* Ways to contribute
+* **Conclusion**
 
 # Conclusions
 
@@ -1156,10 +1147,20 @@ search x f v lo hi = do
 * You can integrate Liquid Haskell with `cabal` and `stack`
 * The Liquid Haskell project needs your help!
 
+You can follow my work on:
+
+* Twitter - [\@GabrielG439](twitter.com/GabrielG439)
+* GitHub - [Gabriel439](https://github.com/Gabriel439)
+
+Also, [we're hiring Haskell interns](https://jobs.lever.co/awake-security)
+
 # TODO
 
 * Talk about how to contribute
-* How to install
+    * Report issues!
+    * Add new refinements to Liquid Haskell prelude
+        * `Data.Vector` module
+    * Fix bugs
 * Link to Twitter and Awake Security
 * Show examples of how to integrate Liquid Haskell into a `cabal` or `stack`
   project

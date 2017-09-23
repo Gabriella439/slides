@@ -1,0 +1,10 @@
+resolver: lts-9.5
+packages: []
+extra-deps:
+- liquid-fixpoint-0.6.0.1
+- located-base-0.1.1.1
+- dotgen-0.4.2
+- fgl-visualize-0.1.0.1
+- intern-0.9.1.4
+- aeson-0.11.3.0
+- liquid-haskell-0.8.0.1
