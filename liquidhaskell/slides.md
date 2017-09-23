@@ -1,6 +1,6 @@
-% Liquid Haskell
+% Scrap your Bounds Checks with Liquid Haskell 
 % Gabriel Gonzalez
-% May 6, 2016
+% October 12, 2017
 
 # Introduction
 
@@ -19,7 +19,7 @@ head (x:_) = x
 ```haskell
 {-@ abs :: Int -> { n : Int | 0 <= n } @-}
 abs :: Int -> Int
-abs x = if x < 0 then negate x else x
+abs x = if x < 0 then 0 - x else x
 ```
 
 # The golden rule of programming
@@ -92,7 +92,8 @@ Each time I follow `stack`'s recommendation for how to fix the file.
 Create the following file:
 
 ```haskell
-$ cat example.hs
+-- example.hs
+
 import Prelude hiding (head, abs)
 
 {-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
@@ -101,7 +102,7 @@ head (x:_) = x
 
 {-@ abs :: Int -> { n : Int | 0 <= n } @-}
 abs :: Int -> Int
-abs x = if x < 0 then negate x else x
+abs x = if x < 0 then 0 - x else x
 ```
 
 ... then type-check the file:
@@ -111,8 +112,6 @@ $ liquid --totality example.hs
 ...
 **** RESULT: SAFE **************************************************************
 ```
-
-Now try to break it!
 
 # Overview
 
@@ -126,25 +125,152 @@ Now try to break it!
 
 # Types + Predicates
 
-Liquid Haskell lets you decorate any type with a predicate.
+Liquid Haskell lets you annotate types with predicates
 
-If you decorate function inputs you get preconditions:
+If you annotate function inputs you get preconditions:
 
 ```haskell
 {-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
 ```
 
-If you decorate function outputs you get postconditions:
+If you annotate function outputs you get postconditions:
 
 ```haskell
 {-@ abs :: Int -> { n : Int | 0 <= n } @-}
 ```
 
+# Preconditions
+
+Preconditions let you constrain function inputs:
+
+```haskell
+import Prelude hiding (head)
+
+{-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
+head :: [a] -> a
+head (x:_) = x
+
+main :: IO ()
+main = print (head [] :: Int)
+```
+
+# Type error
+
+Liquid Haskell will enforce those preconditions:
+
+```
+$ liquid precondition.hs
+...
+**** RESULT: UNSAFE ************************************************************
+
+
+ /Users/gabriel/proj/slides/liquidhaskell/examples/head.hs:8:1-7: Error: Liquid Type Mismatch
+ 
+ 8 | example = head []
+     ^^^^^^^
+   Inferred type
+     VV : {v : [Int] | len v == 0
+                       && (null v <=> true)
+                       && len v >= 0
+                       && v == ?a
+                       && len v >= 0}
+  
+   not a subtype of Required type
+     VV : {VV : [Int] | 1 <= len VV}
+  
+   In Context
+     ?a : {?a : [Int] | len ?a == 0
+                        && (null ?a <=> true)
+                        && len ?a >= 0}
+```
+
+# Postconditions
+
+Postconditions let you decorate function output with additional information:
+
+```haskell
+import Prelude hiding (head, abs)
+
+{-@ abs :: Int -> { n : Int | 0 <= n } @-}
+abs :: Int -> Int
+abs x = if x < 0 then 0 - x else x
+
+{-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
+head :: [a] -> a
+head (x:_) = x
+
+example :: Int -> Int
+example x = if abs x < 0 then head [] else x
+```
+
+# Type check
+
+Liquid Haskell uses postconditions to verify preconditions:
+
+```
+$ liquid postcondition.hs
+...
+**** RESULT: SAFE **************************************************************
+```
+
+# Liquid Haskell is really smart
+
+We can add a post-condition to `example:
+
+```haskell
+import Prelude hiding (head, abs)
+
+{-@ abs :: Int -> { n : Int | 0 <= n } @-}
+abs :: Int -> Int
+abs x = if x < 0 then 0 - x else x
+
+{-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
+head :: [a] -> a
+head (x:_) = x
+
+{-@ example :: x : Int -> { y : Int | x == y } @-}
+example :: Int -> Int
+example x = if abs x < 0 then head [] else x
+```
+
+# Postconditions are not free
+
+For example, Liquid Haskell will reject this program:
+
+```haskell
+import Prelude hiding (abs)
+
+{-@ abs :: Int -> { n : Int | 0 <= n } @-}
+abs :: Int -> Int
+abs x = x
+```
+
+How does Liquid Haskell know when to accept the postcondition?
+
+# Liquid Haskell Prelude
+
+You have to bootstrap the system by assuming some postconditions
+
+For example, Liquid Haskell has a built-in "Prelude" of assumptions, such as:
+
+```haskell
+{-@ assume (-) :: x : Int -> y : Int -> { z : Int | z == x - y } @-}
+{-@ assume (<) :: x : Int -> y : Int -> { z : Int | z == x < y } @-}
+```
+
+... which Liquid Haskell uses to verify postconditions:
+
+```haskell
+{-@ abs :: Int -> { n : Int | 0 <= n } @-}
+abs :: Int -> Int
+abs x = if x < 0 then 0 - x else x
+```
+
 # Preconditions vs Postconditions
 
-Adding preconditions is free
+Preconditions are "free"
 
-Adding postconditions is not free.  You have to either ...
+Postconditions are not "free".  You have to either ...
 
 * Prove the postcondition from some precondition:
 
@@ -153,68 +279,97 @@ example :: { x : Int | 0 <= x } -> { x : Int | 0 <= x }
 example x = x
 ```
 
-* Cheat and `assume` the postcondition
-
-```haskell
-{-@ assume (<) :: x : Int -> y : Int -> { b : Bool | Prop b <=> x < y } @-}
-```
-
 * Prove the postcondition from another postcondition
 
 ```haskell
 {-@ abs :: Int -> { n : Int | 0 <= n } @-}
 abs :: Int -> Int
-abs x = if x < 0 then negate x else x
+abs x = if x < 0 then 0 - x else x
 ```
 
-# More complex example
+* Cheat and `assume` the postcondition
+
+```haskell
+{-@ assume (<) :: x : Int -> y : Int -> { b : Bool | b == x < y } @-}
+```
+
+# Walkthrough
+
+```haskell
+abs :: Int -> Int
+abs x = if x < 0 then 0 - x else x
+
+x :: Int
+
+0 :: { n : Int | n == 0 }
+
+x < 0 :: { b : Bool | b == x < 0 }
+
+0 - x :: { n : Int | n == 0 - x }
+
+if x < 0 then 0 - x else x
+    :: { n : Int
+       |    (      x < 0  => n == 0 - x )
+         && ( not (x < 0) => n == x     )
+       }
+```
+
+The inferred type is stronger than the postcondition we originally requested:
+
+```haskell
+if x < 0 then 0 - x else x
+    :: { n : Int | 0 <= n }
+```
+
+# SMT solver
+
+How does Liquid Haskell know that the inferred type:
+
+```haskell
+if x < 0 then 0 - x else x
+    :: { n : Int
+       |    (      x < 0  => n == 0 - x )
+         && ( not (x < 0) => n == x     )
+       }
+```
+
+... is a subtype of the user-supplied type:
+
+```haskell
+if x < 0 then 0 - x else x
+    :: { n : Int | 0 <= n }
+```
+
+Liquid Haskell uses an SMT solver (such as Z3) to check these subtype relations
+
+Think of Liquid Haskell as a more user-friendly subset of dependent types
+
+# Informative types
+
+```haskell
+mysteryFunction
+    :: n : { n : Int | 0 <= n }
+    -> xs : { xs : [a] | n <= len xs }
+    -> ({ ls : [a] | len ls == n }, { rs : [a] | len rs = len xs - n })
+```
+
+# `splitAt`
 
 ```haskell
 {-@
-mySplitAt
+splitAt
     :: n : { n : Int | 0 <= n }
     -> xs : { xs : [a] | n <= len xs }
     -> ({ ls : [a] | len ls == n }, { rs : [a] | len rs = len xs - n })
 @-}
-mySplitAt :: Int -> [a] -> ([a], [a])
-mySplitAt 0  xs    = (  [], xs)
-mySplitAt n (x:xs) = (x:ls, rs)
+splitAt :: Int -> [a] -> ([a], [a])
+splitAt 0  xs    = (  [], xs)
+splitAt n (x:xs) = (x:ls, rs)
   where
-    ~(ls, rs) = mySplitAt (n - 1) xs
+    ~(ls, rs) = splitAt (n - 1) xs
 ```
 
 Liquid Haskell verifies that the non-exhaustive pattern match is safe!
-
-# Promotion
-
-You can promoted a restricted subset of Haskell to the type level
-
-```haskell
-{-@ measure myLength @-}
-myLength :: [a] -> Int
-myLength  []    = 0
-myLength (x:xs) = 1 + myLength xs
-
-{-@ myHead :: { xs : [a] | 1 <= myLength xs } -> a @-}
-myHead :: [a] -> a
-myHead (x:_) = x
-```
-
-# Subtyping
-
-```haskell
-{-@ zero :: { n : Int | n == 0 } @-}
-zero :: Int
-zero = 0
-
-{-@ zero :: { n : Int | 0 <= n } @-}
-zero' :: Int
-zero' = zero
-
-{-@ zero :: { n : Int | n mod 2 == 0 } @-}
-zero'' :: Int
-zero'' = zero
-```
 
 # Set logic
 
@@ -361,8 +516,7 @@ Most other alternatives are either:
 
 # Packet header parsing
 
-At Awake Networks we use Haskell for high-performance protocol parsing and
-analysis
+At Awake Networks we use Haskell for high-performance protocol parsing
 
 `binary` and `cereal` are sometimes not quite fast enough for our purposes!
 
@@ -385,12 +539,15 @@ take n = Parser (\bs ->
     then Nothing
     else Just (ByteString.splitAt n bs) )
 
-instance Monad Parser where
+instance Functor     Parser where ...
+instance Applicative Parser where ...
+instance Monad       Parser where
     return x = Parser (\bs -> Just (x, bs))
 
     m >>= f = Parser (\bs0 -> do
         (x, bs1) <- runParser m bs0
         runParser (f x) bs1 )
+
 ```
 
 # UDP packet header
@@ -513,7 +670,7 @@ udp = Parser (\bs0 ->
 ```
 
 * One length check instead of four
-* No more `Maybe` binds
+* No more pattern matching on `Maybe`
 
 # Still some waste
 
@@ -757,8 +914,6 @@ unsafeSplitAt :: Int -> ByteString -> (ByteString, ByteString)
 unsafeSplitAt n bs =
     (Unsafe.unsafeTake n bs, Unsafe.unsafeDrop n bs)
 
-{-@ measure bslen :: ByteString -> Int @-}
-
 {-@
 ByteString.length :: bs : ByteString -> { n : Int | n == bslen bs }
 @-}
@@ -917,7 +1072,9 @@ Large {getLarge = 1000}
 Even then, `QuickCheck` still fails if the counter-example is rare:
 
 ```haskell
->>> quickCheck (\x -> x <= 1000 ==> x < 1000)
+>>> quickCheck (\x -> x /= 1000)
++++ OK, passed 100 tests.
+>>> quickCheck (\(Large x) -> x /= (1000 :: Int))
 +++ OK, passed 100 tests.
 ```
 
@@ -960,8 +1117,6 @@ test x = x
      x := {v : GHC.Types.Int | v <= 1000}
 ```
 
-Bleeding-edge Liquid Haskell has experimenta support for counter-examples
-
 # Binary search in a vector
 
 ```haskell
@@ -998,4 +1153,24 @@ search x f v lo hi = do
 # Conclusions
 
 * Liquid Haskell works well for high-performance `Vector`/`ByteString` code
-* Liquid Haskell is not hard to integrate with `cabal` and `stack`
+* You can integrate Liquid Haskell with `cabal` and `stack`
+* The Liquid Haskell project needs your help!
+
+# TODO
+
+* Talk about how to contribute
+* How to install
+* Link to Twitter and Awake Security
+* Show examples of how to integrate Liquid Haskell into a `cabal` or `stack`
+  project
+* Talk about how to read liquid type errors
+
+Compare to:
+
+* `NonEmpty`
+* The `refined` library
+* Dependent types
+
+Some examples:
+
+* `(!)`
