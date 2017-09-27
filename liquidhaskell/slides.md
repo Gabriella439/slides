@@ -73,10 +73,10 @@ Now the `liquid` executable will installed at `~/.local/bin/liquid`
 # Getting started - Nix
 
 ```
-$ nix-env --install --file liquid.nix
+$ nix-shell
 ```
 
-... using the following `liquid.nix` file:
+... using the following `shell.nix` file:
 
 ```nix
 let
@@ -93,12 +93,23 @@ let
 
   pkgs = import nixpkgs { };
 
+  liquid =
+    pkgs.runCommand "liquidhaskell" { buildInputs = [ pkgs.makeWrapper ]; } ''
+      mkdir -p $out/bin
+      ln -s ${pkgs.haskellPackages.liquidhaskell}/bin/liquid $out/bin
+      wrapProgram $out/bin/liquid --prefix PATH : ${pkgs.z3}/bin
+    '';
+
+  ghc = pkgs.haskellPackages.ghcWithPackages (packages: with packages; [
+    vector
+  ]);
+
 in
-  pkgs.runCommand "liquidhaskell" { buildInputs = [ pkgs.makeWrapper ]; } ''
-    mkdir -p $out/bin
-    ln -s ${pkgs.haskellPackages.liquidhaskell}/bin/liquid $out/bin
-    wrapProgram $out/bin/liquid --prefix PATH : ${pkgs.z3}/bin
-  ''
+  pkgs.stdenv.mkDerivation {
+    name = "my-haskell-env-0";
+    buildInputs = [ ghc liquid ];
+    shellHook = "eval $(egrep ^export ${ghc}/bin/ghc)";
+  }
 ```
 
 # Test drive
