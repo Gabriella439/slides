@@ -70,6 +70,8 @@ $ stack install liquidhaskell
 
 Now the `liquid` executable will installed at `~/.local/bin/liquid`
 
+You still need to separately install `z3`
+
 # Getting started - Nix
 
 ```
@@ -114,7 +116,7 @@ in
 
 # Test drive
 
-Create the following file:
+If we type-check the following file with `liquid`:
 
 ```haskell
 -- example.hs
@@ -130,7 +132,7 @@ abs :: Int -> Int
 abs x = if x < 0 then 0 - x else x
 ```
 
-... then type-check the file:
+... we get the following result:
 
 ```haskell
 $ liquid --totality example.hs
@@ -230,14 +232,14 @@ example x = if abs x < 0 then head [] else x
 Liquid Haskell uses postconditions to verify preconditions:
 
 ```
-$ liquid postcondition.hs
+$ liquid --totality postcondition.hs
 ...
 **** RESULT: SAFE **************************************************************
 ```
 
 # Liquid Haskell is really smart
 
-We can add a post-condition to `example:
+We can add a post-condition to `example`:
 
 ```haskell
 import Prelude hiding (head, abs)
@@ -255,39 +257,6 @@ example :: Int -> Int
 example x = if abs x < 0 then head [] else x
 ```
 
-# Postconditions are not free
-
-For example, Liquid Haskell will reject this program:
-
-```haskell
-import Prelude hiding (abs)
-
-{-@ abs :: Int -> { n : Int | 0 <= n } @-}
-abs :: Int -> Int
-abs x = x
-```
-
-How does Liquid Haskell know when to accept the postcondition?
-
-# Liquid Haskell Prelude
-
-You have to bootstrap the system by assuming some postconditions
-
-For example, Liquid Haskell has a built-in "Prelude" of assumptions, such as:
-
-```haskell
-{-@ assume (<) :: x : Int -> y : Int -> { z : Int | z == x < y } @-}
-{-@ assume (-) :: x : Int -> y : Int -> { z : Int | z == x - y } @-}
-```
-
-... which Liquid Haskell uses to verify postconditions:
-
-```haskell
-{-@ abs :: Int -> { n : Int | 0 <= n } @-}
-abs :: Int -> Int
-abs x = if x < 0 then 0 - x else x
-```
-
 # Preconditions vs Postconditions
 
 Preconditions are "free"
@@ -301,18 +270,19 @@ example :: { x : Int | 0 <= x } -> { x : Int | 0 <= x }
 example x = x
 ```
 
+* Cheat and `assume` the postcondition
+
+```haskell
+{-@ assume (<) :: x : Int -> y : Int -> { z : Bool | z == x < y } @-}
+{-@ assume (-) :: x : Int -> y : Int -> { z : Int  | z == x - y } @-}
+```
+
 * Prove the postcondition from another postcondition
 
 ```haskell
 {-@ abs :: Int -> { n : Int | 0 <= n } @-}
 abs :: Int -> Int
 abs x = if x < 0 then 0 - x else x
-```
-
-* Cheat and `assume` the postcondition
-
-```haskell
-{-@ assume (<) :: x : Int -> y : Int -> { b : Bool | b == x < y } @-}
 ```
 
 # Walkthrough
@@ -432,19 +402,6 @@ delete x (y:ys)
     | otherwise = x:delete x ys
 ```
 
-# Totality checker
-
-Liquid Haskell rejects this program:
-
-```haskell
-fibonacci :: Int -> Int
-fibonacci 0 = 0
-fibonacci 1 = 1
-fibonacci n = fibonacci (n - 2) + fibonacci (n - 1)
-```
-
-How do we fix it?
-
 # Customization
 
 You can teach Liquid Haskell new tricks, by creating your own "measure"s:
@@ -492,22 +449,13 @@ import Data.Word (Word8)
 
 import qualified Data.ByteString as ByteString
 
-{-@ assume ByteString.pack :: [Char] -> { bs : ByteString | bslen bs == len w8s } @-}
+{-@ assume ByteString.pack :: cs : [Char] -> { bs : ByteString | bslen bs == len cs } @-}
 
 {-@ ByteString.head :: { bs : ByteString | 1 <= bslen bs } -> Char @-}
 
 staticCheck :: Char
 staticCheck = head "Hello, world!"
 ```
-
-# Learning Liquid Haskell
-
-* 20% is actually learning how to prove things in Liquid Haskell
-    * This is pretty easy because Liquid Haskell does most of the work for you
-* 40% is reporting bugs that you encounter 
-    * The maintainers are very responsive and actively fix reported bugs
-* 40% is building a mental model of what Liquid Haskell can and cannot do
-    * This is extra hard because Liquid Haskell continues to grow more powerful
 
 # Practical applications
 
@@ -523,6 +471,15 @@ Most other alternatives are either:
 * Inefficient (i.e. don't work on `Vector`s or `ByteString`s)
 * Brittle (i.e. can't scale because the type checker can't solve arithmetic)
 * Unreadable (i.e. types are hairy and you have to butcher your code)
+
+# Learning Liquid Haskell
+
+* 20% is actually learning how to prove things in Liquid Haskell
+    * This is pretty easy because Liquid Haskell does most of the work for you
+* 40% is reporting bugs that you encounter 
+    * The maintainers are very responsive and actively fix reported bugs
+* 40% is building a mental model of what Liquid Haskell can and cannot do
+    * This is extra hard because Liquid Haskell continues to grow more powerful
 
 # Scrap your bounds checks
 
@@ -618,8 +575,6 @@ udp = do
 ```
 
 We're wastefully checking the length of the `ByteString` four times!
-
-We're binding a `Maybe` result four times
 
 # GHC Core
 
@@ -719,7 +674,7 @@ udp = Parser (\bs0 ->
 
 # Still some waste
 
-We still have some unnecessary branches:
+Oops!  We still have some hidden length checks:
 
 ```haskell
 splitAt :: Int -> ByteString -> (ByteString, ByteString)
@@ -789,14 +744,14 @@ assume ByteString.length :: bs : ByteString -> { n : Int | n == bslen bs }
 @-}
 
 {-@
-Unsafe.unsafeTake
+assume Unsafe.unsafeTake
     :: n : { n : Int | 0 <= n }
     -> { i : ByteString | n <= bslen i }
     -> { o : ByteString | bslen o == n }
 @-}
 
 {-@
-Unsafe.unsafeDrop
+assume Unsafe.unsafeDrop
     :: n : { n : Int | 0 <= n }
     -> i : { i : ByteString | n <= bslen i }
     -> { o : ByteString | bslen o == bslen i - n }
@@ -1070,7 +1025,7 @@ variance introduced by outliers: 74% (severely inflated)
 
 # `ByteString` annotations
 
-Awake Networks believes in upstreaming and open sourcing as much as possible
+Awake Security believes in upstreaming and open sourcing as much as possible
 
 We upstreamed a very large number of `ByteString` refinements
 
@@ -1125,7 +1080,7 @@ Bonus: the package can bundle `liquidhaskell` with an SMT solver (like `z3`)
 
 At the time of this writing, Liquid Haskell has 238 open issues
 
-* Turn bug reports into failing test (way more useful than you think!)
+* Turn bug reports into failing tests (way more useful than you think!)
 * Identify stale issues that are already fixed
 * Fix issues if you can!
 
