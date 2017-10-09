@@ -2,26 +2,6 @@
 % Gabriel Gonzalez
 % October 12, 2017
 
-# Introduction
-
-Liquid Haskell is a backwards-compatible extension to Haskell's type system
-
-You can use Liquid Haskell to add preconditions:
-
-```haskell
-{-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
-head :: [a] -> a
-head (x:_) = x
-```
-
-... or use Liquid Haskell to check postconditions:
-
-```haskell
-{-@ abs :: Int -> { n : Int | 0 <= n } @-}
-abs :: Int -> Int
-abs x = if x < 0 then 0 - x else x
-```
-
 # The golden rule of programming
 
 **Prefer pushing requirements upstream over pushing problems downstream**
@@ -45,74 +25,23 @@ Pushing the requirement upstream:
 head :: [a] -> a
 ```
 
-# Getting started - Stack
+# Types + Predicates
 
-Create this `stack.yaml` file:
+Liquid Haskell is a backwards-compatible extension to Haskell's type system
 
-```yaml
-resolver: lts-9.5
-packages: []
-extra-deps:
-- aeson-0.11.3.0
-- dotgen-0.4.2
-- fgl-visualize-0.1.0.1
-- intern-0.9.1.4
-- liquid-fixpoint-0.6.0.1
-- liquid-haskell-0.8.0.1
-- located-base-0.1.1.1
+You can use Liquid Haskell to add type-level predicates::
+
+```haskell
+{-@ head :: { xs : [a] | 1 <= len xs } -> a @-}
+head :: [a] -> a
+head (x:_) = x
+
+{-@ abs :: Int -> { n : Int | 0 <= n } @-}
+abs :: Int -> Int
+abs x = if x < 0 then 0 - x else x
 ```
 
-... then in the same directory run:
-
-```bash
-$ stack install liquidhaskell
-```
-
-Now the `liquid` executable will installed at `~/.local/bin/liquid`
-
-You still need to separately install `z3`
-
-# Getting started - Nix
-
-```
-$ nix-shell
-```
-
-... using the following `shell.nix` file:
-
-```nix
-let
-  inherit (import <nixpkgs> { }) fetchFromGitHub;
-
-  nixpkgs = fetchFromGitHub {
-    owner = "NixOS";
-
-    repo = "nixpkgs";
-
-    rev = "1715436b75696d9885b345dd8159e12244d0f7f5";
-    sha256 = "18qp76cppm1yxmzdaak9kcllbypvv22c9g7iaycq2wz0qkka6rx5";
-  };
-
-  pkgs = import nixpkgs { };
-
-  liquid =
-    pkgs.runCommand "liquidhaskell" { buildInputs = [ pkgs.makeWrapper ]; } ''
-      mkdir -p $out/bin
-      ln -s ${pkgs.haskellPackages.liquidhaskell}/bin/liquid $out/bin
-      wrapProgram $out/bin/liquid --prefix PATH : ${pkgs.z3}/bin
-    '';
-
-  ghc = pkgs.haskellPackages.ghcWithPackages (packages: with packages; [
-    vector
-  ]);
-
-in
-  pkgs.stdenv.mkDerivation {
-    name = "my-haskell-env-0";
-    buildInputs = [ ghc liquid ];
-    shellHook = "eval $(egrep ^export ${ghc}/bin/ghc)";
-  }
-```
+Liquid Haskell type signatures are comments alongside normal type signatures
 
 # Test drive
 
@@ -147,7 +76,7 @@ $ liquid --totality example.hs
 * Ways to contribute
 * Conclusion
 
-# Types + Predicates
+# Preconditions and Postconditions
 
 Liquid Haskell lets you annotate types with predicates
 
@@ -174,9 +103,11 @@ import Prelude hiding (head)
 head :: [a] -> a
 head (x:_) = x
 
-main :: IO ()
-main = print (head [] :: Int)
+example :: Int
+example = head []
 ```
+
+Preconditions are "free" (i.e. you can always add more)
 
 # Type error
 
@@ -208,6 +139,20 @@ $ liquid precondition.hs
                         && len ?a >= 0}
 ```
 
+# Non-invasive
+
+Note that we made our code safer without any code changes
+
+Other solutions to type-level safety usually require term-level changes like:
+
+* Wrapping and unwrapping `newtype`s
+* Using a different data structure (like using `NonEmpty` instead of `[]`)
+* Using Template Haskell
+
+Most of these are work-arounds for deficiencies in the type system
+
+Why not **push the fix upstream** and fix the type system?
+
 # Postconditions
 
 Postconditions let you decorate function output with additional information:
@@ -226,6 +171,8 @@ head (x:_) = x
 example :: Int -> Int
 example x = if abs x < 0 then head [] else x
 ```
+
+Postconditions are not "free" (i.e. you cannot add a false postcondition)
 
 # Type check
 
@@ -257,11 +204,9 @@ example :: Int -> Int
 example x = if abs x < 0 then head [] else x
 ```
 
-# Preconditions vs Postconditions
+# Proving Postconditions
 
-Preconditions are "free"
-
-Postconditions are not "free".  You have to either ...
+You cannot add a postcondition unless you can:
 
 * Prove the postcondition from some precondition:
 
@@ -457,6 +402,8 @@ staticCheck :: Char
 staticCheck = head "Hello, world!"
 ```
 
+We **pushed the fix upstream**!
+
 # Practical applications
 
 Liquid Haskell's killer use case is statically catching out-of-bounds errors
@@ -509,6 +456,8 @@ search element vector minIndex maxIndex
     testElement = Data.Vector.unsafeIndex vector testIndex
 ```
 
+What if I call `search` this on an empty list?
+
 # Questions?
 
 * Liquid Haskell 101
@@ -518,7 +467,7 @@ search element vector minIndex maxIndex
 
 # Packet header parsing
 
-At Awake Networks we use Haskell for high-performance protocol parsing
+At Awake Security we use Haskell for high-performance protocol parsing
 
 `binary` and `cereal` are sometimes not quite fast enough for our purposes!
 
@@ -557,7 +506,7 @@ instance Monad       Parser where
 ```haskell
 {-# LANGUAGE RecordWildCards #-}
 
--- We could totally use a better type than this, but humor me
+-- We could totally use a more space-efficient type than this, but humor me
 data UDP = UDP
     { udpSourcePort      :: !ByteString  -- 2 bytes
     , udpDestinationPort :: !ByteString  -- 2 bytes
@@ -574,7 +523,7 @@ udp = do
     return (UDP {..})
 ```
 
-We're wastefully checking the length of the `ByteString` four times!
+We're wastefully checking the length of the `ByteString` eight times!
 
 # GHC Core
 
@@ -669,12 +618,97 @@ udp = Parser (\bs0 ->
         Just (UDP {..}, bs4) )
 ```
 
-* One length check instead of four
-* No more pattern matching on `Maybe`
+Four length checks instead of eight
+
+# GHC Core
+
+```haskell
+$wa1
+$wa1 =
+  \ ww_s1EN ww1_s1EO ww2_s1EP ww3_s1EQ ->
+    case tagToEnum# (<# ww3_s1EQ 8) of _ {
+      False ->
+        let {
+          ds_s1wb
+          ds_s1wb =
+            case tagToEnum# (>=# 2 ww3_s1EQ) of _ {
+              False ->
+                (PS ww_s1EN ww1_s1EO ww2_s1EP 2,
+                 PS ww_s1EN ww1_s1EO (+# ww2_s1EP 2) (-# ww3_s1EQ 2));
+              True -> (PS ww_s1EN ww1_s1EO ww2_s1EP ww3_s1EQ, empty)
+            } } in
+        let {
+          ds1_s1wa
+          ds1_s1wa =
+            case ds_s1wb of _ { (udpSourcePort1_a1is, bs1_X1jt) ->
+            case bs1_X1jt
+            of wild2_a1u6 { PS dt_a1u8 dt1_a1u9 dt2_a1ua dt3_a1ub ->
+            case tagToEnum# (>=# 2 dt3_a1ub) of _ {
+              False ->
+                (PS dt_a1u8 dt1_a1u9 dt2_a1ua 2,
+                 PS dt_a1u8 dt1_a1u9 (+# dt2_a1ua 2) (-# dt3_a1ub 2));
+              True -> (wild2_a1u6, empty)
+            }
+            }
+            } } in
+        let {
+          ds2_s1w9
+          ds2_s1w9 =
+            case ds1_s1wa of _ { (udpDestinationPort1_a1iC, bs2_X1jL) ->
+            case bs2_X1jL
+            of wild2_a1u6 { PS dt_a1u8 dt1_a1u9 dt2_a1ua dt3_a1ub ->
+            case tagToEnum# (>=# 2 dt3_a1ub) of _ {
+              False ->
+                (PS dt_a1u8 dt1_a1u9 dt2_a1ua 2,
+                 PS dt_a1u8 dt1_a1u9 (+# dt2_a1ua 2) (-# dt3_a1ub 2));
+              True -> (wild2_a1u6, empty)
+            }
+            }
+            } } in
+        let {
+          ds3_s1w8
+          ds3_s1w8 =
+            case ds2_s1w9 of _ { (udpLength1_a1iL, bs3_X1k2) ->
+            case bs3_X1k2
+            of wild2_a1u6 { PS dt_a1u8 dt1_a1u9 dt2_a1ua dt3_a1ub ->
+            case tagToEnum# (>=# 2 dt3_a1ub) of _ {
+              False ->
+                (PS dt_a1u8 dt1_a1u9 dt2_a1ua 2,
+                 PS dt_a1u8 dt1_a1u9 (+# dt2_a1ua 2) (-# dt3_a1ub 2));
+              True -> (wild2_a1u6, empty)
+            }
+            }
+            } } in
+        Just
+          (case ds_s1wb of _ { (udpSourcePort1_X1jt, bs1_X1iV) ->
+           case udpSourcePort1_X1jt
+           of dt_XQ9 { PS ipv_s1ym ipv1_s1yn ipv2_s1yo ipv3_s1yp ->
+           case ds1_s1wa of _ { (udpDestinationPort1_X1jL, bs2_X1j6) ->
+           case udpDestinationPort1_X1jL
+           of dt1_XQb { PS ipv4_s1yt ipv5_s1yu ipv6_s1yv ipv7_s1yw ->
+           case ds2_s1w9 of _ { (udpLength1_X1k2, bs3_X1jg) ->
+           case udpLength1_X1k2
+           of dt2_XQd { PS ipv8_s1yA ipv9_s1yB ipv10_s1yC ipv11_s1yD ->
+           case ds3_s1w8 of _ { (udpChecksum1_X1kj, bs4_X1jq) ->
+           case udpChecksum1_X1kj
+           of dt3_XQf { PS ipv12_s1yH ipv13_s1yI ipv14_s1yJ ipv15_s1yK ->
+           UDP dt_XQ9 dt1_XQb dt2_XQd dt3_XQf
+           }
+           }
+           }
+           }
+           }
+           }
+           }
+           },
+           case ds3_s1w8 of _ { (udpChecksum1_a1iU, bs4_X1kj) -> bs4_X1kj });
+      True -> Nothing
+    }
+```
 
 # Still some waste
 
-Oops!  We still have some hidden length checks:
+Our four remaining length checks come from the use of `splitAt`:
 
 ```haskell
 splitAt :: Int -> ByteString -> (ByteString, ByteString)
@@ -1100,6 +1134,8 @@ This is a challenging, but highly worthwhile project
 * Reconciling Liquid Haskell's types with upcoming dependent types
 * Optionally packaging an SMT solver with `ghc`
 
+Why not **push the fix upstream** and fix GHC directly?
+
 # Questions?
 
 * Liquid Haskell 101
@@ -1113,9 +1149,84 @@ This is a challenging, but highly worthwhile project
 * You can integrate Liquid Haskell with `cabal` and `stack`
 * The Liquid Haskell project needs your help!
 
+These slides are hosted online at:
+
+* [https://github.com/Gabriel439/slides/blob/master/liquidhaskell/slides.md](https://github.com/Gabriel439/slides/blob/master/liquidhaskell/slides.md)
+
 You can follow my work on:
 
 * Twitter - [\@GabrielG439](twitter.com/GabrielG439)
 * GitHub - [Gabriel439](https://github.com/Gabriel439)
 
-Also, [we're hiring Haskell interns](https://jobs.lever.co/awake-security)
+Also, we're hiring Haskell interns
+
+* [https://awakesecurity.com/careers/](https://awakesecurity.com/careers/)
+
+# Getting started - Stack
+
+Create this `stack.yaml` file:
+
+```yaml
+resolver: lts-9.5
+packages: []
+extra-deps:
+- aeson-0.11.3.0
+- dotgen-0.4.2
+- fgl-visualize-0.1.0.1
+- intern-0.9.1.4
+- liquid-fixpoint-0.6.0.1
+- liquid-haskell-0.8.0.1
+- located-base-0.1.1.1
+```
+
+... then in the same directory run:
+
+```bash
+$ stack install liquidhaskell
+```
+
+Now the `liquid` executable will installed at `~/.local/bin/liquid`
+
+You still need to separately install `z3`
+
+# Getting started - Nix
+
+```
+$ nix-shell
+```
+
+... using the following `shell.nix` file:
+
+```nix
+let
+  inherit (import <nixpkgs> { }) fetchFromGitHub;
+
+  nixpkgs = fetchFromGitHub {
+    owner = "NixOS";
+
+    repo = "nixpkgs";
+
+    rev = "1715436b75696d9885b345dd8159e12244d0f7f5";
+    sha256 = "18qp76cppm1yxmzdaak9kcllbypvv22c9g7iaycq2wz0qkka6rx5";
+  };
+
+  pkgs = import nixpkgs { };
+
+  liquid =
+    pkgs.runCommand "liquidhaskell" { buildInputs = [ pkgs.makeWrapper ]; } ''
+      mkdir -p $out/bin
+      ln -s ${pkgs.haskellPackages.liquidhaskell}/bin/liquid $out/bin
+      wrapProgram $out/bin/liquid --prefix PATH : ${pkgs.z3}/bin
+    '';
+
+  ghc = pkgs.haskellPackages.ghcWithPackages (packages: with packages; [
+    vector
+  ]);
+
+in
+  pkgs.stdenv.mkDerivation {
+    name = "my-haskell-env-0";
+    buildInputs = [ ghc liquid ];
+    shellHook = "eval $(egrep ^export ${ghc}/bin/ghc)";
+  }
+```
