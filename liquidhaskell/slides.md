@@ -4,7 +4,7 @@
 
 # The golden rule of programming
 
-**Prefer pushing requirements upstream over pushing problems downstream**
+**Prefer pushing fixes upstream over pushing problems downstream**
 
 Example:
 
@@ -1158,10 +1158,6 @@ You can follow my work on:
 * Twitter - [\@GabrielG439](twitter.com/GabrielG439)
 * GitHub - [Gabriel439](https://github.com/Gabriel439)
 
-Also, we're hiring Haskell interns
-
-* [https://awakesecurity.com/careers/](https://awakesecurity.com/careers/)
-
 # Getting started - Stack
 
 Create this `stack.yaml` file:
@@ -1230,3 +1226,13 @@ in
     shellHook = "eval $(egrep ^export ${ghc}/bin/ghc)";
   }
 ```
+
+# `liquidhaskell-cabal`
+
+You can integrate Liquid Haskell into any project built using `cabal` or stack`
+
+Awake Security maintains a working fork of the `liquidhaskell-cabal` project:
+
+* [https://github.com/awakesecurity/liquidhaskell-cabal](https://github.com/awakesecurity/liquidhaskell-cabal)
+
+The project `README` has instructions on how to use this in your own projects
