@@ -1,54 +1,464 @@
 % Nix: under the hood
 % Gabriel Gonzalez
-% November 8, 2017
+% December 7, 2017
 
 # Motivation
 
-People sometimes say: "I love the idea behind Nix but I hate the language"
+This talk covers how to **use** and **debug** Nix effectively in a commercial
+setting
 
-This talk will teach you how to separate the Nix toolchain from the language
+We'll do so by learning how Nix works under the hood
 
-**Key idea:** The `/nix/store` and NixOS are don't depend on the Nix language
+This talk will focus more on breadth rather than depth
 
-Your infrastructure can reuse the `/nix/store` and NixOS without using Nix
+This talk will emphasize the Nix toolchain and de-emphasize the Nix language 
+
+Key ideas:
+
+* The `/nix/store` and NixOS don't depend on the Nix language
+* Nix supports binary distributions (both for packages and operating systems)
+* Don't save secrets in Nix derivations
+* Caching happens at the derivation level
+* Source vs. binary distributions
+* Profiles
+* TODO
 
 # Introduction
+
+Most Nix workflows go through this pipeline:
+
+```
+Nix expression  →  Derivation  →  Build product
+```
+
+We'll organize this talk around those three stages in the pipeline
+
+# Organization
 
 I like to document my Haskell libraries using the following standard format:
 
 * For each type in the API:
     * Document what each type represents
     * Document how to **produce** a value of that type
+    * Document how to **transform** a value of that type
     * Document how to **consume** a value of that type
+
+We'll use a similar approach to systematically explore the Nix pipeline
 
 # Overview
 
-Let's document the Nix toolchain using the same format:
-
+* Nix expressions
+    * What are Nix expressions?
+    * How do we **produce** Nix expressions?
+    * How do we **transform** Nix expressions?
+    * How do we **consume** Nix expressions?
 * Derivations
     * What is a derivation?
     * How do we **produce** a derivation?
+    * How do we **transform** a derivation?
     * How do we **consume** a derivation?
 * Build products
     * What is a build product?
     * How do we **produce** a build product?
+    * How do we **transform** a build product?
     * How do we **consume** a build product?
 
 # Overview
 
-* **Derivations**
-    * **What is a derivation?**
+* Source code
+    * What are Nix expressions?
+    * How do we produce Nix expressions?
+    * How do we transform Nix expressions?
+    * How do we consume Nix expressions?
+* Derivations
+    * What is a derivation?
     * How do we produce a derivation?
+    * How do we transform a derivation?
     * How do we consume a derivation?
 * Build products
     * What is a build product?
     * How do we produce a build product?
+    * How do we transform a build product?
     * How do we consume a build product?
+
+# What is a Nix expression?
+
+A Nix expressions is a purely functional code written in the Nix language
+
+A Nix expression may `import` other Nix expressions stored within files
+
+Reading a Nix expression from a file is a special case of `import`
+
+For example, these two commands are identical:
+
+```
+$ nix-instantiate example.nix
+$ nix-instantiate --expr 'import ./example.nix'
+```
+
+Strings, not files, are the universal interface to the Nix programming language
+
+What are some contexts where we can evaluate a Nix expression without a file?
+
+# Producing a Nix expression
+
+Anything that can produce a string can produce a Nix expression, including:
+
+* Text editors
+* Command lines (such as `nix-repl` or `--expr` arguments to Nix commands)
+* Nix expressions!
+    * This is known as "import from derivation" (or "IFD" for short)
+* Check out text files from a `git` repository
+    * You can combine this with import from derivation
+
+Not covered in this talk:
+
+* `nix-channel`s
+    * I discourage the use of channels for commercial development
+* HTML form input
+    * Example: Hydra web user interface
+
+
+# Example: text editor
+
+Use your editor to save this expression to a file named `add.nix`:
+
+```nix
+2 + 2
+```
+
+Then evaluate the expression:
+
+```bash
+$ nix-instantiate --eval add.nix
+4
+```
+
+# Example: string literal
+
+```bash
+$ nix-instantiate --eval --expr '2 + 2'
+4
+$ nix-instantiate --eval --expr 'import ./add.nix'
+4
+```
+
+```bash
+$ nix-repl
+Welcome to Nix version 1.11.4. Type :? for help.
+
+nix-repl> 2 + 2
+4
+
+```
+
+# Example: import from derivation
+
+```bash
+$ cat derivation.nix
+let
+  pkgs = import <nixpkgs> { };
+
+in
+  pkgs.writeText "result.nix" "2 + 2"
+
+$ nix-instantiate --read-write-mode --eval --expr 'let derivation = import ./derivation.nix; in import derivation'
+building path(s) ‘/nix/store/0nskx7yj8glb2kbqa1lz5alvw4ngz25a-result.nix’
+4
+
+$ cat /nix/store/0nskx7yj8glb2kbqa1lz5alvw4ngz25a-result.nix
+2 + 2
+```
+
+# Example: obtaining `nixpkgs` using import from derivation
+
+[Awake Security](https://awakesecurity.com/) open sourced a derivation for
+retrieving `nixpkgs`:
+
+* https://nixos.wiki/wiki/How_to_fetch_Nixpkgs_with_an_empty_NIX_PATH
+
+```nix
+{ rev                             # The Git revision of nixpkgs to fetch
+, sha256                          # The SHA256 of the downloaded data
+, system ? builtins.currentSystem # This is overridable if necessary
+}:
+
+with {
+  ifThenElse = { bool, thenValue, elseValue }: (
+    if bool then thenValue else elseValue);
+};
+
+ifThenElse {
+  bool = (0 <= builtins.compareVersions builtins.nixVersion "1.12");
+
+  # In Nix 1.12, we can just give a `sha256` to `builtins.fetchTarball`.
+  thenValue = (
+    builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+      inherit sha256;
+    });
+
+  # This hack should at least work for Nix 1.11
+  elseValue = (
+    (rec {
+      tarball = import <nix/fetchurl.nix> {
+        url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+        inherit sha256;
+      };
+
+      builtin-paths = import <nix/config.nix>;
+      
+      script = builtins.toFile "nixpkgs-unpacker" ''
+        "$coreutils/mkdir" "$out"
+        cd "$out"
+        "$gzip" --decompress < "$tarball" | "$tar" -x --strip-components=1
+      '';
+
+      nixpkgs = builtins.derivation {
+        name = "nixpkgs-${builtins.substring 0 6 rev}";
+
+        builder = builtins.storePath builtin-paths.shell;
+
+        args = [ script ];
+
+        inherit tarball system;
+
+        tar       = builtins.storePath builtin-paths.tar;
+        gzip      = builtins.storePath builtin-paths.gzip;
+        coreutils = builtins.storePath builtin-paths.coreutils;
+      };
+    }).nixpkgs);
+}
+```
+
+# Example: obtaining `nixpkgs` using import from derivation
+
+You can import from a `nixpkgs` derivation instead of a `<nixpkgs>` channel:
+
+```nix
+let
+  fetchNixpkgs = import ./fetchNixpkgs.nix;
+
+  nixpkgs = fetchNixpkgs {
+     rev = "76d649b59484607901f0c1b8f737d8376a904019";
+     sha256 = "01c2f4mj4ahir0sxk9kxbymg2pki1pc9a3y6r9x6ridry75fzb8h";
+  };
+
+  pkgs = import nixpkgs { config = {}; };
+
+in
+  pkgs.hello
+```
+
+```bash
+$ nix-build hello.nix
+building path(s) ‘/nix/store/likfhl38gcaxl5s6zywlspaln32lqa2x-nixpkgs-76d649’
+/nix/store/4bc0vx8j66wrm6g44qsswmy060k61qnh-hello-2.10
+```
+
+This is better for commercial development where perfect reproducibility matters
+
+# Transforming a Nix expression
+
+The main way to transform a Nix expression is to evaluate the expression
+
+Main ways to evaluate an expression:
+
+* `nix-instantiate --eval`
+* `nix-repl`
+* implicitly as part of another command (such as `nix-build`)
+
+# Example: `nix-instantiate`
+
+```bash
+$ nix-instantiate --eval --expr '2 + 2'
+4
+```
+
+Evaluating a derivation:
+
+```bash
+$ nix-instantiate --eval --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+{ __ignoreNulls = true; __impureHostDeps = <CODE>; __propagatedImpureHostDeps = 
+<CODE>; __propagatedSandboxProfile = <CODE>; __sandboxProfile = <CODE>; all = <C
+ODE>; args = <CODE>; buildInputs = <CODE>; builder = <CODE>; doCheck = true; drv
+Attrs = { __ignoreNulls = true; __impureHostDeps = <CODE>; __propagatedImpureHos
+tDeps = <CODE>; __propagatedSandboxProfile = <CODE>; __sandboxProfile = <CODE>; 
+args = <CODE>; buildInputs = <CODE>; builder = <CODE>; doCheck = true; name = "h
+ello-2.10"; nativeBuildInputs = <CODE>; propagatedBuildInputs = <CODE>; propagat
+edNativeBuildInputs = <CODE>; src = <CODE>; stdenv = { __impureHostDeps = <CODE>
+; __sandboxProfile = <CODE>; all = <CODE>; allowedRequisites = <CODE>; args = <C
+...
+924537755ce9164fd5b5f81ce16a1c3-src/pkgs/stdenv/generic/setup.sh; shell = <CODE>
+; shellPackage = <CODE>; system = "x86_64-darwin"; type = "derivation"; }; syste
+m = <CODE>; type = "derivation"; userHook = <CODE>; }
+```
+
+A derivation is just a record with field named `type` set to `"derivation"`
+
+# Example: `nix-repl`
+
+```bash
+$ nix-repl
+Welcome to Nix version 1.11.4. Type :? for help.
+
+nix-repl> 2 + 2
+4
+
+nix-repl> let pkgs = import <nixpkgs> { }; in pkgs.hello
+«derivation /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv»
+
+nix-repl> let pkgs = import <nixpkgs> { }; in pkgs.hello.type
+"derivation"
+```
+
+The `nix-repl` automatically shortens derivation records to `«derivation …»`
+
+# Example: implicit evaluation
+
+```bash
+$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+…
+/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+```
+
+Here `nix-instantiate` is actually performing two separate steps:
+
+* evaluate the Nix expression to a derivation
+* creating the derivation file from the Nix expression
+
+Many Nix commands bundle several orthogonal steps in one invocation
+
+Keep these orthogonal steps mentally separate when reasoning about Nix
+
+# Consuming a Nix expression
+
+The only way to consume a Nix expression is to transform into a derivation
+
+This only works if the Nix expression evaluates to a derivation
+
+i.e. a record with a field named `type` whose value is `"derivation"`
+
+Main ways to transform a Nix expression into a derivation using:
+
+* `nix-instantiate`
+* implicitly as part of Nix evaluation
+* implicitly as part of another command (such as `nix-build`)
+
+# Example: `nix-instantiate`
+
+You can generate a derivation from the command line using `nix-instantiate`:
+
+```bash
+$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+…
+/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+```
+
+# Example: implicit as part of Nix evaluation
+
+Nix automatically generates derivations that the root derivation references:
+
+For example, the `both` derivation references `hello` and `goodbye` derivations:
+
+```nix
+let
+  pkgs = import <nixpkgs> { };
+
+  hello = pkgs.writeText "hello.txt" ''
+    Hello, world!
+  '';
+
+  goodbye = pkgs.writeText "goodbye.txt" ''
+    Goodbye, world!
+  '';
+
+  both = pkgs.runCommand "both.txt" {} ''
+    ${pkgs.coreutils}/bin/cp ${hello} ${goodbye}
+  '';
+
+in
+  both
+```
+
+# Example: implicit as part of Nix evaluation
+
+Generating the `both` derivation also generates the `hello`/`goodbye`
+derivations:
+
+```bash
+$ nix-instantiate both.nix 
+…
+/nix/store/a67d2b60vx30isvpgfnyk4qap92sn7zq-both.txt.drv
+
+$ pretty-derivation < /nix/store/a67d2b60vx30isvpgfnyk4qap92sn7zq-both.txt.drv
+Derivation
+  { …
+  , inputDrvs =
+      fromList
+        [ …
+        , ( FilePath
+              "/nix/store/f37sv45m6b3nhxw7hk1jd2iqyhqaq7bp-hello.txt.drv"
+          , fromList [ "out" ]
+          )
+        , ( FilePath
+              "/nix/store/h1phr2qq4as23rd9dgy5ccqg4ysdf0lf-goodbye.txt.drv"
+          , fromList [ "out" ]
+          )
+        , …
+        ]
+  , …
+  }
+
+$ test -e /nix/store/f37sv45m6b3nhxw7hk1jd2iqyhqaq7bp-hello.txt.drv && echo $?
+0
+
+$ test -e /nix/store/h1phr2qq4as23rd9dgy5ccqg4ysdf0lf-goodbye.txt.drv && echo $?
+0
+```
+
+# Example: implicit as part of another command
+
+If you take a `nix-instantiate` command:
+
+```bash
+$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+…
+/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+```
+
+... and replace `nix-instantiate` with `nix-build`:
+
+```bash
+$ nix-build --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
+```
+
+... then Nix generates the derivation *and* builds the corresponding product
+
+# Overview
+
+* Source code
+    * What are Nix expressions?
+    * How do we produce Nix expressions?
+    * How do we consume Nix expressions?
+    * How do we transform nix expressions?
+* Derivations
+    * What is a derivation?
+    * How do we produce a derivation?
+    * How do we consume a derivation?
+    * How do we transform a derivation?
+* Build products
+    * What is a build product?
+    * How do we produce a build product?
+    * How do we consume a build product?
+    * How do we transform a build product?
 
 # What is a derivation?
 
-A derivation is a recipe for how to build a "path"
+A derivation is a language-independent recipe for how to build a path
 
+* "Language-independent" means derivations are also Nix-independent
 * A "path" you build can be a single file or a directory tree
 
 Derivations strive to be "reproducible" and "deterministic"
@@ -56,7 +466,8 @@ Derivations strive to be "reproducible" and "deterministic"
 * "Reproducible" means that you can always build the derivation from scratch
 * "Deterministic" means that the result is always bit-for-bit identical
 
-They are not perfectly reproducible/deterministic in practice, but good enough
+They are not perfectly reproducible/deterministic in practice, but better than
+most alternatives
 
 # Derivation files
 
@@ -444,3 +855,10 @@ $ nix-store --realise /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar
 $ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
 /nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
 ```
+
+# TODO
+
+* Explain how various command lines desugar to Nix expressions trings
+    * i.e. the equivalent `--expr`
+* Explain why channels are not covered
+* Explain why `NIX_PATH` is not covered
