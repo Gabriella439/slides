@@ -236,6 +236,8 @@ ifThenElse {
 You can import from a `nixpkgs` derivation instead of a `<nixpkgs>` channel:
 
 ```nix
+# hello.nix
+
 let
   fetchNixpkgs = import ./fetchNixpkgs.nix;
 
@@ -335,11 +337,13 @@ Keep these orthogonal steps mentally separate when reasoning about Nix
 
 The only way to consume a Nix expression is to transform into a derivation
 
-This only works if the Nix expression evaluates to a derivation
+Transforming a Nix expression into a derivation is known as "instantiation"
+
+Instantiation only works if the Nix expression evaluates to a derivation
 
 i.e. a record with a field named `type` whose value is `"derivation"`
 
-Main ways to transform a Nix expression into a derivation using:
+Main ways to instantiation a Nix expression are:
 
 * `nix-instantiate`
 * implicitly as part of Nix evaluation
@@ -347,7 +351,7 @@ Main ways to transform a Nix expression into a derivation using:
 
 # Example: `nix-instantiate`
 
-You can generate a derivation from the command line using `nix-instantiate`:
+You can instantiate a Nix expression from command line with `nix-instantiate`:
 
 ```bash
 $ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
@@ -362,6 +366,8 @@ Nix automatically generates derivations that the root derivation references:
 For example, the `both` derivation references `hello` and `goodbye` derivations:
 
 ```nix
+# both.nix
+
 let
   pkgs = import <nixpkgs> { };
 
@@ -421,20 +427,24 @@ $ test -e /nix/store/h1phr2qq4as23rd9dgy5ccqg4ysdf0lf-goodbye.txt.drv && echo $?
 
 If you take a `nix-instantiate` command:
 
-```bash
-$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
-…
-/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
-```
-
-... and replace `nix-instantiate` with `nix-build`:
+The following `nix-build` command:
 
 ```bash
 $ nix-build --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
 /nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
 ```
 
-... then Nix generates the derivation *and* builds the corresponding product
+... is a convenience utility that combines two separate steps:
+
+```bash
+$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+…
+/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+
+$ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+…
+/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
+```
 
 # Overview
 
@@ -473,7 +483,7 @@ most alternatives
 
 Derivations are stored as `*.drv` files underneath the `/nix/store` directory:
 
-```shell
+```bash
 $ find /nix/store -name '*.drv' | head
 /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv
 /nix/store/000p9frz8wf8sns2jhn0bj94hl7ksdyq-bash43-030.drv
@@ -491,7 +501,7 @@ $ find /nix/store -name '*.drv' | head
 
 Derivations are serialized as one long line of text:
 
-```shell
+```bash
 $ fold /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv
 Derive([("out","/nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz","
 sha256","c9f0fd93680c029abb9654b5464be260652829961b18b7046f96a0df95e825f4")],[("
@@ -526,86 +536,12 @@ rror://hackage/void-0.7.1.tar.gz")])
 
 # Pretty-printing derivations
 
-You can pretty-print derivations using `ppsh`
+You pretty-print derivations using `pretty-derivation`
 
-You can install `ppsh` from Haskell's `pretty-show` package
+You can install `pretty-derivation` from Haskell's `nix-derivation` package:
 
-```shell
-$ nix-shell --packages haskellPackages.pretty-show
-$ ppsh < /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv
-Derive
-  ( [ ( "out"
-      , "/nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz"
-      , "sha256"
-      , "c9f0fd93680c029abb9654b5464be260652829961b18b7046f96a0df95e825f4"
-      )
-    ]
-  , [ ( "/nix/store/cwnn2alfww3six2ywph5hnnlmxwhv9c7-curl-7.52.1.drv"
-      , [ "dev" ]
-      )
-    , ( "/nix/store/kzs0g1ch3a59ar14xnms1wj22p2bnr9l-stdenv.drv"
-      , [ "out" ]
-      )
-    , ( "/nix/store/qq7pqyfn98314fd30xspb1hi3rqda2lh-bash-4.3-p48.drv"
-      , [ "out" ]
-      )
-    , ( "/nix/store/r1b0rbna957biiy63m75yxsw3aphps9b-mirrors-list.drv"
-      , [ "out" ]
-      )
-    ]
-  , [ "/nix/store/5pqfb6ik1cxqq1d0irlx3060jx1qjmsn-builder.sh" ]
-  , "x86_64-linux"
-  , "/nix/store/gabjbkwga2dhhp2wzyaxl83r8hjjfc37-bash-4.3-p48/bin/bash"
-  , [ "-e"
-    , "/nix/store/5pqfb6ik1cxqq1d0irlx3060jx1qjmsn-builder.sh"
-    ]
-  , [ ( "buildInputs" , "" )
-    , ( "builder"
-      , "/nix/store/gabjbkwga2dhhp2wzyaxl83r8hjjfc37-bash-4.3-p48/bin/bash"
-      )
-    , ( "curlOpts" , "" )
-    , ( "downloadToTemp" , "" )
-    , ( "executable" , "" )
-    , ( "impureEnvVars"
-      , "http_proxy https_proxy ftp_proxy all_proxy no_proxy NIX_CURL_FLAGS NIX_HASHED_MIRRORS NIX_CONNECT_TIMEOUT NIX_MIRRORS_apache NIX_MIRRORS_bioc NIX_MIRRORS_bitlbee NIX_MIRRORS_cpan NIX_MIRRORS_debian NIX_MIRRORS_fedora NIX_MIRRORS_gcc NIX_MIRRORS_gentoo NIX_MIRRORS_gnome NIX_MIRRORS_gnu NIX_MIRRORS_gnupg NIX_MIRRORS_hackage NIX_MIRRORS_hashedMirrors NIX_MIRRORS_imagemagick NIX_MIRRORS_kde NIX_MIRRORS_kernel NIX_MIRRORS_metalab NIX_MIRRORS_mozilla NIX_MIRRORS_mysql NIX_MIRRORS_oldsuse NIX_MIRRORS_openbsd NIX_MIRRORS_opensuse NIX_MIRRORS_postgresql NIX_MIRRORS_pypi NIX_MIRRORS_roy NIX_MIRRORS_sagemath NIX_MIRRORS_samba NIX_MIRRORS_savannah NIX_MIRRORS_sourceforge NIX_MIRRORS_sourceforgejp NIX_MIRRORS_steamrt NIX_MIRRORS_ubuntu NIX_MIRRORS_xfce NIX_MIRRORS_xorg"
-      )
-    , ( "mirrorsFile"
-      , "/nix/store/ab4zh0ga99y5xj441arp89zl8s4jfc7y-mirrors-list"
-      )
-    , ( "name" , "void-0.7.1.tar.gz" )
-    , ( "nativeBuildInputs"
-      , "/nix/store/3ngwsbzhibvc434nqwq6jph6w7c2was6-curl-7.52.1-dev"
-      )
-    , ( "out"
-      , "/nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz"
-      )
-    , ( "outputHash"
-      , "c9f0fd93680c029abb9654b5464be260652829961b18b7046f96a0df95e825f4"
-      )
-    , ( "outputHashAlgo" , "sha256" )
-    , ( "outputHashMode" , "flat" )
-    , ( "postFetch" , "" )
-    , ( "preferHashedMirrors" , "1" )
-    , ( "preferLocalBuild" , "1" )
-    , ( "propagatedBuildInputs" , "" )
-    , ( "propagatedNativeBuildInputs" , "" )
-    , ( "showURLs" , "" )
-    , ( "stdenv"
-      , "/nix/store/985d95clq0216a6pcp3qzw4igp84ajvr-stdenv"
-      )
-    , ( "system" , "x86_64-linux" )
-    , ( "urls" , "mirror://hackage/void-0.7.1.tar.gz" )
-    ]
-  )
-```
-
-# Haskell API for derivations
-
-I authored the `nix-derivation` Haskell package for working with derivations
-
-This package provides a `pretty-derivation` executable for pretty output:
-
-```shell
+```bash
+$ nix-shell --packages haskellPackages.pretty-derivation
 $ pretty-derivation < /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv
 Derivation
   { outputs =
@@ -699,10 +635,95 @@ The key components of a derivation are:
     * This is used to compute what needs to be built before this derivation
 * The build instructions, consisting of:
     * A command (i.e. `/nix/store/...-bash-4.3-p48/bin/bash`)
-    * The command's arguments (i.e. "-e /nix/store/...-builder.sh" ]
+    * The command's arguments (i.e. `-e /nix/store/...-builder.sh`)
     * The command's environment
 * The output paths
     * The build succeeds if and only if the command creates all of these paths
+
+```bash
+Derivation
+  { outputs =
+      fromList
+        [ ( "out"
+          , DerivationOutput
+              { path =
+                  FilePath
+                    "/nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz"
+              , hashAlgo = "sha256"
+              , hash =
+                  "c9f0fd93680c029abb9654b5464be260652829961b18b7046f96a0df95e825f4"
+              }
+          )
+        ]
+  , inputDrvs =
+      fromList
+        [ ( FilePath
+              "/nix/store/cwnn2alfww3six2ywph5hnnlmxwhv9c7-curl-7.52.1.drv"
+          , fromList [ "dev" ]
+          )
+        , ( FilePath
+              "/nix/store/kzs0g1ch3a59ar14xnms1wj22p2bnr9l-stdenv.drv"
+          , fromList [ "out" ]
+          )
+        , ( FilePath
+              "/nix/store/qq7pqyfn98314fd30xspb1hi3rqda2lh-bash-4.3-p48.drv"
+          , fromList [ "out" ]
+          )
+        , ( FilePath
+              "/nix/store/r1b0rbna957biiy63m75yxsw3aphps9b-mirrors-list.drv"
+          , fromList [ "out" ]
+          )
+        ]
+  , inputSrcs =
+      fromList
+        [ FilePath "/nix/store/5pqfb6ik1cxqq1d0irlx3060jx1qjmsn-builder.sh"
+        ]
+  , platform = "x86_64-linux"
+  , builder =
+      "/nix/store/gabjbkwga2dhhp2wzyaxl83r8hjjfc37-bash-4.3-p48/bin/bash"
+  , args =
+      [ "-e" , "/nix/store/5pqfb6ik1cxqq1d0irlx3060jx1qjmsn-builder.sh" ]
+  , env =
+      fromList
+        [ ( "buildInputs" , "" )
+        , ( "builder"
+          , "/nix/store/gabjbkwga2dhhp2wzyaxl83r8hjjfc37-bash-4.3-p48/bin/bash"
+          )
+        , ( "curlOpts" , "" )
+        , ( "downloadToTemp" , "" )
+        , ( "executable" , "" )
+        , ( "impureEnvVars"
+          , "http_proxy https_proxy ftp_proxy all_proxy no_proxy NIX_CURL_FLAGS NIX_HASHED_MIRRORS NIX_CONNECT_TIMEOUT NIX_MIRRORS_apache NIX_MIRRORS_bioc NIX_MIRRORS_bitlbee NIX_MIRRORS_cpan NIX_MIRRORS_debian NIX_MIRRORS_fedora NIX_MIRRORS_gcc NIX_MIRRORS_gentoo NIX_MIRRORS_gnome NIX_MIRRORS_gnu NIX_MIRRORS_gnupg NIX_MIRRORS_hackage NIX_MIRRORS_hashedMirrors NIX_MIRRORS_imagemagick NIX_MIRRORS_kde NIX_MIRRORS_kernel NIX_MIRRORS_metalab NIX_MIRRORS_mozilla NIX_MIRRORS_mysql NIX_MIRRORS_oldsuse NIX_MIRRORS_openbsd NIX_MIRRORS_opensuse NIX_MIRRORS_postgresql NIX_MIRRORS_pypi NIX_MIRRORS_roy NIX_MIRRORS_sagemath NIX_MIRRORS_samba NIX_MIRRORS_savannah NIX_MIRRORS_sourceforge NIX_MIRRORS_sourceforgejp NIX_MIRRORS_steamrt NIX_MIRRORS_ubuntu NIX_MIRRORS_xfce NIX_MIRRORS_xorg"
+          )
+        , ( "mirrorsFile"
+          , "/nix/store/ab4zh0ga99y5xj441arp89zl8s4jfc7y-mirrors-list"
+          )
+        , ( "name" , "void-0.7.1.tar.gz" )
+        , ( "nativeBuildInputs"
+          , "/nix/store/3ngwsbzhibvc434nqwq6jph6w7c2was6-curl-7.52.1-dev"
+          )
+        , ( "out"
+          , "/nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz"
+          )
+        , ( "outputHash"
+          , "c9f0fd93680c029abb9654b5464be260652829961b18b7046f96a0df95e825f4"
+          )
+        , ( "outputHashAlgo" , "sha256" )
+        , ( "outputHashMode" , "flat" )
+        , ( "postFetch" , "" )
+        , ( "preferHashedMirrors" , "1" )
+        , ( "preferLocalBuild" , "1" )
+        , ( "propagatedBuildInputs" , "" )
+        , ( "propagatedNativeBuildInputs" , "" )
+        , ( "showURLs" , "" )
+        , ( "stdenv"
+          , "/nix/store/985d95clq0216a6pcp3qzw4igp84ajvr-stdenv"
+          )
+        , ( "system" , "x86_64-linux" )
+        , ( "urls" , "mirror://hackage/void-0.7.1.tar.gz" )
+        ]
+  }
+```
 
 # Overview
 
@@ -715,21 +736,20 @@ The key components of a derivation are:
     * How do we produce a build product?
     * How do we consume a build product?
 
-# Producing derivations: `nix-instantiate`
+# Producing derivations
 
-`nix-instantiate` produces a derivation from a Nix expression:
+Main ways to produce derivations:
 
-* input a Nix expression (i.e. `*.nix` file)
-* output a derivation (i.e. `/nix/store/*.drv` file)
+* `nix-instantiate`
+* Manually
 
-```shell
-$ nix-instantiate --expr '(import <nixpkgs> {}).hello'
+```bash
+$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+…
 /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
 ```
 
-Carefully note: his is the only part that uses the Nix language
-
-# Producing derivations: minimal builder
+# Producing derivations: minimal derivation
 
 ```c
 // touch.c
@@ -749,7 +769,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-```shell
+```bash
 $ gcc ./touch.c -o ./touch
 ```
 
@@ -765,15 +785,16 @@ derivation {
 
   system = "x86_64-darwin";
 
-  # Same as: builder = /nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch;
   builder = ./touch;
 }
 ```
 
-```shell
+```bash
 $ nix-instantiate empty.nix
+…
 /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
-pretty-derivation < /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv 
+
+$ pretty-derivation < /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv 
 Derivation
   { outputs =
       fromList
@@ -807,29 +828,38 @@ Derivation
 
 # Producing derivations: `nix-store --add`
 
-Note that this approach is **not** safe:
+Note that this approach is **NOT** safe:
 
-```shell
+```bash
 $ cat > empty.drv <<EOF
 Derive([("out","/nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty","","")],[],["/nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch"],"x86_64-darwin","/nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch",[],[("builder","/nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch"),("name","empty"),("out","/nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty"),("system","x86_64-darwin")])
 EOF
 ```
 
-```shell
+```bash
 $ nix-store --add empty.drv 
 /nix/store/c8k1v7k7w349pz5lin1234fh2vhd394l-empty.drv
 ```
 
-# Overview
+# Transforming a derivation
 
-* **Derivations**
-    * What is a derivation?
-    * How do we produce a derivation?
-    * **How do we consume a derivation?**
-* Build products
-    * What is a build product?
-    * How do we produce a build product?
-    * How do we consume a build product?
+Main ways to transform a derivation:
+
+* Copy the derivation to or from another machine
+* Add or remove the derivation from the set of garbage collection roots
+
+# Transforming a derivation: copy between machines
+
+Use `nix-copy-closure` to copy derivations between machines:
+
+```bash
+$ nix-copy-closure --to gabriel@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+```
+
+`nix-copy-closure` also copies derivations that are transitive dependencies of
+the copied derivation
+
+This is how Nix delegates build instructions to other machines
 
 # Consuming derivations: `nix-store --realise`
 
@@ -841,20 +871,56 @@ For each derivation output, Nix will:
 * If not, then check if the build product can be retrieved from a cache
 * If not, then build the derivation
 
-```shell
+```bash
 $ nix-store --realise /nix/store/c8k1v7k7w349pz5lin1234fh2vhd394l-empty.drv
 /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
 
-```shell
+```bash
 $ nix-store --realise /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv 
 /nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz
 ```
 
-```shell
+```bash
 $ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
 /nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
 ```
+
+# Distributed builds
+
+Conceptually a distributed build consists of the following three steps:
+
+* Instantiate the Nix expression to create a derivation
+
+```bash
+$ nix-instantiate empty.nix
+…
+/nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+```
+
+* Copy the derivation to another machine
+
+```bash
+$ nix-copy-closure --to gabriel@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+```
+
+* Realise the derivation on that machine to create a build product
+
+```bash
+$ ssh gabriel@example.com nix-store --realise /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+…
+/nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
+```
+
+* Copy the build product back to your machine
+
+```bash
+$ nix-copy-closure --from gabriel@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
+```
+
+Note that this implies that no Nix code is transferred to the other machine
+
+Only the derivation and build product reside on the other machine
 
 # TODO
 
@@ -862,3 +928,8 @@ $ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
     * i.e. the equivalent `--expr`
 * Explain why channels are not covered
 * Explain why `NIX_PATH` is not covered
+* Explain how caching is based off of derivations when explaining
+  `nix-store --realise`
+* Diagram showing all possible transitions and commands
+* Test audience understanding of caching by understanding that it is insensitive
+  to cosmetic source changes
