@@ -13,23 +13,15 @@ This talk will focus more on breadth rather than depth
 
 This talk will emphasize the Nix toolchain and de-emphasize the Nix language 
 
-Key ideas:
-
-* The `/nix/store` and NixOS don't depend on the Nix language
-* Nix supports binary distributions (both for packages and operating systems)
-* Don't save secrets in Nix derivations
-* Caching happens at the derivation level
-* Source vs. binary distributions
-* Profiles
-* TODO
-
 # Introduction
 
-Most Nix workflows go through this pipeline:
+Nix workflows go through this pipeline:
 
 ```
 Nix expression  →  Derivation  →  Build product
 ```
+
+Everything in Nix (packages, operating systems, clusters) works this way
 
 We'll organize this talk around those three stages in the pipeline
 
@@ -172,8 +164,7 @@ $ cat /nix/store/0nskx7yj8glb2kbqa1lz5alvw4ngz25a-result.nix
 
 # Example: obtaining `nixpkgs` using import from derivation
 
-[Awake Security](https://awakesecurity.com/) open sourced a derivation for
-retrieving `nixpkgs`:
+[Awake Security][awake] open sourced a derivation for retrieving `nixpkgs`:
 
 * https://nixos.wiki/wiki/How_to_fetch_Nixpkgs_with_an_empty_NIX_PATH
 
@@ -727,20 +718,27 @@ Derivation
 
 # Overview
 
-* **Derivations**
+* Source code
+    * What are Nix expressions?
+    * How do we produce Nix expressions?
+    * How do we consume Nix expressions?
+    * How do we transform nix expressions?
+* Derivations
     * What is a derivation?
-    * **How do we produce a derivation?**
+    * How do we produce a derivation?
     * How do we consume a derivation?
+    * How do we transform a derivation?
 * Build products
     * What is a build product?
     * How do we produce a build product?
     * How do we consume a build product?
+    * How do we transform a build product?
 
 # Producing derivations
 
 Main ways to produce derivations:
 
-* `nix-instantiate`
+* Instantiate the derivation using `nix-instantiate`
 * Manually
 
 ```bash
@@ -792,16 +790,16 @@ derivation {
 ```bash
 $ nix-instantiate empty.nix
 …
-/nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+/nix/store/g34m25sy69dxd7ly7fk2nw4zhjs55jp7-empty.drv
 
-$ pretty-derivation < /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv 
+$ pretty-derivation < /nix/store/g34m25sy69dxd7ly7fk2nw4zhjs55jp7-empty.drv
 Derivation
   { outputs =
       fromList
         [ ( "out"
           , DerivationOutput
               { path =
-                  FilePath "/nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty"
+                  FilePath "/nix/store/cacmfnwdls57zd13hj5v2ydzh2gbwyl5-empty"
               , hashAlgo = ""
               , hash = ""
               }
@@ -810,17 +808,17 @@ Derivation
   , inputDrvs = fromList []
   , inputSrcs =
       fromList
-        [ FilePath "/nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch" ]
+        [ FilePath "/nix/store/jvf7isim1fhrppywazgxzx9h1hhzvkkb-touch" ]
   , platform = "x86_64-darwin"
-  , builder = "/nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch"
+  , builder = "/nix/store/jvf7isim1fhrppywazgxzx9h1hhzvkkb-touch"
   , args = []
   , env =
       fromList
         [ ( "builder"
-          , "/nix/store/j65p7rrvmk6zhhbn19il02gsfrwcsgf9-touch"
+          , "/nix/store/jvf7isim1fhrppywazgxzx9h1hhzvkkb-touch"
           )
         , ( "name" , "empty" )
-        , ( "out" , "/nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty" )
+        , ( "out" , "/nix/store/cacmfnwdls57zd13hj5v2ydzh2gbwyl5-empty" )
         , ( "system" , "x86_64-darwin" )
         ]
   }
@@ -845,12 +843,13 @@ $ nix-store --add empty.drv
 
 Main ways to transform a derivation:
 
-* Copy the derivation to or from another machine
+* Copy the derivation between machines using `nix-copy-closure`
 * Add or remove the derivation from the set of garbage collection roots
 
-# Transforming a derivation: copy between machines
+# Transforming a derivation
 
-Use `nix-copy-closure` to copy derivations between machines:
+The main transformation s to copy the derivation between machines using
+`nix-copy-closure`
 
 ```bash
 $ nix-copy-closure --to gabriel@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
@@ -861,32 +860,257 @@ the copied derivation
 
 This is how Nix delegates build instructions to other machines
 
-# Consuming derivations: `nix-store --realise`
+# Consuming derivations
+
+Main ways to consume a derivation:
+
+* Build the derivation using `nix-store --realise` 
+* Debug the derivation using `nix-store --query`
+* Garbage collection using `nix-store --gc`
+
+# Consuming derivations: build the derivation
 
 You can use `nix-store --realise` to build a derivation:
 
-For each derivation output, Nix will:
+For each derivation output, `nix-store --realise` will:
 
-* Check if the build product already exists
-* If not, then check if the build product can be retrieved from a cache
+* Check if the path to build already exists locally
+* If not, then check if the build product can be downloaded from a remote cache
 * If not, then build the derivation
 
 ```bash
 $ nix-store --realise /nix/store/c8k1v7k7w349pz5lin1234fh2vhd394l-empty.drv
+…
 /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
 
 ```bash
 $ nix-store --realise /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv 
+…
 /nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz
 ```
 
 ```bash
 $ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+…
 /nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
 ```
 
-# Distributed builds
+# Consuming derivations: Debugging
+
+You can query a derivation's dependencies:
+
+```bash
+$ nix-store --query --tree /nix/store/jkhmav7kp8yrch4qx67276gsbzad0wbd-hello-2.10.drv
+/nix/store/jkhmav7kp8yrch4qx67276gsbzad0wbd-hello-2.10.drv
++---/nix/store/9krlzvny65gdc8s7kpb6lkx8cd02c25b-default-builder.sh
++---/nix/store/z347hsajryw593h802ggb63lbr3gpv2b-standard-sandbox.sb
++---/nix/store/1ksvs625n8lwjhjxld446gn9ql23v5k8-bash-4.4-p5.drv
+|   +---/nix/store/z347hsajryw593h802ggb63lbr3gpv2b-standard-sandbox.sb [...]
+|   +---/nix/store/hh429nvzmkzvgq4w55bi3ihw5l5zzhwl-bootstrap-tools.drv
+|   |   +---/nix/store/46qc2v6h7cicpcbchpk7ijprfwhzxxkk-cpio.drv
+|   |   +---/nix/store/4cyixalr14bc2zmnvn665b3x13vq3vhd-bootstrap-tools.cpio.bz2.drv
+|   |   +---/nix/store/4gn863k65zyramwjydiv32l79nw3mazi-bzip2.drv
+|   |   +---/nix/store/8c8jgksrsr0xiq1ijyx7qkxcvlswhf4m-mkdir.drv
+…
+```
+
+These are your *build-time* dependencies
+
+# Consuming derivations: Debugging
+
+You can query the derivation's reverse dependencies:
+
+```bash
+$ nix-store --query --referrers-closure /nix/store/8c8jgksrsr0xiq1ijyx7qkxcvlswhf4m-mkdir.drv
+/nix/store/8c8jgksrsr0xiq1ijyx7qkxcvlswhf4m-mkdir.drv
+/nix/store/hh429nvzmkzvgq4w55bi3ihw5l5zzhwl-bootstrap-tools.drv
+/nix/store/fswx214d183zqv3x3l4bxhz7ams9rb3r-stdenv-darwin-boot-0.drv
+/nix/store/3rp0p5xs8x9hljzvdvd6aa7915xf3b0q-mirrors-list.drv
+/nix/store/751d1f1459f48ypfzq4wg2r9m9vdf6da-libffi-3.2.1.tar.gz.drv
+/nix/store/2kl1f4g2ix0ypf99vz6fj7rwkfbhpv3p-bash44-004.drv
+/nix/store/3cwnh05fc4l0xwh7h6bh3qikf8qbj07s-bash44-002.drv
+/nix/store/alim4jg8300blbjzlj9q1m4r4k7fngz7-bash-4.4-popd-offset-overflow.patch?id=1bf1ceeb04a2f57e1e5e1636a8c288c4d0db6682.drv
+/nix/store/kiy5cl6a166samb58001gc4x3hxm2bj3-bash44-001.drv
+/nix/store/13f9kca130ybpfjsjymrxn9bnad461za-bootstrap-libcxx.drv
+…
+```
+
+# Consuming derivations: Debugging
+
+You can do a rich diff of two derivations using `nix-diff`:
+
+![](./nix-diff.png)
+
+This comes in handy when figuring out why Nix won't garbage collect something
+
+# Consuming derivations: Garbage collection
+
+`nix-store --gc` will delete any derivations not reachable from a garbage
+collection root
+
+You can list any garbage collection roots using:
+
+```bash
+$ nix-store --gc --print-roots
+/Users/gabriel/proj/docs/result -> /nix/store/ih5wgz02rhhr327bvdbzmdv3g5rads47-node-awake-customer-docs-0.1.0
+…
+/nix/var/nix/profiles/default-845-link -> /nix/store/mw9jj3f0gy05gyck3s3yyhx97damxf80-user-environment
+…
+/nix/var/nix/profiles/per-user/gabriel/channels-14-link -> /nix/store/064hh5d6s5qrvnhrqdjgcvxv9s4j9gg8-user-environment
+…
+```
+
+# Consuming derivations: Garbage collection
+
+Things that create garbage collection roots by default:
+
+* `nix-build` - Garbage collection root for latest build
+* `nix-env` / `nix-channel` - Garbage collection root for each profile change
+* NixOS / NixOps - Garbage collection root for each configuration change
+* Hydra - Garbage collection roots for most recent N builds
+
+You can delete garbage collection roots using `rm`
+
+# Overview
+
+* Source code
+    * What are Nix expressions?
+    * How do we produce Nix expressions?
+    * How do we consume Nix expressions?
+    * How do we transform nix expressions?
+* Derivations
+    * What is a derivation?
+    * How do we produce a derivation?
+    * How do we consume a derivation?
+    * How do we transform a derivation?
+* Build products
+    * What is a build product?
+    * How do we produce a build product?
+    * How do we consume a build product?
+    * How do we transform a build product?
+
+# What is a build product
+
+A build product is anything in the `/nix/store` that is not a derivation
+
+A build product can be a single file:
+
+```bash
+$ cat /nix/store/sp0jf57pkwaihyalr2xribvrimq7vy6v-openssl-config.txt
+[req]
+prompt = no
+distinguished_name = dn
+req_extension = ext
+[dn]
+CN = localhost.localdomain
+emailAddress = noreply@localhost.localdomain
+O = Private Company
+L = California
+C = US
+[ext]
+```
+
+... or a directory tree:
+
+```bash
+$ tree /nix/store/vy38yvpnb89zwrf0ndd7y0qg52a088ik-criterion
+/nix/store/vy38yvpnb89zwrf0ndd7y0qg52a088ik-criterion
+├── Criterion
+│   ├── Analysis.hs
+│   ├── EmbeddedData.hs
+│   ├── IO
+│   │   └── Printf.hs
+│   ├── IO.hs
+│   ├── Internal.hs
+│   ├── Main
+│   │   └── Options.hs
+│   ├── Main.hs
+│   ├── Measurement.hs
+│   ├── Monad
+│   │   └── Internal.hs
+│   ├── Monad.hs
+│   ├── Report.hs
+│   ├── Types
+│   │   └── Internal.hs
+│   └── Types.hs
+├── Criterion.hs
+├── LICENSE
+├── README.markdown
+├── Setup.lhs
+├── app
+│   ├── Options.hs
+│   └── Report.hs
+├── cbits
+│   ├── cycles.c
+│   ├── time-osx.c
+│   ├── time-posix.c
+│   └── time-windows.c
+├── changelog.md
+├── criterion.cabal
+├── examples
+│   ├── BadReadFile.hs
+│   ├── Comparison.hs
+│   ├── ConduitVsPipes.hs
+│   ├── Fibber.hs
+│   ├── GoodReadFile.hs
+│   ├── Judy.hs
+│   ├── Maps.hs
+│   ├── Overhead.hs
+│   ├── criterion-examples.cabal
+│   └── tiny.html
+├── stack.yaml
+├── templates
+│   ├── criterion.css
+│   ├── default.tpl
+│   ├── js
+│   │   └── jquery.criterion.js
+│   └── json.tpl
+├── tests
+│   ├── Cleanup.hs
+│   ├── Properties.hs
+│   ├── Sanity.hs
+│   └── Tests.hs
+└── www
+    ├── Makefile
+    ├── background.jpg
+    ├── bootstrap-custom.css
+    ├── fibber-screenshot.png
+    ├── fibber.html
+    ├── index.md
+    ├── report.html
+    ├── template.html
+    └── tutorial.md
+
+12 directories, 53 files
+```
+
+# Producing build products
+
+Main ways to product a build product
+
+* Build a derivation using `nix-store --realise`
+* Add a path directly to the store using `nix-store --add`
+
+# Overview
+
+* Source code
+    * What are Nix expressions?
+    * How do we produce Nix expressions?
+    * How do we consume Nix expressions?
+    * How do we transform nix expressions?
+* Derivations
+    * What is a derivation?
+    * How do we produce a derivation?
+    * How do we consume a derivation?
+    * How do we transform a derivation?
+* Build products
+    * What is a build product?
+    * How do we produce a build product?
+    * How do we consume a build product?
+    * How do we transform a build product?
+
+# Putting it all together: Distributed builds
 
 Conceptually a distributed build consists of the following three steps:
 
@@ -895,7 +1119,7 @@ Conceptually a distributed build consists of the following three steps:
 ```bash
 $ nix-instantiate empty.nix
 …
-/nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+/nix/store/g34m25sy69dxd7ly7fk2nw4zhjs55jp7-empty.drv
 ```
 
 * Copy the derivation to another machine
@@ -918,18 +1142,80 @@ $ ssh gabriel@example.com nix-store --realise /nix/store/21wp6p5cd55kwf6f5p91w2a
 $ nix-copy-closure --from gabriel@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
 
-Note that this implies that no Nix code is transferred to the other machine
+[Awake Security][awake] open sourced an executable that simplifies distributed
+builds for you:
 
-Only the derivation and build product reside on the other machine
+* `nix-delegate`: [https://github.com/awakesecurity/nix-delegate](https://github.com/awakesecurity/nix-delegate)
+
+# Putting it all together: NixOS
+
+Conceptually a NixOps deploy consists of the following steps:
+
+* A NixOS system configuration is just a Nix expression:
+
+```nix
+# system.nix
+
+let
+  nixos = import <nixpkgs/nixos> {
+    system = "x86_64-linux";
+
+    configuration = {
+      boot.loader.grub.device = "/dev/sda";
+
+      fileSystems."/" = {
+        device = "/dev/disk/by-label/nixos";
+        fsType = "ext4";
+      };
+    };
+  };
+
+in
+  nixos.system
+```
+
+* You instantiate the expression to create a derivation:
+
+```bash
+$ nix-instantiate system.nix
+…
+/nix/store/d8xi7adaljkj39sfz7s7bg72qybywq2l-nixos-system-nixos-16.09pre-git.drv
+```
+
+* You realise the derivation to create a build product:
+
+```bash
+$ nix-store --realise /nix/store/d8xi7adaljkj39sfz7s7bg72qybywq2l-nixos-system-nixos-16.09pre-git.drv 
+```
+
+* You copy the derivation to the target system:
+
+```bash
+$ nix-copy-closure --to target /nix/store/vc2sb3i0mmsgj91w6a97f96g7p3lna5f-nixos-system-nixos-16.09pre-git
+```
+
+* Then you a script within the copied closure to deploy the system:
+
+```bash
+$ ssh target /nix/store/vc2sb3i0mmsgj91w6a97f96g7p3lna5f-nixos-system-nixos-16.09pre-git/bin/switch-to-configuration switch
+```
+
+[Awake security][awake] open sourced a `nix-deploy` tool that simplifies the
+last two steps for you:
+
+* `nix-deploy`: [https://github.com/awakesecurity/nix-deploy](https://github.com/awakesecurity/nix-delegate)
 
 # TODO
 
+* Explain the implications of Nix derivations being Nix-independent
 * Explain how various command lines desugar to Nix expressions trings
     * i.e. the equivalent `--expr`
 * Explain why channels are not covered
 * Explain why `NIX_PATH` is not covered
+* Diagram showing all possible transitions and commands
 * Explain how caching is based off of derivations when explaining
   `nix-store --realise`
-* Diagram showing all possible transitions and commands
 * Test audience understanding of caching by understanding that it is insensitive
   to cosmetic source changes
+
+[awake]: https://github.com/awakesecurity/nix-deploy
