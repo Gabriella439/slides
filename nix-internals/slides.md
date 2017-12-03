@@ -814,17 +814,11 @@ $ nix-store --realise /nix/store/c8k1v7k7w349pz5lin1234fh2vhd394l-empty.drv
 /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
 
-```bash
-$ nix-store --realise /nix/store/0008hdcdvkrr5mcqahy416hv6rmb5fwg-void-0.7.1.tar.gz.drv 
-…
-/nix/store/fbbqa4x05q9x0w6s1fqmx7k676d2zyz1-void-0.7.1.tar.gz
-```
+# Exercise
 
-```bash
-$ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
-…
-/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
-```
+Will adding a comment to a Nix expression cause a cache miss?
+
+Why or why not?
 
 # Consuming derivations: Debugging
 
@@ -1275,15 +1269,6 @@ Being fluent at all three levels will improve your effectiveness at:
 # TODO
 
 * Explain the implications of Nix derivations being Nix-independent
-* Explain how various command lines desugar to Nix expressions trings
-    * i.e. the equivalent `--expr`
-* Explain why channels are not covered
-* Explain why `NIX_PATH` is not covered
-* Diagram showing all possible transitions and commands
-* Explain how caching is based off of derivations when explaining
-  `nix-store --realise`
-* Test audience understanding of caching by understanding that it is insensitive
-  to cosmetic source changes
 * Add more questions for the audience
 
 [awake]: https://github.com/awakesecurity/nix-deploy
