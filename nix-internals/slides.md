@@ -54,24 +54,14 @@ We'll use a similar approach to systematically explore the Nix pipeline
     * How do we **produce** a build product?
     * How do we **transform** a build product?
     * How do we **consume** a build product?
+* Putting it all together
 
 # Overview
 
-* Source code
-    * What are Nix expressions?
-    * How do we produce Nix expressions?
-    * How do we transform Nix expressions?
-    * How do we consume Nix expressions?
+* **Source code**
 * Derivations
-    * What is a derivation?
-    * How do we produce a derivation?
-    * How do we transform a derivation?
-    * How do we consume a derivation?
 * Build products
-    * What is a build product?
-    * How do we produce a build product?
-    * How do we transform a build product?
-    * How do we consume a build product?
+* Putting it all together
 
 # What is a Nix expression?
 
@@ -338,7 +328,6 @@ Main ways to instantiation a Nix expression are:
 
 * `nix-instantiate`
 * implicitly as part of Nix evaluation
-* implicitly as part of another command (such as `nix-build`)
 
 # Example: `nix-instantiate`
 
@@ -414,46 +403,12 @@ $ test -e /nix/store/h1phr2qq4as23rd9dgy5ccqg4ysdf0lf-goodbye.txt.drv && echo $?
 0
 ```
 
-# Example: implicit as part of another command
-
-If you take a `nix-instantiate` command:
-
-The following `nix-build` command:
-
-```bash
-$ nix-build --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
-/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
-```
-
-... is a convenience utility that combines two separate steps:
-
-```bash
-$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
-…
-/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
-
-$ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
-…
-/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
-```
-
 # Overview
 
 * Source code
-    * What are Nix expressions?
-    * How do we produce Nix expressions?
-    * How do we consume Nix expressions?
-    * How do we transform nix expressions?
-* Derivations
-    * What is a derivation?
-    * How do we produce a derivation?
-    * How do we consume a derivation?
-    * How do we transform a derivation?
+* **Derivations**
 * Build products
-    * What is a build product?
-    * How do we produce a build product?
-    * How do we consume a build product?
-    * How do we transform a build product?
+* Putting it all together
 
 # What is a derivation?
 
@@ -716,24 +671,6 @@ Derivation
   }
 ```
 
-# Overview
-
-* Source code
-    * What are Nix expressions?
-    * How do we produce Nix expressions?
-    * How do we consume Nix expressions?
-    * How do we transform nix expressions?
-* Derivations
-    * What is a derivation?
-    * How do we produce a derivation?
-    * How do we consume a derivation?
-    * How do we transform a derivation?
-* Build products
-    * What is a build product?
-    * How do we produce a build product?
-    * How do we consume a build product?
-    * How do we transform a build product?
-
 # Producing derivations
 
 Main ways to produce derivations:
@@ -841,21 +778,14 @@ $ nix-store --add empty.drv
 
 # Transforming a derivation
 
-Main ways to transform a derivation:
-
-* Copy the derivation between machines using `nix-copy-closure`
-* Add or remove the derivation from the set of garbage collection roots
-
-# Transforming a derivation
-
-The main transformation s to copy the derivation between machines using
-`nix-copy-closure`
+The main transformation is to copy the derivation between machines using
+`nix-copy-closure`:
 
 ```bash
 $ nix-copy-closure --to gabriel@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
 ```
 
-`nix-copy-closure` also copies derivations that are transitive dependencies of
+`nix-copy-closure` also copies derivations that are *build-time* dependencies of
 the copied derivation
 
 This is how Nix delegates build instructions to other machines
@@ -975,20 +905,9 @@ You can delete garbage collection roots using `rm`
 # Overview
 
 * Source code
-    * What are Nix expressions?
-    * How do we produce Nix expressions?
-    * How do we consume Nix expressions?
-    * How do we transform nix expressions?
 * Derivations
-    * What is a derivation?
-    * How do we produce a derivation?
-    * How do we consume a derivation?
-    * How do we transform a derivation?
-* Build products
-    * What is a build product?
-    * How do we produce a build product?
-    * How do we consume a build product?
-    * How do we transform a build product?
+* **Build products**
+* Putting it all together
 
 # What is a build product
 
@@ -1092,23 +1011,157 @@ Main ways to product a build product
 * Build a derivation using `nix-store --realise`
 * Add a path directly to the store using `nix-store --add`
 
+# Producing build products: build a derivation
+
+`nix-store --realise` runs a derivation to build the output path:
+
+```bash
+$ nix-store --realise /nix/store/g34m25sy69dxd7ly7fk2nw4zhjs55jp7-empty.drv 
+…
+/nix/store/cacmfnwdls57zd13hj5v2ydzh2gbwyl5-empty
+
+$ cat /nix/store/cacmfnwdls57zd13hj5v2ydzh2gbwyl5-empty  # It's empty
+```
+
+# Producing build products: add a path directly to the store
+
+You can use `nix-store --add` to add files directly to the `/nix/store`:
+
+```bash
+$ echo foo > example.txt
+$ nix-store --add example.txt
+/nix/store/qrxgbry3bk4jxlywa2c9qybm4kq4lyzl-example.txt
+$ cat /nix/store/qrxgbry3bk4jxlywa2c9qybm4kq4lyzl-example.txt 
+foo
+```
+
+You usually only do this for self-contained files, such as:
+
+* Text that doesn't reference any other files
+* Object code with no dependencies
+
+For anything with dependencies, you can create a derivation
+
+# Transforming build products
+
+The main transformation is to copy the build product between machines using
+`nix-copy-closure`
+
+```bash
+$ nix-copy-closure --from gabriel@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
+```
+
+This is just like copying a derivation to another system
+
+The difference is that the closure includes *run-time* dependencies
+
+# Consuming build products
+
+Main ways to consume a build product:
+
+* A build product can be anything, such as:
+    * An executable you can run
+    * An HTML page you can open
+    * A text file you can view
+* Debug the derivation using `nix-store --query`
+* Garbage collection using `nix-store --gc`
+
+# Consuming build products: using them directly
+
+```bash
+$ nix-build hello.nix
+/nix/store/4bc0vx8j66wrm6g44qsswmy060k61qnh-hello-2.10
+$ /nix/store/4bc0vx8j66wrm6g44qsswmy060k61qnh-hello-2.10/bin/hello 
+Hello, world!
+```
+
+Also, `nix-build` creates a convenient `result` symlink to the build product:
+
+```bash
+$ result/bin/hello 
+Hello, world!
+```
+
+# Consuming build products: using them directly
+
+Caveat: don't reference `/nix/store` paths in directions:
+
+```nix
+# BAD!
+
+let
+  fetchNixpkgs = import ./fetchNixpkgs.nix;
+
+  nixpkgs = fetchNixpkgs {
+     rev = "76d649b59484607901f0c1b8f737d8376a904019";
+     sha256 = "01c2f4mj4ahir0sxk9kxbymg2pki1pc9a3y6r9x6ridry75fzb8h";
+  };
+
+  pkgs = import nixpkgs { config = {}; };
+in
+  pkgs.runCommand "hello" {} ''
+    /nix/store/4bc0vx8j66wrm6g44qsswmy060k61qnh-hello-2.10/bin/hello > $out
+  ''
+```
+
+... instead interpolate Nix expressions that evaluate to derivations:
+
+```nix
+# GOOD!
+
+let
+  fetchNixpkgs = import ./fetchNixpkgs.nix;
+
+  nixpkgs = fetchNixpkgs {
+     rev = "76d649b59484607901f0c1b8f737d8376a904019";
+     sha256 = "01c2f4mj4ahir0sxk9kxbymg2pki1pc9a3y6r9x6ridry75fzb8h";
+  };
+
+  pkgs = import nixpkgs { config = {}; };
+in
+  pkgs.runCommand "hello" {} ''
+    ${pkgs.hello}/bin/hello > $out
+  ''
+```
+
+# Consuming build products: Debugging
+
+You can debug build products using `nix-store --query` (just like derivations):
+
+The difference is you query run-time relationships instead of built-time
+relationships
+
+* `nix-store --query --tree` gives you runtime dependency graph
+* `nix-store --query --referrers-closure` gives you runtime reverse dependencies
+* NEW: `nix-store --query --deriver` gives you the corresponding derivation
+
 # Overview
 
 * Source code
-    * What are Nix expressions?
-    * How do we produce Nix expressions?
-    * How do we consume Nix expressions?
-    * How do we transform nix expressions?
 * Derivations
-    * What is a derivation?
-    * How do we produce a derivation?
-    * How do we consume a derivation?
-    * How do we transform a derivation?
 * Build products
-    * What is a build product?
-    * How do we produce a build product?
-    * How do we consume a build product?
-    * How do we transform a build product?
+* **Putting it all together**
+
+# Putting it all together: `nix-build`
+
+The following `nix-build` command:
+
+```bash
+$ nix-build --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
+```
+
+... just combines `nix-instantiate` and `nix-store --realise`:
+
+```bash
+$ nix-instantiate --expr 'let pkgs = import <nixpkgs> { }; in pkgs.hello'
+…
+/nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+
+$ nix-store --realise /nix/store/w3a5xqc8zjamz01qqnziwasalbkzyskc-hello-2.10.drv
+…
+/nix/store/h5paliil3r6m70na37ymba1f007mm28k-hello-2.10
+```
 
 # Putting it all together: Distributed builds
 
@@ -1205,6 +1258,20 @@ last two steps for you:
 
 * `nix-deploy`: [https://github.com/awakesecurity/nix-deploy](https://github.com/awakesecurity/nix-delegate)
 
+# Conclusion
+
+Nix conceptually operates at three layers:
+
+* Nix expressions
+* Derivations
+* Build products
+
+Being fluent at all three levels will improve your effectiveness at:
+
+* Debugging build failures and cache misses
+* Integrating with other tools
+* Using Nix more idiomatically
+
 # TODO
 
 * Explain the implications of Nix derivations being Nix-independent
@@ -1217,5 +1284,6 @@ last two steps for you:
   `nix-store --realise`
 * Test audience understanding of caching by understanding that it is insensitive
   to cosmetic source changes
+* Add more questions for the audience
 
 [awake]: https://github.com/awakesecurity/nix-deploy
