@@ -80,8 +80,6 @@ $ nix-instantiate --expr 'import ./example.nix'
 
 Strings, not files, are the universal interface to the Nix programming language
 
-What are some contexts where we can evaluate a Nix expression without a file?
-
 # Producing a Nix expression
 
 Anything that can produce a string can produce a Nix expression, including:
@@ -360,7 +358,8 @@ let
   '';
 
   both = pkgs.runCommand "both.txt" {} ''
-    ${pkgs.coreutils}/bin/cp ${hello} ${goodbye}
+    mkdir $out
+    ${pkgs.coreutils}/bin/cp ${hello} ${goodbye} $out
   '';
 
 in
@@ -1265,10 +1264,5 @@ Being fluent at all three levels will improve your effectiveness at:
 * Debugging build failures and cache misses
 * Integrating with other tools
 * Using Nix more idiomatically
-
-# TODO
-
-* Explain the implications of Nix derivations being Nix-independent
-* Add more questions for the audience
 
 [awake]: https://github.com/awakesecurity/nix-deploy
