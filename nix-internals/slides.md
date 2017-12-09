@@ -1240,7 +1240,7 @@ $ nix-store --realise /nix/store/d8xi7adaljkj39sfz7s7bg72qybywq2l-nixos-system-n
 $ nix-copy-closure --to target /nix/store/vc2sb3i0mmsgj91w6a97f96g7p3lna5f-nixos-system-nixos-16.09pre-git
 ```
 
-* Then you a script within the copied closure to deploy the system:
+* Then you run a script within the copied closure to deploy the system:
 
 ```bash
 $ ssh target /nix/store/vc2sb3i0mmsgj91w6a97f96g7p3lna5f-nixos-system-nixos-16.09pre-git/bin/switch-to-configuration switch
@@ -1249,7 +1249,7 @@ $ ssh target /nix/store/vc2sb3i0mmsgj91w6a97f96g7p3lna5f-nixos-system-nixos-16.0
 [Awake security][awake] open sourced a `nix-deploy` tool that simplifies the
 last two steps for you:
 
-* `nix-deploy`: [https://github.com/awakesecurity/nix-deploy](https://github.com/awakesecurity/nix-delegate)
+* `nix-deploy`: [https://github.com/awakesecurity/nix-deploy](https://github.com/awakesecurity/nix-deploy)
 
 # Conclusion
 
