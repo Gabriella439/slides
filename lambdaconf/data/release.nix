@@ -6,8 +6,6 @@ let
           bears = haskellPackagesNew.callPackage ./bears.nix { };
 
           exercises = haskellPackagesNew.callPackage ./exercises { };
-
-          foldl = haskellPackagesNew.callPackage ./foldl.nix { };
         };
       };
     };
