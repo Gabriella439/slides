@@ -4,8 +4,6 @@ let
       haskellPackages = pkgs.haskellPackages.override {
         overrides = haskellPackagesNew: haskellPackgesOld: {
           bears = haskellPackagesNew.callPackage ./bears.nix { };
-
-          foldl = haskellPackagesNew.callPackage ./foldl.nix { };
         };
       };
     };
