@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="Gabriel Gonzalez" />
+  <meta name="date" content="2017-04-18" />
+  <title>Parallel state machines</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" type="text/css" media="screen, projection, print"
+    href="http://www.w3.org/Talks/Tools/Slidy2/styles/slidy.css" />
+  <script src="http://www.w3.org/Talks/Tools/Slidy2/scripts/slidy.js"
+    charset="utf-8" type="text/javascript"></script>
+</head>
+<body>
+<div class="slide titlepage">
+  <h1 class="title">Parallel state machines</h1>
+  <p class="author">
+Gabriel Gonzalez
+  </p>
+  <p class="date">April 18, 2017</p>
+</div>
+<div id="overview" class="slide section level1">
+<h1>Overview</h1>
+<p>This talk is based on the following paper:</p>
+<blockquote>
+<p><a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/asplos302-mytkowicz.pdf">Mytkowicz, Todd, Madanlal Musuvathi, and Wolfram Schulte. &quot;Data-parallel finite-state machines.&quot; ACM SIGARCH Computer Architecture News. Vol. 42. No. 1. ACM, 2014</a></p>
+</blockquote>
+<p>... and also a 🔥 blazing 🔥 fast signature detection package named <code>sig</code></p>
+<blockquote class="twitter-tweet" data-lang="en">
+<p lang="en" dir="ltr">
+Tip when evaluating libraries: check if it's blazing fast. If it's fast, but the README doesn't specify whether its fastness is blazing, keep searching. Often you can find a similar library that does the same thing, but blazingly. Blazing means good.
+</p>
+— Andrew Clark (<span class="citation">@acdlite</span>) <a href="https://twitter.com/acdlite/status/974390255393505280?ref_src=twsrc%5Etfw">March 15, 2018</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<p><code>sig</code> is based on a subset of the paper (simulating up to 16 states in parallel)</p>
+</div>
+<div id="data-parallel-finite-state-machines" class="slide section level1">
+<h1>Data-Parallel Finite-State Machines</h1>
+<div class="figure">
+<img src="./paper.png" />
+
+</div>
+<p>The paper describes how to simulate state machines:</p>
+<ul>
+<li>... quickly</li>
+<li>... and in parallel</li>
+</ul>
+</div>
+<div id="state-machine" class="slide section level1">
+<h1>State machine</h1>
+<p>According to <a href="https://en.wikipedia.org/wiki/Finite-state_machine">Wikipedia</a>:</p>
+<blockquote>
+<p>A deterministic finite state machine or acceptor deterministic finite state machine is a quintuple (Σ, S, s₀, δ, F), where:</p>
+<ul>
+<li>Σ is the input alphabet (a finite, non-empty set of symbols).</li>
+<li>S is a finite, non-empty set of states</li>
+<li>s₀ is an initial state, an element of S</li>
+<li>δ is the state-transition function: δ : S × Σ → S</li>
+<li>F is the set of final states, a (possibly empty) subset of S</li>
+</ul>
+</blockquote>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Set</span> (<span class="dt">Set</span>)
+
+<span class="kw">data</span> <span class="dt">StateMachine</span> _Σ _S <span class="fu">=</span> <span class="dt">StateMachine</span>
+    { s₀<span class="ot"> ::</span> _S
+    , δ<span class="ot">  ::</span> (_S, _Σ) <span class="ot">-&gt;</span> _S
+    ,<span class="ot"> _F ::</span> <span class="dt">Set</span> _S
+    }</code></pre></div>
+</div>
+<div id="use-english-names" class="slide section level1">
+<h1>Use English names</h1>
+<p>Let's translate this:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Set</span> (<span class="dt">Set</span>)
+
+<span class="kw">data</span> <span class="dt">StateMachine</span> _Σ _S <span class="fu">=</span> <span class="dt">StateMachine</span>
+    { s₀<span class="ot"> ::</span> _S
+    , δ<span class="ot">  ::</span> (_S, _Σ) <span class="ot">-&gt;</span> _S
+    ,<span class="ot"> _F ::</span> <span class="dt">Set</span> _S
+    }</code></pre></div>
+<p>... to a version with English names:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Set</span> (<span class="dt">Set</span>)
+
+<span class="kw">data</span> <span class="dt">StateMachine</span> input state <span class="fu">=</span> <span class="dt">StateMachine</span>
+    {<span class="ot"> startingState   ::</span> state
+    ,<span class="ot"> step            ::</span> state <span class="ot">-&gt;</span> input <span class="ot">-&gt;</span> state
+    ,<span class="ot"> acceptingStates ::</span> <span class="dt">Set</span> state
+    }</code></pre></div>
+</div>
+<div id="hide-the-state" class="slide section level1">
+<h1>Hide the state</h1>
+<p>Let's translate this:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Set</span> (<span class="dt">Set</span>)
+
+<span class="kw">data</span> <span class="dt">StateMachine</span> input state <span class="fu">=</span> <span class="dt">StateMachine</span>
+    {<span class="ot"> startingState   ::</span> state
+    ,<span class="ot"> step            ::</span> state <span class="ot">-&gt;</span> input <span class="ot">-&gt;</span> state
+    ,<span class="ot"> acceptingStates ::</span> <span class="dt">Set</span> state
+    }</code></pre></div>
+<p>... to this version that hides the type of the internal state:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE ExistentialQuantification #-}</span>
+
+<span class="kw">import </span><span class="dt">Data.Set</span> (<span class="dt">Set</span>)
+
+<span class="kw">data</span> <span class="dt">StateMachine</span> input <span class="fu">=</span> forall state <span class="fu">.</span> <span class="dt">Ord</span> state <span class="ot">=&gt;</span> <span class="dt">StateMachine</span>
+    {<span class="ot"> startingState   ::</span> state
+    ,<span class="ot"> step            ::</span> state <span class="ot">-&gt;</span> input <span class="ot">-&gt;</span> state
+    ,<span class="ot"> acceptingStates ::</span> <span class="dt">Set</span> state
+    }</code></pre></div>
+</div>
+<div id="example-state-machine---diagram" class="slide section level1">
+<h1>Example state machine - Diagram</h1>
+<div class="figure">
+<img src="cstyle.png" />
+
+</div>
+</div>
+<div id="example-state-machine---code" class="slide section level1">
+<h1>Example state machine - Code</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RecordWildCards #-}</span>
+
+<span class="kw">import qualified</span> <span class="dt">Data.Set</span>
+
+<span class="kw">data</span> <span class="dt">State</span> <span class="fu">=</span> <span class="dt">A</span> <span class="fu">|</span> <span class="dt">B</span> <span class="fu">|</span> <span class="dt">C</span> <span class="fu">|</span> <span class="dt">D</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Ord</span>)
+
+<span class="ot">cStyleComments ::</span> <span class="dt">StateMachine</span> <span class="dt">Char</span>
+cStyleComments <span class="fu">=</span> <span class="dt">StateMachine</span> {<span class="fu">..</span>}
+  <span class="kw">where</span>
+    startingState <span class="fu">=</span> <span class="dt">A</span>
+
+    step <span class="ch">&#39;/&#39;</span> <span class="dt">A</span> <span class="fu">=</span> <span class="dt">B</span>
+    step <span class="ch">&#39;/&#39;</span> <span class="dt">B</span> <span class="fu">=</span> <span class="dt">B</span>
+    step <span class="ch">&#39;/&#39;</span> <span class="dt">C</span> <span class="fu">=</span> <span class="dt">C</span>
+    step <span class="ch">&#39;/&#39;</span> <span class="dt">D</span> <span class="fu">=</span> <span class="dt">A</span>
+
+    step <span class="ch">&#39;*&#39;</span> <span class="dt">A</span> <span class="fu">=</span> <span class="dt">A</span>
+    step <span class="ch">&#39;*&#39;</span> <span class="dt">B</span> <span class="fu">=</span> <span class="dt">C</span>
+    step <span class="ch">&#39;*&#39;</span> <span class="dt">C</span> <span class="fu">=</span> <span class="dt">D</span>
+    step <span class="ch">&#39;*&#39;</span> <span class="dt">D</span> <span class="fu">=</span> <span class="dt">D</span>
+
+    step  _  <span class="dt">A</span> <span class="fu">=</span> <span class="dt">A</span>
+    step  _  <span class="dt">B</span> <span class="fu">=</span> <span class="dt">A</span>
+    step  _  <span class="dt">C</span> <span class="fu">=</span> <span class="dt">C</span>
+    step  _  <span class="dt">D</span> <span class="fu">=</span> <span class="dt">C</span>
+
+    acceptingStates <span class="fu">=</span> Data.Set.fromList [ <span class="dt">A</span>, <span class="dt">B</span> ]</code></pre></div>
+</div>
+<div id="run-a-state-machine" class="slide section level1">
+<h1>Run a state machine</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE ExistentialQuantification #-}</span>
+
+<span class="kw">import </span><span class="dt">Data.Set</span> (<span class="dt">Set</span>)
+
+<span class="kw">import qualified</span> <span class="dt">Data.Set</span>
+
+<span class="kw">data</span> <span class="dt">StateMachine</span> input <span class="fu">=</span> forall state <span class="fu">.</span> <span class="dt">Ord</span> state <span class="ot">=&gt;</span> <span class="dt">StateMachine</span>
+    {<span class="ot"> startingState   ::</span> state
+    ,<span class="ot"> step            ::</span> input <span class="ot">-&gt;</span> state <span class="ot">-&gt;</span> state
+    ,<span class="ot"> acceptingStates ::</span> <span class="dt">Set</span> state
+    }
+
+<span class="ot">accept ::</span> <span class="dt">StateMachine</span> input <span class="ot">-&gt;</span> [input] <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+accept (<span class="dt">StateMachine</span> {<span class="fu">..</span>}) startingInputs <span class="fu">=</span> 
+    Data.Set.member finalState acceptingStates
+  <span class="kw">where</span>
+    finalState <span class="fu">=</span> loop startingInputs startingState
+
+    loop [] state <span class="fu">=</span> state
+
+    loop (input<span class="fu">:</span>inputs) state <span class="fu">=</span> loop inputs (step input state)
+
+<span class="co">--  loop [i₀, i₁, i₂] state = step i₂ (step i₁ (step i₀ state))</span></code></pre></div>
+</div>
+<div id="example-runs" class="slide section level1">
+<h1>Example runs</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;&gt;</span> accept cStyleComments <span class="st">&quot;/**/&quot;</span>
+<span class="dt">True</span>
+<span class="fu">&gt;&gt;&gt;</span> accept cStyleComments <span class="st">&quot;/*ABC&quot;</span>
+<span class="dt">False</span>
+<span class="fu">&gt;&gt;&gt;</span> accept cStyleComments <span class="st">&quot;/**&quot;</span>
+<span class="dt">False</span>
+<span class="fu">&gt;&gt;&gt;</span> accept cStyleComments <span class="st">&quot;ABC&quot;</span>
+<span class="dt">True</span>
+<span class="fu">&gt;&gt;&gt;</span> accept cStyleComments <span class="st">&quot;**/&quot;</span>
+<span class="dt">True</span>
+<span class="fu">&gt;&gt;&gt;</span> accept cStyleComments <span class="st">&quot;/* /* */&quot;</span>
+<span class="dt">True</span></code></pre></div>
+</div>
+<div id="question" class="slide section level1">
+<h1>Question</h1>
+<p>How do we parallelize <code>accept</code>?</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">accept ::</span> <span class="dt">StateMachine</span> input <span class="ot">-&gt;</span> [input] <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+accept (<span class="dt">StateMachine</span> {<span class="fu">..</span>}) startingInputs <span class="fu">=</span> 
+    Data.Set.member finalState acceptingStates
+  <span class="kw">where</span>
+    finalState <span class="fu">=</span> loop startingInputs startingState
+
+    loop [] state <span class="fu">=</span> state
+
+    loop (input<span class="fu">:</span>inputs) state <span class="fu">=</span> loop inputs (step input state)</code></pre></div>
+</div>
+<div id="insight-0---restrict-the-number-of-states" class="slide section level1">
+<h1>Insight 0 - Restrict the number of states</h1>
+<p>We can simulate every state in parallel if we restrict the number of states</p>
+<p>Let's cap the number of states to 16 (for now):</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">State</span> <span class="fu">=</span> <span class="dt">S00</span> <span class="fu">|</span> <span class="dt">S01</span> <span class="fu">|</span> <span class="dt">S02</span> <span class="fu">|</span> <span class="dt">S03</span> <span class="fu">|</span> <span class="dt">S04</span> <span class="fu">|</span> <span class="dt">S05</span> <span class="fu">|</span> <span class="dt">S06</span> <span class="fu">|</span> <span class="dt">S07</span>
+           <span class="fu">|</span> <span class="dt">S08</span> <span class="fu">|</span> <span class="dt">S09</span> <span class="fu">|</span> <span class="dt">S10</span> <span class="fu">|</span> <span class="dt">S11</span> <span class="fu">|</span> <span class="dt">S12</span> <span class="fu">|</span> <span class="dt">S13</span> <span class="fu">|</span> <span class="dt">S14</span> <span class="fu">|</span> <span class="dt">S15</span>
+           <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Ord</span>)</code></pre></div>
+<p>... and update our <code>StateMachine</code> type to only work on <code>State</code>s:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">StateMachine</span> input <span class="fu">=</span> <span class="dt">StateMachine</span>
+    {<span class="ot"> startingState   ::</span> <span class="dt">State</span>
+    ,<span class="ot"> step            ::</span> input <span class="ot">-&gt;</span> <span class="dt">State</span> <span class="ot">-&gt;</span> <span class="dt">State</span>
+    ,<span class="ot"> acceptingStates ::</span> <span class="dt">Set</span> <span class="dt">State</span>
+    }</code></pre></div>
+</div>
+<div id="state-transitions" class="slide section level1">
+<h1>State transitions</h1>
+<p>A state transition is a function from an old <code>State</code> to a new <code>State</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Transition</span> <span class="fu">=</span> <span class="dt">Transition</span> {<span class="ot"> runTransition ::</span> <span class="dt">State</span> <span class="ot">-&gt;</span> <span class="dt">State</span> }</code></pre></div>
+<p>... and a state transition is a <code>Monoid</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Transition</span> <span class="kw">where</span>
+    mempty <span class="fu">=</span> <span class="dt">Transition</span> id
+
+    mappend (<span class="dt">Transition</span> f) (<span class="dt">Transition</span> g) <span class="fu">=</span> <span class="dt">Transition</span> (g <span class="fu">.</span> f)</code></pre></div>
+<p>... equivalent to the <code>Endo</code> <code>Monoid</code>, where:</p>
+<ul>
+<li><code>mempty</code> is the empty transition that doesn't change the <code>State</code></li>
+<li><code>mappend</code> composes two <code>Transition</code>s</li>
+</ul>
+</div>
+<div id="using-transition" class="slide section level1">
+<h1>Using <code>Transition</code></h1>
+<p>We can refactor the inner loop of <code>accept</code> to use the <code>Transition</code> <code>Monoid</code></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">accept ::</span> <span class="dt">StateMachine</span> input <span class="ot">-&gt;</span> [input] <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+accept (<span class="dt">StateMachine</span> {<span class="fu">..</span>}) startingInputs <span class="fu">=</span>
+    Data.Set.member finalState acceptingStates
+  <span class="kw">where</span>
+    finalState <span class="fu">=</span> loop startingInputs startingState
+
+<span class="co">--  loop :: [input] -&gt; State -&gt; State</span>
+    loop [] state <span class="fu">=</span> state
+
+    loop (input<span class="fu">:</span>inputs) state <span class="fu">=</span>
+        loop inputs (step input state)
+
+<span class="co">--  loop [i₀, i₁, i₂] state = step i₂ (step i₁ (step i₀ state))</span></code></pre></div>
+<p>First, we refactor the inner loop to use <code>id</code> and <code>(.)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">--  loop :: [input] -&gt; State -&gt; State</span>
+    loop [] state <span class="fu">=</span> id state
+
+    loop (input<span class="fu">:</span>inputs) state <span class="fu">=</span>
+        (loop inputs <span class="fu">.</span> step input) state
+
+<span class="co">--  loop [i₀, i₁, i₂] state = (id . step i₂ . step i₁ . step i₀) state</span></code></pre></div>
+<p>Then we η-reduce (&quot;eta&quot;-reduce) the <code>loop</code> function:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">--  loop :: [input] -&gt; State -&gt; State</span>
+    loop [] <span class="fu">=</span> id 
+
+    loop (input<span class="fu">:</span>inputs) <span class="fu">=</span>
+        loop inputs <span class="fu">.</span> step input
+
+<span class="co">--  loop [i₀, i₁, i₂] = id . step i₂ . step i₁ . step i₀</span></code></pre></div>
+<p>Now we wrap things in <code>Transition</code> to use <code>mempty</code> and <code>(&lt;&gt;)</code> instead:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">--  loop :: [input] -&gt; Transition</span>
+    loop [] <span class="fu">=</span> mempty
+
+    loop (input<span class="fu">:</span>inputs) <span class="fu">=</span>
+        <span class="dt">Transition</span> (step input) <span class="fu">&lt;&gt;</span> loop inputs
+
+<span class="co">--  loop [i₀, i₁, i₂] =</span>
+<span class="co">--          Transition (step i₀)</span>
+<span class="co">--      &lt;&gt;  Transition (step i₁)</span>
+<span class="co">--      &lt;&gt;  Transition (step i₂)</span>
+<span class="co">--      &lt;&gt;  mempty</span></code></pre></div>
+</div>
+<div id="parallel-mappend" class="slide section level1">
+<h1>Parallel <code>mappend</code></h1>
+<p>The <code>(&lt;&gt;)</code> operator is associative:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(x <span class="fu">&lt;&gt;</span> y) <span class="fu">&lt;&gt;</span> z <span class="fu">=</span> x <span class="fu">&lt;&gt;</span> (y <span class="fu">&lt;&gt;</span> z)</code></pre></div>
+<p>... so if we have a large chain of <code>(&lt;&gt;)</code>s, like this:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">x₀ <span class="fu">&lt;&gt;</span> x₁ <span class="fu">&lt;&gt;</span> x₂ <span class="fu">&lt;&gt;</span> x₃ <span class="fu">&lt;&gt;</span> x₄ <span class="fu">&lt;&gt;</span> x₅ <span class="fu">&lt;&gt;</span> x₆ <span class="fu">&lt;&gt;</span> x₇</code></pre></div>
+<p>... we can divide up that computational work into two smaller parallel batches:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> l <span class="fu">=</span> x₀ <span class="fu">&lt;&gt;</span> x₁ <span class="fu">&lt;&gt;</span> x₂ <span class="fu">&lt;&gt;</span> x₃
+
+    r <span class="fu">=</span> x₄ <span class="fu">&lt;&gt;</span> x₅ <span class="fu">&lt;&gt;</span> x₆ <span class="fu">&lt;&gt;</span> x₇
+
+<span class="kw">in</span>  l <span class="ot">`par`</span> r <span class="ot">`par`</span> l <span class="fu">&lt;&gt;</span> r</code></pre></div>
+<p>... and if we can afford more parallelism then we can further sub-divide</p>
+</div>
+<div id="parallelize-functions" class="slide section level1">
+<h1>Parallelize functions?</h1>
+<p>However, that doesn't really work for our inner <code>loop</code>, though:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">loop [i₀, i₁, i₂, i₃] <span class="fu">=</span>
+        <span class="dt">Transition</span> (step i₀)
+    <span class="fu">&lt;&gt;</span>  <span class="dt">Transition</span> (step i₁)
+    <span class="fu">&lt;&gt;</span>  <span class="dt">Transition</span> (step i₂)
+    <span class="fu">&lt;&gt;</span>  <span class="dt">Transition</span> (step i₃)</code></pre></div>
+<p>We might naïvely try to do this:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> l <span class="fu">=</span> <span class="dt">Transition</span> (step i₀) <span class="fu">&lt;&gt;</span> <span class="dt">Transition</span> (step i₁)
+
+    r <span class="fu">=</span> <span class="dt">Transition</span> (step i₂) <span class="fu">&lt;&gt;</span> <span class="dt">Transition</span> (step i₃)
+
+<span class="kw">in</span>  l <span class="ot">`par`</span> r <span class="ot">`par`</span> l <span class="fu">&lt;&gt;</span> r</code></pre></div>
+<p>... but we can't really &quot;evaluate&quot; an unsaturated function call ahead of time</p>
+<p>... or can we?</p>
+</div>
+<div id="parallelizing-things" class="slide section level1">
+<h1>Parallelizing things</h1>
+<p>The reason we do so is because now we can use <code>mconcat</code> and <code>map</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">--  loop :: [input] -&gt; Transition</span>
+    loop inputs <span class="fu">=</span> mconcat (map (<span class="dt">Transition</span> <span class="fu">.</span> step) inputs)
+
+<span class="co">--  loop [i₀, i₁, i₂] =</span>
+<span class="co">--      mconcat (map (Transition . step) [i₀, i₁, i₂])</span></code></pre></div>
+<p>... which is the same thing as <code>foldMap</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">--  loop :: [input] -&gt; Transition</span>
+    loop inputs <span class="fu">=</span> foldMap (<span class="dt">Transition</span> <span class="fu">.</span> step) inputs
+
+<span class="co">--  loop [i₀, i₁, i₂] inputs = foldMap (Transition . step) [i₀, i₁, i₂] inputs</span></code></pre></div>
+<p>... and we can η-reduce again!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">--  loop :: [input] -&gt; Transition</span>
+    loop <span class="fu">=</span> foldMap (<span class="dt">Transition</span> <span class="fu">.</span> step)</code></pre></div>
+<p>The final <code>accept</code> function:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">accept ::</span> forall input <span class="fu">.</span> <span class="dt">StateMachine</span> input <span class="ot">-&gt;</span> [input] <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+accept (<span class="dt">StateMachine</span> {<span class="fu">..</span>}) startingInputs <span class="fu">=</span>
+    Data.Set.member finalState acceptingStates
+  <span class="kw">where</span>
+    finalState <span class="fu">=</span> runTransition (loop startingInputs) startingState
+
+<span class="ot">    loop ::</span> [input] <span class="ot">-&gt;</span> <span class="dt">Transition</span>
+    loop <span class="fu">=</span> foldMap (<span class="dt">Transition</span> <span class="fu">.</span> step)</code></pre></div>
+</div>
+<div id="parallelizing-foldmap" class="slide section level1">
+<h1>Parallelizing <code>foldMap</code></h1>
+<p>Normally anything we cfan</p>
+</div>
+<div id="insight-1" class="slide section level1">
+<h1>Insight #1</h1>
+<p>The paper shows that we can efficiently simulate up to 16 states at a time</p>
+<p>... in one CPU instruction!!</p>
+<p><a href="https://en.wikipedia.org/wiki/Finite-state_machine"><code>PSHUFB</code></a> is short for &quot;packed shuffle bytes&quot;</p>
+<p>We can understand how <code>PSHUFB</code> works by analogy to our Haskell implementation</p>
+</div>
+<div id="encoding-state-transitions" class="slide section level1">
+<h1>Encoding state transitions</h1>
+<p>We can encode a <code>Transition</code> by storing where all 16 states transition to.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Binary</span> <span class="dt">Transition</span> <span class="kw">where</span>
+    put (<span class="dt">Transition</span> f) <span class="fu">=</span> mapM_ (put <span class="fu">.</span> f) [minBound<span class="fu">..</span>maxBound]
+
+    get <span class="fu">=</span> <span class="kw">do</span>
+        <span class="kw">let</span> numStates <span class="fu">=</span> fromEnum (maxBound<span class="ot"> ::</span> <span class="dt">State</span>) <span class="fu">+</span> <span class="dv">1</span>
+        <span class="fu">!</span>ss <span class="ot">&lt;-</span> Data.Vector.replicateM numStates get
+        return (<span class="dt">Transition</span> (\s <span class="ot">-&gt;</span> ss <span class="fu">!</span> fromEnum s))</code></pre></div>
+<p>Or in other words:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">    put (<span class="dt">Transition</span> f) <span class="fu">=</span> <span class="kw">do</span>
+        put (f <span class="dt">S00</span>)
+        put (f <span class="dt">S01</span>)
+        put (f <span class="dt">S02</span>)
+        put (f <span class="dt">S03</span>)
+        <span class="fu">...</span>
+        put (f <span class="dt">S15</span>)</code></pre></div>
+<p>For example:</p>
+<pre><code>00000000  -- S0 → S0
+00000001  -- S1 → S3
+00000010  -- S3 → S2
+00000011
+00000100
+00000101
+00000110
+00000111
+00000000
+00000001
+00000010
+00000011
+00000100
+00000101
+00000110
+00000111</code></pre>
+<p>You can encode a <code>Transition</code> in 64 bits!</p>
+</div>
+<div id="state" class="slide section level1">
+<h1>State</h1>
+<p>Let's define a Haskell data type representing one of 16 possible states:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DeriveAnyClass #-}</span>
+<span class="ot">{-# LANGUAGE DeriveGeneric  #-}</span>
+
+<span class="kw">import </span><span class="dt">Data.Binary</span> (<span class="dt">Binary</span>)
+<span class="kw">import </span><span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)
+
+<span class="kw">data</span> <span class="dt">State</span> <span class="fu">=</span> <span class="dt">S00</span>  <span class="co">-- 0000</span>
+           <span class="fu">|</span> <span class="dt">S01</span>  <span class="co">-- 0001</span>
+           <span class="fu">|</span> <span class="dt">S02</span>  <span class="co">-- 0010</span>
+           <span class="fu">|</span> <span class="dt">S03</span>  <span class="co">-- 0011</span>
+           <span class="fu">|</span> <span class="dt">S04</span>  <span class="co">-- 0100</span>
+           <span class="fu">|</span> <span class="dt">S05</span>  <span class="co">-- 0101</span>
+           <span class="fu">|</span> <span class="dt">S06</span>  <span class="co">-- 0110</span>
+           <span class="fu">|</span> <span class="dt">S07</span>  <span class="co">-- 0111</span>
+           <span class="fu">|</span> <span class="dt">S08</span>  <span class="co">-- 1000</span>
+           <span class="fu">|</span> <span class="dt">S09</span>  <span class="co">-- 1001</span>
+           <span class="fu">|</span> <span class="dt">S10</span>  <span class="co">-- 1010</span>
+           <span class="fu">|</span> <span class="dt">S11</span>  <span class="co">-- 1011</span>
+           <span class="fu">|</span> <span class="dt">S12</span>  <span class="co">-- 1100</span>
+           <span class="fu">|</span> <span class="dt">S13</span>  <span class="co">-- 1101</span>
+           <span class="fu">|</span> <span class="dt">S14</span>  <span class="co">-- 1110</span>
+           <span class="fu">|</span> <span class="dt">S15</span>  <span class="co">-- 1111</span>
+           <span class="kw">deriving</span> (<span class="dt">Binary</span>, <span class="dt">Bounded</span>, <span class="dt">Enum</span>, <span class="dt">Generic</span>)</code></pre></div>
+<p>We'll round up to 1 byte by deriving <code>Binary</code></p>
+</div>
+</body>
+</html>
