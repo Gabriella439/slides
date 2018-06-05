@@ -15,13 +15,15 @@ Tip when evaluating libraries: check if it&#39;s blazing fast. If it&#39;s fast,
 </blockquote>
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
-`sig` is based on a subset of the paper (simulating up to 16 states in parallel)
+This talk and the package only cover a subset of the paper (simulating up to 16
+states in parallel)
 
 # Overview
 
-* Haskell state machines
+* **Haskell state machines**
 * C state machines
 * Parallel state machines
+* Conclusion
 
 # Data-Parallel Finite-State Machines
 
@@ -416,7 +418,12 @@ unsigned char run(
 }
 ```
 
-# Overview
+# Questions?
+
+* Haskell state machines
+* **C state machines**
+* Parallel state machines
+* Conclusion
 
 # Pure C example
 
@@ -504,14 +511,16 @@ Surprisingly, the pure C example is slower:
 ```
 $ time ./file
 True
-real	0m38.809s
-user	0m38.414s
-sys	0m0.361s
+real    0m38.809s
+user    0m38.414s
+sys     0m0.361s
 ```
 
 1 B / 38.8 ns = 26 MB / s
 
 I'm not sure why 🤷
+
+(Yes, I also tried buffered reads, which were even slower)
 
 You'll just have to trust me that using C will pay off in the end.  I promise
 
@@ -701,7 +710,7 @@ cStyleComments = buildStateMachine step
 ```haskell
 import Data.ByteString (ByteString)
 import Foreign (Ptr)
-import Foreign.C.Types (CChar(..), CSize(..))
+import Foreign.C.Types (CChar(..), CSize(..), CUChar(..))
 
 import qualified Data.Binary
 import qualified Data.ByteString.Lazy
@@ -709,468 +718,743 @@ import qualified Data.ByteString.Unsafe
 import qualified Foreign.Marshal.Unsafe
 
 foreign import ccall "run" c_run
-    :: Ptr CChar -> CSize -> Ptr CChar -> IO CChar
+    :: Ptr CChar -> CSize -> CUChar -> Ptr CChar -> IO CUChar
 
 run :: StateMachine -> ByteString -> Transition
 run stateMachine input = Transition f
   where
     step = Data.ByteString.Lazy.toStrict (Data.Binary.encode stateMachine)
 
-    io =
-        Data.ByteString.Unsafe.unsafeUseAsCStringLen step  $ \(ptrStep , _  ) -> do
-        Data.ByteString.Unsafe.unsafeUseAsCStringLen input $ \(ptrBytes, len) -> do
-        c_run ptrBytes (fromIntegral len) ptrStep
-
-    f startingState =
-      toEnum (fromEnum (Foreign.Marshal.Unsafe.unsafeLocalState io))
+    f startingState = Foreign.Marshal.Unsafe.unsafeLocalState io
+      where
+        io =
+            Data.ByteString.Unsafe.unsafeUseAsCStringLen step  $ \(ptrStep , _  ) -> do
+            Data.ByteString.Unsafe.unsafeUseAsCStringLen input $ \(ptrBytes, len) -> do
+            let c_startingState = fromIntegral (fromEnum startingState)
+            let c_len           = fromIntegral len
+            c_finalState <- c_run ptrBytes c_len c_startingState ptrStep
+            return (toEnum (fromEnum c_finalState))
 ```
+
+# Full example
+
+```haskell
+-- c.hs
+
+{-# LANGUAGE BangPatterns   #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+
+module Main where
+
+import Data.Binary (Binary(..))
+import Data.ByteString (ByteString)
+import Data.Vector ((!))
+import Data.Word (Word8)
+import Foreign (Ptr)
+import Foreign.C.Types (CChar(..), CUChar(..), CSize(..))
+import GHC.Generics (Generic)
+
+import qualified Data.Binary
+import qualified Data.ByteString
+import qualified Data.ByteString.Lazy
+import qualified Data.ByteString.Unsafe
+import qualified Data.Vector
+import qualified Foreign.Marshal.Unsafe
+
+data State = S00 | S01 | S02 | S03 | S04 | S05 | S06 | S07
+           | S08 | S09 | S10 | S11 | S12 | S13 | S14 | S15
+           deriving (Binary, Bounded, Enum, Eq, Generic, Ord, Show)
+
+numberOfStates :: Int
+numberOfStates = fromEnum (maxBound :: State) + 1
+
+newtype Transition = Transition { runTransition :: State -> State }
+
+instance Binary Transition where
+    put (Transition f) = mapM_ (put . f) [minBound..maxBound]
+
+    get = do
+        !ss <- Data.Vector.replicateM numberOfStates get
+        return (Transition (\s -> ss ! fromEnum s))
+
+newtype StateMachine = StateMachine { runStateMachine :: Word8 -> Transition }
+
+instance Binary StateMachine where
+    put (StateMachine k) = mapM_ (put . k) [minBound..maxBound]
+
+    get = do
+        let numBytes = fromEnum (maxBound :: Word8) + 1
+        ts <- Data.Vector.replicateM numBytes get
+        return (StateMachine (\word8 -> ts ! fromEnum word8))
+
+buildStateMachine :: (Word8 -> State -> State) -> StateMachine
+buildStateMachine f = StateMachine (fmap Transition f)
+
+cStyleComments :: StateMachine
+cStyleComments = buildStateMachine step
+  where
+    step 47 S00 = S01  -- Possible  comment start: Go to state #1
+    step 42 S01 = S02  -- Confirmed comment start: Go to state #2
+    step 42 S02 = S03  -- Possible  comment end  : Go to state #3
+    step 47 S03 = S00  -- Confirmed comment end  : Go to state #0
+
+    step 47 S01 = S01  -- Still might be a comment start: Stay on   state #1
+    step  _ S01 = S00  -- Not a comment after all       : Return to state #0
+
+    step 42 S03 = S03  -- Still might be a comment end  : Stay on   state #3
+    step  _ S03 = S02  -- Not a comment after all       : Return to state #2
+
+    step  _ S00 = S00  -- Outside of a comment: Stay on state #0
+
+    step  _ S02 = S02  -- Inside a comment    : Stay on state #2
+
+    step  _ _   = S00
+
+foreign import ccall "run" c_run
+    :: Ptr CChar -> CSize -> CUChar -> Ptr CChar -> IO CUChar
+
+run :: StateMachine -> ByteString -> Transition
+run stateMachine input = Transition f
+  where
+    step = Data.ByteString.Lazy.toStrict (Data.Binary.encode stateMachine)
+
+    f startingState = Foreign.Marshal.Unsafe.unsafeLocalState io
+      where
+        io =
+            Data.ByteString.Unsafe.unsafeUseAsCStringLen step  $ \(ptrStep , _  ) -> do
+            Data.ByteString.Unsafe.unsafeUseAsCStringLen input $ \(ptrBytes, len) -> do
+            let c_startingState = fromIntegral (fromEnum startingState)
+            let c_len           = fromIntegral len
+            c_finalState <- c_run ptrBytes c_len c_startingState ptrStep
+            return (toEnum (fromEnum c_finalState))
+
+main :: IO ()
+main = do
+    bytes <- Data.ByteString.readFile "test.c"
+    print (runTransition (run cStyleComments bytes) S00)
+```
+
+# Performance
+
+```
+$ gcc -O3 -march=native -c run.c
+$ ghc -O2 c.hs run.o
+$ time ./c
+S00
+
+real    0m3.118s
+user    0m2.280s
+sys     0m0.816s
+```
+
+This is in between the pure Haskell solutions for `String` vs `ByteString`
+
+Surprisingly, using Haskell for file I/O is much faster than using pure C 🤷
+
+# Questions?
+
+* Haskell state machines
+* C state machines
+* **Parallel state machines**
+* Conclusion
 
 # Question
 
-How do we parallelize `accept`? 🤔
+How do we make this algorithm parallel? 🤔
 
-```haskell
-accept :: StateMachine input -> [input] -> Bool
-accept (StateMachine {..}) startingInputs = 
-    Data.Set.member finalState acceptingStates
-  where
-    finalState = loop startingInputs startingState
+In other words, how can we take advantage of multiple cores to accelerate this?
 
-    loop [] state = state
+# 💡 Insight #1 - Use a CPU intrinsic
 
-    loop (input:inputs) state = loop inputs (step input state)
-```
-
-# Insight #1 - Use a CPU intrinsic
-
-The paper shows that we can efficiently simulate up to 16 states at a time
-
-... in one CPU instruction!!
+The paper notes that we can simulate all 16 states in one CPU instruction!
 
 GCC provides a
 [`__builtin_shuffle` intrinsic](https://gcc.gnu.org/onlinedocs/gcc/Vector-Extensions.html)
 for this purpose
 
-We can understand how `__builtin_shuffle` works by analogy to Haskell code
+We can understand `__builtin_shuffle` by analogy to our `Transition` type
 
-# Restrict the number of states
+# The `Transition` monoid
 
-Suppose that we cap the number of states to 16 (for now):
-
-```haskell
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-
-import Data.Binary (Binary)
-import GHC.Generics (Generic)
-
-data State = S00 | S01 | S02 | S03 | S04 | S05 | S06 | S07
-           | S08 | S09 | S10 | S11 | S12 | S13 | S14 | S15
-           deriving (Binary, Bounded, Enum, Eq, Generic, Ord)
-```
-
-... and hardcode our `StateMachine` type to only work on `State`s:
-
-```haskell
-data StateMachine input = StateMachine
-    { startingState   :: State
-    , step            :: input -> State -> State
-    , acceptingStates :: Set State
-    }
-```
-
-# State transitions
-
-Now define a state transition as a function from an old `State` to a new
-`State`:
-
-```haskell
-newtype Transition = Transition { runTransition :: State -> State }
-```
-
-... and a state transition is a `Monoid`:
+First, define a `Monoid` instance for our `Transition` type:
 
 ```haskell
 instance Monoid Transition where
     mempty = Transition id
 
     mappend (Transition f) (Transition g) = Transition (g . f)
+
+-- Reminder that `(<>)` is an infix operator synonymous with `mappend`
+(<>) :: Monoid m => m -> m -> m
+(<>) = mappend
 ```
 
-... equivalent to the `Endo` `Monoid`, where:
+`mempty` is what we previously called `identityTransition`
 
-* `mempty` is the empty transition that doesn't change the `State`
-* `mappend` composes two `Transition`s
+`f <> g` means compose two state transitions end-to-end
+
+`__builtin_shuffle` is essentially a really fast `mappend` for `Transition`
 
 # `__builtin_shuffle`
 
-`__builtin_shuffle` is lets us (essentially) `mappend` `Transition`s in one CPU
-instruction
+`__builtin_shuffle` composes two transition arrays
+
+Specifically, `__builtin_shuffle` composes the binary representation of our
+`Transition` type
+
+```c
+typedef uint8_t v16si __attribute__ ((vector_size (16)));
+
+// The encoding of `contrivedTransition`
+v16si contrivedTransition = { 0, 4, 1, 10, 2, 0, 3, 6, 4, 12, 5, 2, 6, 8, 7, 14 }
+
+// The encoding of `identityTransition`
+v16si identityTransition  = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+// result0 = { 0, 2, 4, 5, 1, 0, 10, 3, 2, 6, 0, 1, 3, 4, 6, 7 }
+result0 = __builtin_shuffle(contrivedTransition, contrivedTransition)
+
+// result1 = { 0, 4, 1, 10, 2, 0, 3, 6, 4, 12, 5, 2, 6, 8, 7, 14 }
+result1 = __builtin_shuffle(contrivedTransition, identityTransition)
+```
+
+Compare to Haskell:
 
 ```haskell
-instance Monoid Transition where
-    mempty = Transition id
-
-    mappend = {-# __builtin_shuffle(_, _) #-}
-```
-
-The truth is more complicated, but we'll get there
-
-For now, let's play code Tetris to exploit `__builtin_shuffle`
-
-# Refactor our inner `loop`
-
-We can refactor `accept` to use `(<>)` for the `Transition` `Monoid`
-
-```haskell
-accept :: StateMachine input -> [input] -> Bool
-accept (StateMachine {..}) startingInputs =
-    Data.Set.member finalState acceptingStates
-  where
-    finalState = loop startingInputs startingState
-
---  loop :: [input] -> State -> State
-    loop [] state = state
-
-    loop (input:inputs) state =
-        loop inputs (step input state)
-
---  loop [i₀, i₁, i₂] state = step i₂ (step i₁ (step i₀ state))
-```
-
-First, we refactor the inner loop to use `id` and `(.)`:
-
-```haskell
---  loop :: [input] -> State -> State
-    loop [] state = id state
-
-    loop (input:inputs) state =
-        (loop inputs . step input) state
-
---  loop [i₀, i₁, i₂] state = (id . step i₂ . step i₁ . step i₀) state
-```
-
-Then we η-reduce ("eta"-reduce) the `loop` function:
-
-```haskell
---  loop :: [input] -> State -> State
-    loop [] = id 
-
-    loop (input:inputs) =
-        loop inputs . step input
-
---  loop [i₀, i₁, i₂] = id . step i₂ . step i₁ . step i₀
-```
-
-Now we wrap things in `Transition` to use `mempty` and `(<>)` instead:
-
-```haskell
---  loop :: [input] -> Transition
-    loop [] = mempty
-
-    loop (input:inputs) =
-        Transition (step input) <> loop inputs
-
---  loop [i₀, i₁, i₂] =
---          Transition (step i₀)
---      <>  Transition (step i₁)
---      <>  Transition (step i₂)
---      <>  mempty
-```
-
-... and now we're in a position to exploit `__builtin_shuffle`
-
-# The truth behind `__builtin_shuffle`
-
-Here is how `__builtin_shuffle` *actually* works:
-
-* Convert each `Transition` function to a "transition array"
-* Marshal each transition array into C
-* Call `__builtin_shuffle` to compose transition arrays
-* Marshal the result back into Haskell
-
-For efficiency, we actually marshal data to and from C in large batches
-
-# Transition array
-
-A transition array is a lookup table for a transition function, where:
-
-* the index of the array represents the old state before the transition
-* the value stored at that index represents the new state after the transition
-
-For example, this transition table:
-
-```
-Old → New
-─────────
-S00 → S00
-S01 → S04
-S02 → S01
-S03 → S10
-S04 → S02
-S05 → S00
-S06 → S03
-S07 → S06
-S08 → S04
-S09 → S12
-S10 → S05
-S11 → S01
-S12 → S06
-S13 → S04
-S14 → S07
-S15 → S14
-```
-
-.. corresponds to this transition array:
-
-```haskell
-> bytes transition
+>>> bytes (contrivedTransition <> contrivedTransition)
+[0,2,4,5,1,0,10,3,2,6,0,1,3,4,6,7]
+>>> bytes (contrivedTransition <> identityTransition)
 [0,4,1,10,2,0,3,6,4,12,5,2,6,8,7,14]
 ```
 
-# Conversion
-
-This code explains the correspondence between `Transition` functions and arrays:
+# `Monoid` laws
 
 ```haskell
-{-# LANGUAGE OverloadedLists #-}
+x <> mempty = x                -- f . id = f
 
-import Data.Vector (Vector, (!))
+mempty <> x = x                -- id . f = f
 
-to :: Transition -> Vector State
-to (Transition f) = fmap f [minBound..maxBound]
-
-from :: Vector State -> Transition
-from states = Transition (\state -> states ! fromEnum s)
+(x <> y) <> z = x <> (y <> z)  -- (f . g) . h = f . (g . h)
 ```
-
-In practice, we convert to and from a 16-byte representation that C uses:
-
-```haskell
-instance Binary Transition where
-    put (Transition f) = mapM_ (put . f) [minBound..maxBound]
-
-    get = do
-        let numStates = fromEnum (maxBound :: State) + 1
-        !ss <- Data.Vector.replicateM numStates get
-        return (Transition (\s -> ss ! fromEnum s))
-```
-
-# Restrict the input
-
-There's a cost to passing transition arrays back and forth between Haskell and C
-
-We can amortize that cost by precomputing **ALL** possible transition arrays
-
-This requires changing our `StateMachine` type from one that accepts any input:
-
-```haskell
-data StateMachine input = StateMachine
-    { startingState   :: State
-    , stepFunction    :: input -> State -> State
-    , acceptingStates :: Set State
-    }
-```
-
-... to a `StateMachine` that only accepts bytes as input:
-
-```haskell
-import Data.Word (Word8)
-
-data StateMachine = StateMachine
-    { startingState   :: State
-    , stepFunction    :: Word8 -> State -> State
-    , acceptingStates :: Set State
-    }
-```
-
-# Precomputing transition arrays
-
-If we look at the type of the `stepFunction` field of `StateMachine`:
-
-```haskell
-data StateMachine = StateMachine
-    { startingState   :: State
-    , stepFunction    :: Word8 -> State -> State
-    , acceptingStates :: Set State
-    }
-```
-
-... we can encode this by precomputing `stepFunction` for all 256 possible input
-bytes:
-
-```haskell
-[ minBound .. maxBound ] :: [Word8]
-
-map stepFunction [ minBound .. maxBound ] :: [ State -> State ]
-
-map (Transition . stepFunction) [ minBound .. maxBound ] :: [ Transition ]
-```
-
-This gives us a list of 256 `Transition`s, each of which we encode in 16 bytes
-
-256 bytes × 16 = 4 kibibytes (compact! 😊)
-
-# The C magic
 
 ```c
-#include <stdint.h>
+__builtin_shuffle(x, identityTransition) = x
+
+__builtin_shuffle(identityTransition, x) = x
+
+__builtin_shuffle(__builtin_shuffle(x, y), z) = __builtin_shuffle(x, __builtin_shuffle(y, z))
+```
+
+# Using `__builtin_shuffle`
+
+We don't need specify the starting state now that we have `__builtin_shuffle`
+
+We can simulate all 16 of them at the same time!
+
+```c
+-- run2.c
+
 #include <stdlib.h>
 
-// C representation of a transition array (16 elements, 1 byte each)
+#define NUM_STATES 16
+#define NUM_BYTES  256
+
 typedef uint8_t v16si __attribute__ ((vector_size (16)));
 
-void run(char *bytes, size_t len, unsigned char *stepBytes, char *out) {
-    unsigned char byte;
-    int i, j;
+void run(
+    // Input bytes to process
+    char *input,
 
-    // Represent the step function as an array of 256 transition arrays
-    v16si step[256];
+    // Length of the input
+    size_t length,
 
-    // Decode input into the format that `__builtin_shuffle` expects
-    for (i = 0; i < 256; i++) {
-        for (j = 0; j < 16; j++) {
-            step[i][j] = stepBytes[16 * i + j];
+    // Step function encoded as lookup table
+    char *stepBytes,
+
+    // Output to save the final state for all 16 initial states
+    char *out
+) {
+    size_t byte, index, state;
+    char currentByte;
+    v16si step[NUM_BYTES];
+    v16si currentStates = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+    for (byte = 0; byte < NUM_BYTES; byte++) {
+        for (state = 0; state < NUM_STATES; state++) {
+            step[byte][state] = stepBytes[NUM_STATES * byte + state];
         }
     }
 
-    // Begin with the identity transition array
-    v16si s = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-
-    // Run the state machine
-    for (i = 0; i < len; i ++) {
-        byte = bytes[i];
-
-        // s := step byte <> s
-        s = __builtin_shuffle(step[byte], s);
+    for (index = 0; index < length; index++) {
+        currentByte = input[index];
+        currentStates = __builtin_shuffle(step[currentByte], currentStates);
     }
 
-    // Encode output into the format that the Haskell side expects
-    for (i = 0; i < 16; i++) {
-        out[i] = s[i];
+    for (state = 0; state < NUM_STATES; state++) {
+        out[state] = currentStates[state];
     }
 }
 ```
 
-# Haskell binding to C
+# Matching Haskell changes
 
-Now let's wrap the C code in a purely functional API
+Now the C code returns a `Transition` array, which we decode directly:
 
 ```haskell
+run :: StateMachine -> ByteString -> Transition
+run stateMachine input = Foreign.Marshal.Unsafe.unsafeLocalState io
+  where
+    step = Data.ByteString.Lazy.toStrict (Data.Binary.encode stateMachine)
+
+    io =
+        Data.ByteString.Unsafe.unsafeUseAsCStringLen step  $ \(ptrStep , _  ) -> do
+        Data.ByteString.Unsafe.unsafeUseAsCStringLen input $ \(ptrBytes, len) -> do
+        Foreign.allocaBytes numberOfStates                 $ \ptrOut          -> do
+        let c_len = fromIntegral len
+        c_run ptrBytes c_len ptrStep ptrOut
+        bytes <- Data.ByteString.packCStringLen (ptrOut, numberOfStates)
+        return (Data.Binary.decode (Data.ByteString.Lazy.fromStrict bytes))
+```
+
+# Full example
+
+```haskell
+{-# LANGUAGE BangPatterns   #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+
+module Main where
+
+import Data.Binary (Binary(..))
+import Data.ByteString (ByteString)
+import Data.Vector ((!))
+import Data.Word (Word8)
+import Foreign (Ptr)
+import Foreign.C.Types (CChar(..), CSize(..), CUChar(..))
+import GHC.Generics (Generic)
+
+import qualified Data.Binary
+import qualified Data.ByteString.Lazy
+import qualified Data.ByteString.Unsafe
+import qualified Data.Vector
+import qualified Foreign.Marshal.Unsafe
+
+import qualified Data.ByteString
+import qualified Foreign
+
+data State = S00 | S01 | S02 | S03 | S04 | S05 | S06 | S07
+           | S08 | S09 | S10 | S11 | S12 | S13 | S14 | S15
+           deriving (Binary, Bounded, Enum, Eq, Generic, Ord, Show)
+
+numberOfStates :: Int
+numberOfStates = fromEnum (maxBound :: State) + 1
+
+newtype Transition = Transition { runTransition :: State -> State }
+
+instance Binary Transition where
+    put (Transition f) = mapM_ (put . f) [minBound..maxBound]
+
+    get = do
+        !ss <- Data.Vector.replicateM numberOfStates get
+        return (Transition (\s -> ss ! fromEnum s))
+
+newtype StateMachine = StateMachine { runStateMachine :: Word8 -> Transition }
+
+instance Binary StateMachine where
+    put (StateMachine k) = mapM_ (put . k) [minBound..maxBound]
+
+    get = do
+        let numBytes = fromEnum (maxBound :: Word8) + 1
+        ts <- Data.Vector.replicateM numBytes get
+        return (StateMachine (\word8 -> ts ! fromEnum word8))
+
+buildStateMachine :: (Word8 -> State -> State) -> StateMachine
+buildStateMachine f = StateMachine (fmap Transition f)
+
+cStyleComments :: StateMachine
+cStyleComments = buildStateMachine step
+  where
+    step 47 S00 = S01  -- Possible  comment start: Go to state #1
+    step 42 S01 = S02  -- Confirmed comment start: Go to state #2
+    step 42 S02 = S03  -- Possible  comment end  : Go to state #3
+    step 47 S03 = S00  -- Confirmed comment end  : Go to state #0
+
+    step 47 S01 = S01  -- Still might be a comment start: Stay on   state #1
+    step  _ S01 = S00  -- Not a comment after all       : Return to state #0
+
+    step 42 S03 = S03  -- Still might be a comment end  : Stay on   state #3
+    step  _ S03 = S02  -- Not a comment after all       : Return to state #2
+
+    step  _ S00 = S00  -- Outside of a comment: Stay on state #0
+
+    step  _ S02 = S02  -- Inside a comment    : Stay on state #2
+
+    step  _ _   = S00
+
 foreign import ccall "run" c_run
     :: Ptr CChar -> CSize -> Ptr CChar -> Ptr CChar -> IO ()
 
-runSerial :: StateMachine -> ByteString -> Transition
-runSerial matrix bytes = Data.Binary.decode (Data.ByteString.Lazy.fromStrict (
-    Foreign.Marshal.Unsafe.unsafeLocalState (do
-        Data.ByteString.Unsafe.unsafeUseAsCStringLen stepBytes (\(ptrStepBytes, _) ->
-            Data.ByteString.Unsafe.unsafeUseAsCStringLen bytes (\(ptrBytes, len) ->
-                Foreign.allocaBytes 16 (\ptrOut -> do
-                    c_run ptrBytes (fromIntegral len) ptrStepBytes ptrOut
-                    Data.ByteString.packCStringLen (ptrOut, 16) ) ) ) ) ))
+run :: StateMachine -> ByteString -> Transition
+run stateMachine input = Foreign.Marshal.Unsafe.unsafeLocalState io
   where
-    stepBytes = Data.ByteString.Lazy.toStrict (Data.Binary.encode matrix)
+    step = Data.ByteString.Lazy.toStrict (Data.Binary.encode stateMachine)
+
+    io =
+        Data.ByteString.Unsafe.unsafeUseAsCStringLen step  $ \(ptrStep , _  ) -> do
+        Data.ByteString.Unsafe.unsafeUseAsCStringLen input $ \(ptrBytes, len) -> do
+        Foreign.allocaBytes numberOfStates                 $ \ptrOut          -> do
+        let c_len = fromIntegral len
+        c_run ptrBytes c_len ptrStep ptrOut
+        bytes <- Data.ByteString.packCStringLen (ptrOut, numberOfStates)
+        return (Data.Binary.decode (Data.ByteString.Lazy.fromStrict bytes))
+
+main :: IO ()
+main = do
+    bytes <- Data.ByteString.readFile "test.c"
+    print (runTransition (run cStyleComments bytes) S00)
 ```
 
+# Performance
 
-# We can parallelize `mappend`
+```
+$ gcc -O3 -mssse3 -c run2.c
+$ ghc -O2 c2.hs run2.o
+$ time ./c2
+S00
 
-The `(<>)` operator is associative:
-
-```haskell
-(x <> y) <> z = x <> (y <> z)
+real    0m1.504s
+user    0m0.721s
+sys     0m0.760s
 ```
 
-... so if we have a large chain of `(<>)`s, like this:
+We can simulate 16 states faster than simulating 1 state! 😮
 
-```haskell
-x₀ <> x₁ <> x₂ <> x₃ <> x₄ <> x₅ <> x₆ <> x₇
-```
+# `PSHUFB`
 
-... we can divide up that computational work into two smaller parallel batches:
+`__builtin_shuffle` is beats a lookup table thanks to the `PSHUFB` instruction:
 
-```haskell
-let l = x₀ <> x₁ <> x₂ <> x₃
-
-    r = x₄ <> x₅ <> x₆ <> x₇
-
-in  l `par` r `par` l <> r
-```
-
-... and if we can afford more parallelism then we can further sub-divide
-
-# Parallelize functions?
-
-However, that doesn't really work for our inner `loop`, though:
-
-```haskell
-loop [i₀, i₁, i₂, i₃] =
-        Transition (step i₀)
-    <>  Transition (step i₁)
-    <>  Transition (step i₂)
-    <>  Transition (step i₃)
-```
-
-This won't speed things up
-
-```haskell
-let l = Transition (step i₀) <> Transition (step i₁)
-
-    r = Transition (step i₂) <> Transition (step i₃)
-
-in  l `par` r `par` l <> r
-```
-
-... but we can't really "evaluate" an unsaturated function call ahead of time
-
-# Parallelizing things
-
-The reason we do so is because now we can use `mconcat` and `map`:
-
-```haskell
---  loop :: [input] -> Transition
-    loop inputs = mconcat (map (Transition . step) inputs)
-
---  loop [i₀, i₁, i₂] =
---      mconcat (map (Transition . step) [i₀, i₁, i₂])
-```
-
-... which is the same thing as `foldMap`:
-
-```haskell
---  loop :: [input] -> Transition
-    loop inputs = foldMap (Transition . step) inputs
-
---  loop [i₀, i₁, i₂] inputs = foldMap (Transition . step) [i₀, i₁, i₂] inputs
-```
-
-... and we can η-reduce again!
-
-```haskell
---  loop :: [input] -> Transition
-    loop = foldMap (Transition . step)
-```
-
-The final `accept` function:
-
-```haskell
-accept :: forall input . StateMachine input -> [input] -> Bool
-accept (StateMachine {..}) startingInputs =
-    Data.Set.member finalState acceptingStates
-  where
-    finalState = runTransition (loop startingInputs) startingState
-
-    loop :: [input] -> Transition
-    loop = foldMap (Transition . step)
-```
-
-# Insight
-
-The paper shows that we can efficiently simulate up to 16 states at a time
-
-... in one CPU instruction!!
-
-[`PSHUFB`](https://en.wikipedia.org/wiki/Finite-state_machine) is short for
+[`PSHUFB`](https://www.felixcloutier.com/x86/PSHUFB.html) is short for
 "packed shuffle bytes"
 
-We can understand how `PSHUFB` works by analogy to our Haskell implementation
+`gcc` provides a (slower) fallback implementation for processors that don't
+provide this instruction
+
+This feature requires passing the `-mssse3` flag to `gcc`
+
+```
+$ gcc -O3 -mssse3 -S run2.c
+$ cat run2.s
+	...
+L6:
+	movsbq	(%rax), %rdx
+	addq	$1, %rax
+	pand	%xmm2, %xmm0
+	salq	$4, %rdx
+	cmpq	%rax, %rsi
+	movdqa	16(%rsp,%rdx), %xmm1
+	pshufb	%xmm0, %xmm1          # The magic instruction
+	movdqa	%xmm1, %xmm0
+	jne	L6
+	movaps	%xmm1, (%rsp)
+L7:
+	...
+```
+
+# 💡 Insight #2: Use the `Transition` `Monoid` to parallelize `run`
+
+Given a single-threaded run:
+
+```haskell
+run :: StateMachine -> ByteString -> Transition
+```
+
+... we can create a parallel run using a divide and conquer algorithm:
+
+* splitting our input into chunks (i.e. "divide")
+* calling the single-threaded `run` on each chunk in parallel (i.e. "conquer")
+* combining the `Transition`s returned by each `run` using `(<>)`
+
+```haskell
+-- Not legal Haskell
+runParallel :: StateMachine -> ByteString -> Transition
+runParallel stateMachine (bytes₀ <> bytes₂ <> … <> bytesᵢ)
+       run stateMachine bytes₀  -- We can compute
+    <> run stateMachine bytes₁  -- each one of these
+    <> …                        -- `run` functions
+    <> run stateMachine bytesᵢ  -- in parallel
+```
+
+# The actual implementation
+
+```haskell
+import qualified Control.Parallel.Strategies
+
+runParallel :: Int -> StateMachine -> ByteString -> Transition
+runParallel numThreads stateMachine bytes =
+    mconcat
+        (Control.Parallel.Strategies.parMap
+            Control.Parallel.Strategies.rseq
+            (run stateMachine)
+            (chunkBytes subLen bytes) )
+  where
+    len = Data.ByteString.length bytes
+
+    subLen = ((len - 1) `div` numThreads) + 1
+
+chunkBytes :: Int -> ByteString -> [ByteString]
+chunkBytes n bytes =
+    if Data.ByteString.null bytes
+    then []
+    else prefix : chunkBytes n suffix
+  where
+    ~(prefix, suffix) = Data.ByteString.splitAt n bytes
+```
+
+# Full example
+
+```haskell
+{-# LANGUAGE BangPatterns   #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+
+module Main where
+
+import Data.Binary (Binary(..))
+import Data.ByteString (ByteString)
+import Data.Vector ((!))
+import Data.Word (Word8)
+import Foreign (Ptr)
+import Foreign.C.Types (CChar(..), CSize(..), CUChar(..))
+import GHC.Generics (Generic)
+
+import qualified Control.Parallel.Strategies
+import qualified Data.Binary
+import qualified Data.ByteString.Lazy
+import qualified Data.ByteString.Unsafe
+import qualified Data.ByteString
+import qualified Data.Vector
+import qualified Foreign
+import qualified Foreign.Marshal.Unsafe
+import qualified System.IO.MMap
+
+data State = S00 | S01 | S02 | S03 | S04 | S05 | S06 | S07
+           | S08 | S09 | S10 | S11 | S12 | S13 | S14 | S15
+           deriving (Binary, Bounded, Enum, Eq, Generic, Ord, Show)
+
+numberOfStates :: Int
+numberOfStates = fromEnum (maxBound :: State) + 1
+
+newtype Transition = Transition { runTransition :: State -> State }
+
+instance Monoid Transition where
+    mempty = Transition id
+
+    mappend (Transition f) (Transition g) = Transition (g . f)
+
+instance Binary Transition where
+    put (Transition f) = mapM_ (put . f) [minBound..maxBound]
+
+    get = do
+        !ss <- Data.Vector.replicateM numberOfStates get
+        return (Transition (\s -> ss ! fromEnum s))
+
+newtype StateMachine = StateMachine { runStateMachine :: Word8 -> Transition }
+
+instance Binary StateMachine where
+    put (StateMachine k) = mapM_ (put . k) [minBound..maxBound]
+
+    get = do
+        let numBytes = fromEnum (maxBound :: Word8) + 1
+        ts <- Data.Vector.replicateM numBytes get
+        return (StateMachine (\word8 -> ts ! fromEnum word8))
+
+buildStateMachine :: (Word8 -> State -> State) -> StateMachine
+buildStateMachine f = StateMachine (fmap Transition f)
+
+cStyleComments :: StateMachine
+cStyleComments = buildStateMachine step
+  where
+    step 47 S00 = S01  -- Possible  comment start: Go to state #1
+    step 42 S01 = S02  -- Confirmed comment start: Go to state #2
+    step 42 S02 = S03  -- Possible  comment end  : Go to state #3
+    step 47 S03 = S00  -- Confirmed comment end  : Go to state #0
+
+    step 47 S01 = S01  -- Still might be a comment start: Stay on   state #1
+    step  _ S01 = S00  -- Not a comment after all       : Return to state #0
+
+    step 42 S03 = S03  -- Still might be a comment end  : Stay on   state #3
+    step  _ S03 = S02  -- Not a comment after all       : Return to state #2
+
+    step  _ S00 = S00  -- Outside of a comment: Stay on state #0
+
+    step  _ S02 = S02  -- Inside a comment    : Stay on state #2
+
+    step  _ _   = S00
+
+foreign import ccall "run" c_run
+    :: Ptr CChar -> CSize -> Ptr CChar -> Ptr CChar -> IO ()
+
+run :: StateMachine -> ByteString -> Transition
+run stateMachine input = Foreign.Marshal.Unsafe.unsafeLocalState io
+  where
+    step = Data.ByteString.Lazy.toStrict (Data.Binary.encode stateMachine)
+
+    io =
+        Data.ByteString.Unsafe.unsafeUseAsCStringLen step  $ \(ptrStep , _  ) -> do
+        Data.ByteString.Unsafe.unsafeUseAsCStringLen input $ \(ptrBytes, len) -> do
+        Foreign.allocaBytes numberOfStates                 $ \ptrOut          -> do
+        let c_len = fromIntegral len
+        c_run ptrBytes c_len ptrStep ptrOut
+        bytes <- Data.ByteString.packCStringLen (ptrOut, numberOfStates)
+        return (Data.Binary.decode (Data.ByteString.Lazy.fromStrict bytes))
+
+runParallel :: Int -> StateMachine -> ByteString -> Transition
+runParallel numThreads stateMachine bytes =
+    mconcat
+        (Control.Parallel.Strategies.parMap
+            Control.Parallel.Strategies.rseq
+            (run stateMachine)
+            (chunkBytes subLen bytes) )
+  where
+    len = Data.ByteString.length bytes
+
+    subLen = ((len - 1) `div` numThreads) + 1
+
+chunkBytes :: Int -> ByteString -> [ByteString]
+chunkBytes n bytes =
+    if Data.ByteString.null bytes
+    then []
+    else prefix : chunkBytes n suffix
+  where
+    ~(prefix, suffix) = Data.ByteString.splitAt n bytes
+
+main :: IO ()
+main = do
+    bytes <- System.IO.MMap.mmapFileByteString "test.c" Nothing
+    print (runTransition (runParallel 4 cStyleComments bytes) S00)
+```
+
+# Performance
+
+TODO: Test on Linux machine
+
+# 💡 Insight #3 - Use CPU data pipelining
+
+We can extract more parallelism per-thread by minimizing data dependencies in C
+code
+
+`__builtin_shuffle` is associative, so we can reorder how we combine transitions
+
+Each non-leaf node in this tree represents a `__builtin_shuffle` of its
+children:
+
+```
+                    states
+                /             \
+          states4             states5
+          /     \             /     \
+     states0   states1   states2   states3
+      /   \     /   \     /   \     /   \
+  states s[a] s[b] t[c] s[d] s[e] s[f] s[g]
+```
+
+The CPU is smart and notices that each tree layer has no data dependencies
+
+The CPU exploits the lack of data dependencies using instruction-level
+parallelism
+
+# Minimizing data dependencies
+
+```c
+#include <stdlib.h>
+
+#define NUM_STATES 16
+#define NUM_BYTES  256
+
+typedef uint8_t v16si __attribute__ ((vector_size (16)));
+
+void run(
+    // Input bytes to process
+    char *input,
+
+    // Length of the input
+    size_t length,
+
+    // Step function encoded as lookup table
+    char *stepBytes,
+
+    // Output to save the final state for all 16 initial states
+    char *out
+) {
+    size_t byte, index, state;
+    char a, b, c, d, e, f, g;
+    v16si s[NUM_BYTES];
+    v16si states = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    v16si states0, states1, states2, states3, states4, states5;
+
+    for (byte = 0; byte < NUM_BYTES; byte++) {
+        for (state = 0; state < NUM_STATES; state++) {
+            s[byte][state] = stepBytes[NUM_STATES * byte + state];
+        }
+    }
+
+    for (index = 0; index + 6 < length; index +=7) {
+        // These can be run in parallel
+        a = input[index     ];
+        b = input[index + 1];
+        c = input[index + 2];
+        d = input[index + 3];
+        e = input[index + 4];
+        f = input[index + 5];
+        g = input[index + 6];
+
+        // These can be run in parallel
+        states0 = __builtin_shuffle(s[a], states);
+        states1 = __builtin_shuffle(s[c], s[b] );
+        states2 = __builtin_shuffle(s[e], s[d] );
+        states3 = __builtin_shuffle(s[g], s[f] );
+
+        // These can be run in parallel
+        states4 = __builtin_shuffle(states1, states0);
+        states5 = __builtin_shuffle(states3, states2);
+
+        states = __builtin_shuffle(states5, states4);
+    }
+
+    for (; index < length; index++) {
+        a = input[index];
+        states = __builtin_shuffle(s[a], states);
+    }
+
+    for (state = 0; state < NUM_STATES; state++) {
+        out[state] = states[state];
+    }
+}
+```
+
+# Performance
+
+TODO
+
+# Questions?
+
+* Haskell state machines
+* C state machines
+* Parallel state machines
+* **Conclusion**
+
+# Conclusion
+
+The paper actually describes how to scale this algorithm efficiently to 256-512
+states
+
+I couldn't figure out how to use the intrinsic that unlocks additional states
+
+Everything I described is in a package on Hackage called `sig`:
+
+* [https://hackage.haskell.org/package/sig](https://hackage.haskell.org/package/sig)
+
+Associative operations can be cheaply parallelized
+
+Haskell is a great language for providing provides a high-level interface to C
