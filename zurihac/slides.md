@@ -150,6 +150,7 @@ cStyleComments = StateMachine {..}
 # Run a state machine
 
 ```haskell
+{-# LANGUAGE BangPatterns              #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
 import Data.Set (Set)
@@ -168,9 +169,9 @@ accept (StateMachine {..}) startingInputs =
   where
     finalState = loop startingInputs startingState
 
-    loop [] state = state
+    loop [] !state = state
 
-    loop (input:inputs) state = loop inputs (step state input)
+    loop (input:inputs) !state = loop inputs (step state input)
 
 --  loop [i₀, i₁, i₂] state = step (step (step state i₀) i₁) i₂
 ```
