@@ -258,12 +258,12 @@ cStyleComments = StateMachine {..}
 $ time ./chars
 True
 
-real    0m7.406s
-user    0m6.997s
-sys     0m0.402s
+real    0m17.202s
+user    0m17.000s
+sys     0m0.196s
 ```
 
-1 B / 7.4 ns = 135 MB / s
+1 B / 17.2 ns = 58 MB/s
 
 # Using `ByteString`s
 
@@ -354,20 +354,20 @@ cStyleComments = StateMachine {..}
 $ time ./bytes
 True
 
-real    0m1.497s
-user    0m0.705s
-sys     0m0.760s
+real    0m1.468s
+user    0m0.952s
+sys     0m0.512s
 ```
 
-1 B / 1.5 ns = 667 MB / s
+1 B / 1.47 ns = 681 MB/s
 
-~4.9x faster using `ByteString` instead of `String`
+~11.7x faster using `ByteString` instead of `String`
 
 # Question
 
-Is 667 MB / s good?
+Is 681 MB/s good?
 
-Is 1 B / 1.5 ns good?
+Is 1 B / 1.47 ns good?
 
 What is the single-threaded performance we should expect for an optimal state
 machine implementation?
@@ -384,7 +384,7 @@ states
 We'll support up to 16 states for now:
 
 ```c
--- run.c
+// run.c
 
 #include <stdlib.h>
 
@@ -430,7 +430,7 @@ unsigned char run(
 We can test a pure C example matching C-style comments as an example:
 
 ```c
--- file.c
+// file.c
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -509,14 +509,14 @@ int main() {
 Surprisingly, the pure C example is slower:
 
 ```
-$ time ./file
+$ time ./a.out
 True
-real    0m38.809s
-user    0m38.414s
-sys     0m0.361s
+real    0m7.568s
+user    0m7.400s
+sys     0m0.164s
 ```
 
-1 B / 38.8 ns = 26 MB / s
+1 B / 7.568 ns = 132 MB/s
 
 I'm not sure why 🤷
 
@@ -708,6 +708,8 @@ cStyleComments = buildStateMachine step
 😱
 
 ```haskell
+-- c.hs
+
 import Data.ByteString (ByteString)
 import Foreign (Ptr)
 import Foreign.C.Types (CChar(..), CSize(..), CUChar(..))
@@ -843,9 +845,9 @@ $ ghc -O2 c.hs run.o
 $ time ./c
 S00
 
-real    0m3.118s
-user    0m2.280s
-sys     0m0.816s
+real    0m2.735s
+user    0m2.220s
+sys     0m0.512s
 ```
 
 This is in between the pure Haskell solutions for `String` vs `ByteString`
@@ -953,7 +955,7 @@ We don't need specify the starting state now that we have `__builtin_shuffle`
 We can simulate all 16 of them at the same time!
 
 ```c
--- run2.c
+// run2.c
 
 #include <stdlib.h>
 
@@ -1020,6 +1022,8 @@ run stateMachine input = Foreign.Marshal.Unsafe.unsafeLocalState io
 # Full example
 
 ```haskell
+-- c2.hs
+
 {-# LANGUAGE BangPatterns   #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
@@ -1123,10 +1127,12 @@ $ ghc -O2 c2.hs run2.o
 $ time ./c2
 S00
 
-real    0m1.504s
-user    0m0.721s
-sys     0m0.760s
+real    0m1.079s
+user    0m1.040s
+sys     0m0.036s
 ```
+
+1 B / 1.08 ns = 926 MB/s
 
 We can simulate 16 states faster than simulating 1 state! 😮
 
@@ -1214,6 +1220,8 @@ chunkBytes n bytes =
 # Full example
 
 ```haskell
+-- c3.hs
+
 {-# LANGUAGE BangPatterns   #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
@@ -1228,6 +1236,7 @@ import Foreign (Ptr)
 import Foreign.C.Types (CChar(..), CSize(..), CUChar(..))
 import GHC.Generics (Generic)
 
+import qualified Control.Concurrent
 import qualified Control.Parallel.Strategies
 import qualified Data.Binary
 import qualified Data.ByteString.Lazy
@@ -1332,12 +1341,38 @@ chunkBytes n bytes =
 main :: IO ()
 main = do
     bytes <- System.IO.MMap.mmapFileByteString "test.c" Nothing
-    print (runTransition (runParallel 4 cStyleComments bytes) S00)
+    n <- Control.Concurrent.getNumCapabilities
+    print (runTransition (runParallel n cStyleComments bytes) S00)
 ```
 
 # Performance
 
-TODO: Test on Linux machine
+```
+$ gcc -O3 -mssse3 -S run2.c
+$ ghc -O2 -threaded -rtsopts c3.hs run2.0
+$ time ./c3 +RTS -N1
+S00
+
+real    0m1.069s
+user    0m1.024s
+sys     0m0.044s
+
+$ time ./c3 +RTS -N2
+S00
+
+real    0m0.603s
+user    0m0.996s
+sys     0m0.064s
+
+$ time ./c3 +RTS -N4
+S00
+
+real    0m0.444s
+user    0m1.568s
+sys     0m0.052s
+```
+
+1 B / 0.44 ns = 2272 MB/s
 
 # 💡 Insight #3 - Use CPU data pipelining
 
@@ -1367,6 +1402,9 @@ parallelism
 # Minimizing data dependencies
 
 ```c
+// run3.c
+
+#include <stdint.h>
 #include <stdlib.h>
 
 #define NUM_STATES 16
@@ -1435,7 +1473,28 @@ void run(
 
 # Performance
 
-TODO
+```
+$ time ./c3 +RTS -N1
+S00
+
+real    0m0.697s
+user    0m0.676s
+sys     0m0.020s
+$ time ./c3 +RTS -N2
+S00
+
+real    0m0.398s
+user    0m0.736s
+sys     0m0.040s
+$ time ./c3 +RTS -N4
+S00
+
+real    0m0.386s
+user    0m1.352s
+sys     0m0.060s
+```
+
+1 B / 0.39 ns = 2590 MB/s
 
 # Questions?
 
