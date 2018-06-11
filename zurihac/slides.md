@@ -458,6 +458,9 @@ I'm not sure why 🤷
 
 (Yes, I also tried reading blocks instead of individual bytes, unsuccessfully)
 
+**Update**: @nh2 discovered that this is because the C implementation is
+decoding the input instead of reading raw bytes
+
 You'll just have to trust me that using C will pay off in the end.  I promise
 
 # Serialization
