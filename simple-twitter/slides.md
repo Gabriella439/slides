@@ -17,12 +17,14 @@ The final implementation fits in a single file! (~450 lines of code)
 # Overview
 
 * **How web servers work**
-* Using Nix to deploy a database and server skeleton to EC2
-* Using Haskell to implement the business logic
+* Deploy a blank server (NixOps)
+* Add the database (Postgres)
+* Add the web service (Haskell)
+* Render the results (HTML + CSS)
 
 # Single page vs multi page application
 
-There are two extremes on the web application spectrum
+There are two extremes on the web application spectrum:
 
 * Multi-page applications (e.g. `dmv.ca.gov`)
 
@@ -36,7 +38,7 @@ There are two extremes on the web application spectrum
 * Single-page applications (e.g. `gmail.com`)
 
   HTML is served only once for the initial page load, but after that JavaScript
-  code communicates with the server on the user's behalf using JSON
+  code communicates with the server on the user's behalf using (usually) JSON
 
   ```haskell
   { path : List Text, input : < GET : JSON | POST : JSON | … > } → JSON
@@ -44,14 +46,38 @@ There are two extremes on the web application spectrum
 
 Many web applications are somewhere in between (e.g. `github.com`)
 
+# Multi page application
+
+![](./multi-page.png)
+
+# Single page application
+
+![](./single-page.png)
+
 # `yesod` vs. `servant`
 
-`yesod` is primarily designed to support multi page web applications
+**`yesod`** is primarily designed to support **multi page web applications**
 
-`servant` is primarily designed to support single page web applications
+**`servant`** is primarily designed to support **single page web applications**
 
 They both can be used for other use cases, though!
 
-For example, this talk will use `servant` to serve a multi page web application
+For example, this talk uses **`servant`** for a **multi page web application**
 
-This was the simplest to demo, not necessarily what I might use in production
+This is simple to demo, but not necessarily the approach I'd use in production
+
+# Anatomy of our multi-page application
+
+* Front-end: HTML + CSS
+* Web service: ⚡️ Haskell
+* Database: Postgres
+
+![](./anatomy.png)
+
+# Overview
+
+* How web servers work
+* **Deploy a blank server (NixOps)**
+* Add the database (Postgres)
+* Add the web service (Haskell)
+* Render the results (HTML + CSS)
