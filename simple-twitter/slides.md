@@ -14,6 +14,10 @@ This talk illustrates how to implement and deploy a:
 
 The final implementation fits in a single file! (~450 lines of code)
 
+* ~340 lines of Haskell code
+* ~80 lines of Nix
+* ~30 lines of SQL
+
 # Overview
 
 * **How web servers work**
@@ -137,7 +141,7 @@ machine....> copying path '/nix/store/kl1k39r4aw5almxscbgnq7jigl98w92h-acl-2.2.5
 machine....> copying path '/nix/store/zl1gyi297xvflrlsg3zp46990g2xg30l-acl-2.2.53-man' from 'https://cache.nixos.org'...
 machine....> copying path '/nix/store/f1f6xz2nkfhs1w64gfhgbck2ialhcq6q-attr-2.4.48-doc' from 'https://cache.nixos.org'...
 …
-simple-twitter-iterate> closures copied successfully
+simple-twitter> closures copied successfully
 machine....> updating GRUB 2 menu...
 machine....> installing the GRUB 2 boot loader on /dev/xvda...
 machine....> Installing for i386-pc platform.
@@ -156,7 +160,7 @@ machine....> restarting the following units: dhcpcd.service, sshd.service, syste
 machine....> starting the following units: apply-ec2-data.service, audit.service, kmod-static-nodes.service, network-local-commands.service, network-setup.service, nix-daemon.socket, nscd.service, print-host-key.service, rngd.service, systemd-journal-catalog-update.service, systemd-modules-load.service, systemd-sysctl.service, systemd-timesyncd.service, systemd-tmpfiles-clean.timer, systemd-tmpfiles-setup-dev.service, systemd-udev-trigger.service, systemd-udevd-control.socket, systemd-udevd-kernel.socket, systemd-update-done.service
 machine....> the following new units were started: resolvconf.service, systemd-binfmt.service, systemd-coredump.socket
 machine....> activation finished successfully
-simple-twitter-iterate> deployment finished successfully
+simple-twitter> deployment finished successfully
 ```
 
 # Browsing the server
@@ -214,7 +218,7 @@ in
 # Applying the option change
 
 ```bash
-$ nixops deploy --deployment simple-twitter-iterate 
+$ nixops deploy --deployment simple-twitter
 building all machine configurations...
 these derivations will be built:
   /nix/store/62jn9qic8i36cdsmmr4gwjg022nkgrk8-firewall-start.drv
@@ -251,7 +255,7 @@ machine....> copying path '/nix/store/da6v3js93qm55iv1md40fdf7yc2lsjdx-unit-fire
 machine....> copying path '/nix/store/7hm6yjp66vlsb6z9b6kvzbw1r8i1w3vs-system-units' to 'ssh://root@13.52.184.65'...
 machine....> copying path '/nix/store/way2szw1j5gb7basi2pp8g0241wcjdhw-etc' to 'ssh://root@13.52.184.65'...
 machine....> copying path '/nix/store/3i67bb8bigz10c0y4ipwzx1sqa387rw3-nixos-system-machine-20.03pre197736.91d5b3f07d2' to 'ssh://root@13.52.184.65'...
-simple-twitter-iterate> closures copied successfully
+simple-twitter> closures copied successfully
 machine....> updating GRUB 2 menu...
 machine....> setting up /etc...
 machine....> activating the configuration...
@@ -259,13 +263,13 @@ machine....> reloading user units for root...
 machine....> setting up tmpfiles
 machine....> reloading the following units: firewall.service
 machine....> activation finished successfully
-simple-twitter-iterate> deployment finished successfully
+simple-twitter> deployment finished successfully
 ```
 
 # Verify the change
 
 ```bash
-$ nixops ssh --deployment simple-twitter-iterate machine
+$ nixops ssh --deployment simple-twitter machine
 
 [root@machine:~]# iptables --list nixos-fw --numeric
 Chain nixos-fw (1 references)
@@ -353,28 +357,7 @@ CREATE TABLE follows (
             PRIMARY KEY (name)
           );
 
-          CREATE TABLE tweet (
-            id integer GENERATED ALWAYS AS IDENTITY,
-            contents text NOT NULL,
-            time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
-          );
-
-          CREATE TABLE user_tweet (
-            "user" text NOT NULL,
-            tweet integer NOT NULL,
-            PRIMARY KEY ("user", tweet),
-            FOREIGN KEY ("user") REFERENCES "user" (name) ON DELETE CASCADE,
-            FOREIGN KEY (tweet) REFERENCES tweet (id) ON DELETE CASCADE
-          );
-
-          CREATE TABLE follows (
-            follower text NOT NULL,
-            followed text NOT NULL,
-            PRIMARY KEY (follower, followed),
-            FOREIGN KEY (follower) REFERENCES "user" (name) ON DELETE CASCADE,
-            FOREIGN KEY (followed) REFERENCES "user" (name) ON DELETE CASCADE
-          );
+          …
         '';
       };
     };
@@ -386,7 +369,7 @@ CREATE TABLE follows (
 # Deploying the database
 
 ```bash
-$ nixops deploy --deployment simple-twitter-iterate 
+$ nixops deploy --deployment simple-twitter
 building all machine configurations...
 these derivations will be built:
 …
@@ -405,22 +388,11 @@ these paths will be fetched (16.78 MiB download, 90.94 MiB unpacked):
   /nix/store/p2c1hpyn0a7hf4ji0alsapn990ig8zqi-postgresql-11.5-lib
   /nix/store/sg98yg6572kzbppn3ykgy8li5wakbs2k-postgresql-11.5-doc
 …
-copying path '/nix/store/sg98yg6572kzbppn3ykgy8li5wakbs2k-postgresql-11.5-doc' from 'https://cache.nixos.org'...
-building '/nix/store/5xxq80nkwpi7gd6si8wgnb1jlxnyiglr-users-groups.json.drv' on 'ssh://root@107.23.226.1'...
+simple-twitter> closures copied successfully
 …
-machine....> copying closure...
-machine....> copying path '/nix/store/2pla5hnaqknpf65ilnf9f03jhqw51hs8-hook' from 'https://cache.nixos.org'...
-…
-simple-twitter-iterate> closures copied successfully
-machine....> updating GRUB 2 menu...
-machine....> activating the configuration...
-machine....> setting up /etc...
-machine....> reloading user units for root...
-machine....> setting up tmpfiles
-machine....> reloading the following units: dbus.service
 machine....> the following new units were started: postgresql.service
 machine....> activation finished successfully
-simple-twitter-iterate> deployment finished successfully
+simple-twitter> deployment finished successfully
 ```
 
 # Test-driving the database
@@ -465,4 +437,145 @@ postgres-# ORDER BY tweet.time;
 ---------------
  Hello, world!
 (1 row)
+```
+
+# Overview
+
+* How web servers work
+* Deploy a blank server (NixOps)
+* Add the database (Postgres)
+* **Add the web service (Haskell)**
+* Render the results (HTML + CSS)
+
+# A minimal Haskell service
+
+```haskell
+{-# LANGUAGE BlockArguments     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE TypeApplications   #-}
+
+module Main where
+
+import Data.Proxy (Proxy(..))
+import Data.Text (Text)
+import Data.Word (Word16)
+import GHC.Generics (Generic)
+import Options.Generic (ParseRecord)
+import Servant.API (Get, JSON)
+
+import qualified Control.Exception          as Exception
+import qualified Database.PostgreSQL.Simple as PostgreSQL
+import qualified Network.Wai.Handler.Warp   as Warp
+import qualified Options.Generic            as Options
+import qualified Servant.Server             as Server
+
+newtype Options = Options { connectPort :: Word16 }
+    deriving stock (Generic)
+    deriving anyclass (ParseRecord)
+
+type API = Get '[JSON] Text
+
+main :: IO ()
+main = do
+    Options {..} <- Options.getRecord "Simple Twitter"
+
+    let connectInfo =
+            PostgreSQL.defaultConnectInfo
+              { PostgreSQL.connectPort = connectPort
+              , PostgreSQL.connectHost = ""
+              }
+
+    let open = PostgreSQL.connect connectInfo
+    let close = PostgreSQL.close
+
+    Exception.bracket open close \_connection -> do
+        let server = return "Hello, world!"
+
+        let application = Server.serve @API Proxy server
+
+        Warp.run 80 application
+```
+
+# Creating a skeleton for our service
+
+```nix
+…
+  { machine = { config, pkgs, resources, ... }: {
+      …
+
+      systemd.services.simple-twitter = {
+        wantedBy = [ "multi-user.target" ];
+
+        after = [ "postgresql.service" ];
+
+        script =
+          let
+            ghc =
+              pkgs.haskellPackages.ghcWithPackages (pkgs: [
+                  pkgs.optparse-generic
+                  pkgs.postgresql-simple
+                  pkgs.servant
+                  pkgs.servant-server
+                  pkgs.warp
+                ]
+              );
+
+            code = pkgs.writeText "Main.hs" ''
+{-# LANGUAGE BlockArguments     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DataKinds          #-}
+…
+            '';
+
+            simple-twitter = pkgs.runCommand "simple-twitter" {} ''
+              ${pkgs.coreutils}/bin/mkdir --parents $out/bin
+
+              ${ghc}/bin/ghc -O -Wall -Werror ${code} -o $out/bin/simple-twitter
+            '';
+
+          in
+            ''
+            ${simple-twitter}/bin/simple-twitter --connectPort ${toString config.services.postgresql.port}
+            '';
+      };
+    };
+
+    resources = {
+      …
+
+      ec2SecurityGroups."http" = {
+        inherit accessKeyId region;
+
+        rules = [
+          { fromPort = 80; toPort = 80; sourceIp = "0.0.0.0/0"; }
+        ];
+      };
+    };
+  }
+```
+
+# Deploy our service
+
+```
+$ nixops deploy --deployment simple-twitter
+…
+building '/nix/store/vahxd7w11zmllrcd7r97w7mfsjffv8hw-Main.hs.drv' on 'ssh://root@107.23.226.1'...
+copying 1 paths...
+copying path '/nix/store/qshljjjasg2j5p1qjl8wfd8wv6q4yqm5-Main.hs' from 'ssh://root@107.23.226.1'...
+building '/nix/store/s8qv8k29f75rgpg65c83zk7zplyvm0w5-simple-twitter.drv' on 'ssh://root@107.23.226.1'...
+[1 of 1] Compiling Main             ( /nix/store/qshljjjasg2j5p1qjl8wfd8wv6q4yqm5-Main.hs, /nix/store/qshljjjasg2j5p1qjl8wfd8wv6q4yqm5-Main.o )
+Linking /nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-twitter/bin/simple-twitter ...
+copying 1 paths...
+copying path '/nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-twitter' from 'ssh://root@107.23.226.1'...
+…
+machine....> copying path '/nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-twitter' to 'ssh://root@54.67.99.168'...
+…
+machine....> starting the following units: simple-twitter.service
+machine....> activation finished successfully
+simple-twitter> deployment finished successfully
 ```
