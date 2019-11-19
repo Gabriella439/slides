@@ -680,22 +680,6 @@ type API =
 # Handlers
 
 ```haskell
-let execute :: (MonadIO io, ToRow input) => input -> Query -> io ()
-    execute input q = liftIO do
-        _ <- PostgreSQL.execute connection q input
-
-        return ()
-
-let query
-        :: (MonadIO io, ToRow input, FromRow output)
-        => input -> Query -> io [output]
-    query input q = liftIO (PostgreSQL.query connection q input)
-
-let query_
-        :: (MonadIO io, FromRow output)
-        => Query -> io [output]
-    query_ q = liftIO (PostgreSQL.query_ connection q)
-
 let index :: Handler Markup
     index = do
         tweets <- query_ [sql|
@@ -715,16 +699,13 @@ let getUsers :: Handler Markup
         …  -- Render the list of users
 
 let createUser :: User -> Handler Markup
-    createUser user@User{..} = do
-        let message =
-                "A user named '" <> name <> "' already exists"
-
+    createUser user = do
         execute user [sql|INSERT INTO "user" (name) VALUES (?)|]
 
         getUsers
 
 let getUser :: User -> Handler Markup
-    getUser user@User{..} = do
+    getUser user = do
         followeds <- query user [sql|
             SELECT follows.followed
             FROM           "user"
@@ -751,10 +732,10 @@ let getUser :: User -> Handler Markup
             ORDER BY tweet.time DESC
         |]
 
-        …  -- Render the user's profile
+        …  -- Render the user's profile and timeline
 
 let deleteUser :: User -> Handler Markup
-    deleteUser user@User{..}= do
+    deleteUser user = do
         execute user [sql|DELETE FROM "user" WHERE name = ?|]
 
         getUsers
@@ -776,7 +757,7 @@ let createTweet :: Tweet -> Handler Markup
         getUser (User {..})
 
 let follow :: Follow -> Handler Markup
-    follow f@Follow{..} = do
+    follow f = do
         execute f [sql|
             INSERT INTO follows (follower, followed) VALUES (?, ?)
         |]
