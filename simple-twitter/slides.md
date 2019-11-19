@@ -530,6 +530,7 @@ main = do
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DataKinds          #-}
 …
+        Warp.run 80 application
             '';
 
             simple-twitter = pkgs.runCommand "simple-twitter" {} ''
@@ -578,4 +579,215 @@ machine....> copying path '/nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-tw
 machine....> starting the following units: simple-twitter.service
 machine....> activation finished successfully
 simple-twitter> deployment finished successfully
+```
+
+# Testing our service
+
+```bash
+$ nixops info --deployment simple-twitter-iterate
+Network name: simple-twitter
+…
+
++-------------+-----------------+--------------------------------+-------------+--------------+
+| Name        |      Status     | Type                           | Resource Id | IP address   |
++-------------+-----------------+--------------------------------+-------------+--------------+
+| machine     | Up / Up-to-date | ec2 [us-west-1c; t2.nano]      | …           | 54.67.99.168 |
+| my-key-pair |        Up       | ec2-keypair [us-west-1]        | …           |              |
+| http        |        Up       | ec2-security-group [us-west-1] | …           |              |
++-------------+-----------------+--------------------------------+-------------+--------------+
+
+$ curl http://54.67.99.168
+"Hello, world!"
+```
+
+Not covered in this talk:
+
+* How to register a domain name
+* How to enable HTTPS using Let's Encrypt (easy, but requires a domain)
+
+# Define our API
+
+The endpoints we will use to power our Twitter-like site are:
+
+* `GET /` - Get the global timeline
+
+* `POST /user` (†) - Create a user
+
+* `GET /user` - Get a specific user's profile (tweets, timeline, follows)
+
+* `POST /user/delete` (‡) - Delete a user
+
+* `GET /users` - Get a list of all users
+
+* `POST /tweet` (†) - Create a tweet
+
+* `POST /follow` (†) - Follow a user
+
+†: These methods should really be `PUT`
+
+‡: This method should really be `DELETE /user`
+
+Browser links and web forms only support `GET`/`POST`
+
+# Our `Servant` API
+
+```haskell
+newtype User = User { name :: Text }
+    deriving stock (Generic)
+    deriving anyclass (FromForm, FromRow, ToRow)
+    deriving newtype (FromHttpApiData)
+
+data Follow = Follow { follower :: Text, followed :: Text }
+    deriving stock (Generic)
+    deriving anyclass (FromForm, ToRow)
+
+data Tweet = Tweet { name :: Text, contents :: Text }
+    deriving stock (Generic)
+    deriving anyclass (FromForm, FromRow)
+
+type API =
+        Get '[HTML] Markup
+   :<|> "user" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup
+   :<|> "user" :> QueryParam' '[Required, Strict] "name" User :> Get '[HTML] Markup
+   :<|> "user" :> "delete" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup
+   :<|> "users" :> Get '[HTML] Markup
+   :<|> "tweet" :> ReqBody '[FormUrlEncoded] Tweet :> Post '[HTML] Markup
+   :<|> "follow" :> ReqBody '[FormUrlEncoded] Follow :> Post '[HTML] Markup
+```
+
+# Handler types
+
+```haskell
+>>> import Data.Text as Text
+>>> import GHC.Generics as Generics
+>>> import Servant
+>>> import Servant.HTML.Blaze as Servant.Blaze
+>>> import Text.Blaze.Internal as Blaze
+>>> import Web.FormUrlEncoded as Web
+>>> :set -XDeriveGeneric -XDeriveAnyClass -XGeneralizedNewtypeDeriving -XDerivingStrategies
+>>> :set -XDataKinds -XTypeOperators
+>>> newtype User = User { name :: Text } deriving stock (Generic) deriving anyclass (FromForm) deriving newtype (FromHttpApiData)
+>>> :kind! Server (Get '[HTML] Markup)
+= Handler (MarkupM ())
+>>> :kind! Server ("user" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup)
+= User -> Handler (MarkupM ())
+>>> :kind! Server ("user" :> QueryParam' '[Required, Strict] "name" User :> Get '[HTML] Markup)
+= User -> Handler (MarkupM ())
+>>> :kind! Server ("user" :> "delete" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup)
+= User -> Handler (MarkupM ())
+```
+
+# Handlers
+
+```haskell
+let execute :: (MonadIO io, ToRow input) => input -> Query -> io ()
+    execute input q = liftIO do
+        _ <- PostgreSQL.execute connection q input
+
+        return ()
+
+let query
+        :: (MonadIO io, ToRow input, FromRow output)
+        => input -> Query -> io [output]
+    query input q = liftIO (PostgreSQL.query connection q input)
+
+let query_
+        :: (MonadIO io, FromRow output)
+        => Query -> io [output]
+    query_ q = liftIO (PostgreSQL.query_ connection q)
+
+let index :: Handler Markup
+    index = do
+        tweets <- query_ [sql|
+            SELECT "user".name, tweet.contents
+            FROM           "user"
+                INNER JOIN user_tweet ON "user".name = user_tweet."user"
+                INNER JOIN tweet      ON user_tweet.tweet = tweet.id
+            ORDER BY tweet.time DESC
+        |]
+
+        …  -- Render the global timeline
+
+let getUsers :: Handler Markup
+    getUsers = do
+        users <- query_ [sql|SELECT name FROM "user"|]
+
+        …  -- Render the list of users
+
+let createUser :: User -> Handler Markup
+    createUser user@User{..} = do
+        let message =
+                "A user named '" <> name <> "' already exists"
+
+        execute user [sql|INSERT INTO "user" (name) VALUES (?)|]
+
+        getUsers
+
+let getUser :: User -> Handler Markup
+    getUser user@User{..} = do
+        followeds <- query user [sql|
+            SELECT follows.followed
+            FROM           "user"
+                INNER JOIN follows ON "user".name = follows.follower
+            WHERE "user".name = ?
+        |]
+
+        history <- query user [sql|
+            SELECT "user".name, tweet.contents
+            FROM           "user"
+                INNER JOIN user_tweet ON "user".name = user_tweet."user"
+                INNER JOIN tweet      ON user_tweet.tweet = tweet.id
+            WHERE "user".name = ?
+            ORDER BY tweet.time DESC
+        |]
+
+        timeline <- query user [sql|
+            SELECT follows.followed, tweet.contents
+            FROM           "user"
+                INNER JOIN follows    ON "user".name = follows.follower
+                INNER JOIN user_tweet ON follows.followed = user_tweet."user"
+                INNER JOIN tweet      ON user_tweet.tweet = tweet.id
+            WHERE "user".name = ?
+            ORDER BY tweet.time DESC
+        |]
+
+        …  -- Render the user's profile
+
+let deleteUser :: User -> Handler Markup
+    deleteUser user@User{..}= do
+        execute user [sql|DELETE FROM "user" WHERE name = ?|]
+
+        getUsers
+
+let createTweet :: Tweet -> Handler Markup
+    createTweet (Tweet {..}) = do
+        rows <- query (Only contents) [sql|
+            INSERT INTO tweet (contents) VALUES (?) RETURNING (id)
+        |]
+
+        id <- case rows of
+            [ (id :: Only Integer) ] -> return id
+            _                        -> Catch.throwM Server.err500
+
+        execute (Only name :. id) [sql|
+            INSERT INTO user_tweet ("user", tweet) VALUES (?, ?)
+        |]
+
+        getUser (User {..})
+
+let follow :: Follow -> Handler Markup
+    follow f@Follow{..} = do
+        execute f [sql|
+            INSERT INTO follows (follower, followed) VALUES (?, ?)
+        |]
+
+        getUser (User { name = follower })
+
+let server = index
+        :<|> createUser
+        :<|> getUser
+        :<|> deleteUser
+        :<|> getUsers
+        :<|> createTweet
+        :<|> follow
 ```
