@@ -25,6 +25,7 @@ The final implementation fits in a single file! (~450 lines of code)
 * Add the database (Postgres)
 * Add the web service (Haskell)
 * Render the results (HTML + CSS)
+* Conclusion
 
 # Single page vs multi page application
 
@@ -45,18 +46,10 @@ There are two extremes on the web application spectrum:
   code communicates with the server on the user's behalf using (usually) JSON
 
   ```haskell
-  { path : List Text, input : < GET : JSON | POST : JSON | … > } → JSON
+  { path : List Text, input : < GET : QueryParams | POST : JSON | … > } → JSON
   ```
 
 Many web applications are somewhere in between (e.g. `github.com`)
-
-# Multi page application
-
-![](./multi-page.png)
-
-# Single page application
-
-![](./single-page.png)
 
 # `yesod` vs. `servant`
 
@@ -85,6 +78,7 @@ This is simple to demo, but not necessarily the approach I'd use in production
 * Add the database (Postgres)
 * Add the web service (Haskell)
 * Render the results (HTML + CSS)
+* Conclusion
 
 # A blank EC2 server
 
@@ -219,56 +213,11 @@ in
 
 ```bash
 $ nixops deploy --deployment simple-twitter
-building all machine configurations...
-these derivations will be built:
-  /nix/store/62jn9qic8i36cdsmmr4gwjg022nkgrk8-firewall-start.drv
-  /nix/store/xjjl73mpwj45qz3scpkwsrffapdkb2db-firewall-reload.drv
-  /nix/store/nk8vv2rln68d6rsypvkifvil037pf6wp-unit-firewall.service.drv
-  /nix/store/5j4hdhfhryhvxfa9gp9ar5j37vyh3xf3-system-units.drv
-  /nix/store/ilrzg8fi27zv2w2irhz7nqa8z3mj3nz9-etc.drv
-  /nix/store/wcchpbi5pg2y309f89k87axn6b3n7hph-nixos-system-machine-20.03pre197736.91d5b3f07d2.drv
-  /nix/store/rh6pf6f1bdkhvhkwdpmnv3arxnnbanbs-nixops-machines.drv
-building '/nix/store/62jn9qic8i36cdsmmr4gwjg022nkgrk8-firewall-start.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/cqnr2k485zn95is865wl131r28fmxccw-firewall-start' from 'ssh://root@107.23.226.1'...
-building '/nix/store/xjjl73mpwj45qz3scpkwsrffapdkb2db-firewall-reload.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/yz82p7nlycl58szsy39q1gygx43qnf38-firewall-reload' from 'ssh://root@107.23.226.1'...
-building '/nix/store/nk8vv2rln68d6rsypvkifvil037pf6wp-unit-firewall.service.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/da6v3js93qm55iv1md40fdf7yc2lsjdx-unit-firewall.service' from 'ssh://root@107.23.226.1'...
-building '/nix/store/5j4hdhfhryhvxfa9gp9ar5j37vyh3xf3-system-units.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/7hm6yjp66vlsb6z9b6kvzbw1r8i1w3vs-system-units' from 'ssh://root@107.23.226.1'...
-building '/nix/store/ilrzg8fi27zv2w2irhz7nqa8z3mj3nz9-etc.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/way2szw1j5gb7basi2pp8g0241wcjdhw-etc' from 'ssh://root@107.23.226.1'...
-building '/nix/store/wcchpbi5pg2y309f89k87axn6b3n7hph-nixos-system-machine-20.03pre197736.91d5b3f07d2.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/3i67bb8bigz10c0y4ipwzx1sqa387rw3-nixos-system-machine-20.03pre197736.91d5b3f07d2' from 'ssh://root@107.23.226.1'...
-building '/nix/store/rh6pf6f1bdkhvhkwdpmnv3arxnnbanbs-nixops-machines.drv'...
-machine....> copying closure...
-machine....> copying path '/nix/store/cqnr2k485zn95is865wl131r28fmxccw-firewall-start' from 'https://cache.nixos.org'...
-machine....> copying path '/nix/store/yz82p7nlycl58szsy39q1gygx43qnf38-firewall-reload' from 'https://cache.nixos.org'...
-machine....> copying 4 paths...
-machine....> copying path '/nix/store/da6v3js93qm55iv1md40fdf7yc2lsjdx-unit-firewall.service' to 'ssh://root@13.52.184.65'...
-machine....> copying path '/nix/store/7hm6yjp66vlsb6z9b6kvzbw1r8i1w3vs-system-units' to 'ssh://root@13.52.184.65'...
-machine....> copying path '/nix/store/way2szw1j5gb7basi2pp8g0241wcjdhw-etc' to 'ssh://root@13.52.184.65'...
-machine....> copying path '/nix/store/3i67bb8bigz10c0y4ipwzx1sqa387rw3-nixos-system-machine-20.03pre197736.91d5b3f07d2' to 'ssh://root@13.52.184.65'...
-simple-twitter> closures copied successfully
-machine....> updating GRUB 2 menu...
-machine....> setting up /etc...
-machine....> activating the configuration...
-machine....> reloading user units for root...
-machine....> setting up tmpfiles
+…
 machine....> reloading the following units: firewall.service
 machine....> activation finished successfully
 simple-twitter> deployment finished successfully
-```
 
-# Verify the change
-
-```bash
 $ nixops ssh --deployment simple-twitter machine
 
 [root@machine:~]# iptables --list nixos-fw --numeric
@@ -297,6 +246,7 @@ You can browse available NixOS options by visiting:
 * **Add the database (Postgres)**
 * Add the web service (Haskell)
 * Render the results (HTML + CSS)
+* Conclusion
 
 # Schema
 
@@ -370,34 +320,11 @@ CREATE TABLE follows (
 
 ```bash
 $ nixops deploy --deployment simple-twitter
-building all machine configurations...
-these derivations will be built:
-…
-  /nix/store/bin42k3ggcymx67gpn6hhxxp6zdmwn2z-pg_ident.conf.drv
-  /nix/store/flf45y66hyz3znj82s4w2pj96iynignw-pg_hba.conf.drv
-  /nix/store/60pvsi0l8l34lf2j454qxjcrdmwj8maw-postgresql.conf.drv
-  /nix/store/cirascnqjv7b157cibgylb0bhyfbh203-unit-script-postgresql-start.drv
-  /nix/store/8b8brkmsjf8bpv2rabpjkwr35v9mdl9j-initialScript.sql.drv
-  /nix/store/lkk0xw9d1348zb61k9kgzbrzsj2rx7k4-unit-script-postgresql-post-start.drv
-  /nix/store/zda4whxymihfp9k8cnjy3z68ww3r8wpi-unit-script-postgresql-pre-start.drv
-  /nix/store/2w0wxrplb65j37zd9vw9fi0hfh7jvrb4-unit-postgresql.service.drv
-…
-these paths will be fetched (16.78 MiB download, 90.94 MiB unpacked):
-  /nix/store/1lxj940cgn672lpaizbw4x9q7zxdv84c-postgresql-11.5
-  /nix/store/cf81428clxaahaly17i4mvxlmx6kdn7d-postgresql-11.5-man
-  /nix/store/p2c1hpyn0a7hf4ji0alsapn990ig8zqi-postgresql-11.5-lib
-  /nix/store/sg98yg6572kzbppn3ykgy8li5wakbs2k-postgresql-11.5-doc
-…
-simple-twitter> closures copied successfully
 …
 machine....> the following new units were started: postgresql.service
 machine....> activation finished successfully
 simple-twitter> deployment finished successfully
-```
 
-# Test-driving the database
-
-```bash
 $ nixops ssh --deployment simple-twitter machine
 
 [root@machine:~]# sudo -u postgres psql
@@ -415,28 +342,6 @@ Referenced by:
     TABLE "follows" CONSTRAINT "follows_followed_fkey" FOREIGN KEY (followed) REFERENCES "user"(name) ON DELETE CASCADE
     TABLE "follows" CONSTRAINT "follows_follower_fkey" FOREIGN KEY (follower) REFERENCES "user"(name) ON DELETE CASCADE
     TABLE "user_tweet" CONSTRAINT "user_tweet_user_fkey" FOREIGN KEY ("user") REFERENCES "user"(name) ON DELETE CASCADE
-
-postgres=# INSERT INTO "user" (name) VALUES ('Gabriel');
-INSERT 0 1
-postgres=# INSERT INTO "tweet" (contents) VALUES ('Hello, world!');
-INSERT 0 1
-postgres=# SELECT * FROM tweet;
- id |   contents    |            time            
-----+---------------+----------------------------
-  1 | Hello, world! | 2019-11-09 18:22:14.491523
-(1 row)
-
-postgres=# INSERT INTO user_tweet ("user", tweet) VALUES ('Gabriel', 1);
-INSERT 0 1
-
-postgres=# SELECT tweet.contents
-postgres-# FROM user_tweet INNER JOIN tweet ON user_tweet.tweet = tweet.id
-postgres-# WHERE user_tweet.user = 'Gabriel'
-postgres-# ORDER BY tweet.time;
-   contents    
----------------
- Hello, world!
-(1 row)
 ```
 
 # Overview
@@ -446,6 +351,7 @@ postgres-# ORDER BY tweet.time;
 * Add the database (Postgres)
 * **Add the web service (Haskell)**
 * Render the results (HTML + CSS)
+* Conclusion
 
 # A minimal Haskell service
 
@@ -565,26 +471,11 @@ main = do
 ```
 $ nixops deploy --deployment simple-twitter
 …
-building '/nix/store/vahxd7w11zmllrcd7r97w7mfsjffv8hw-Main.hs.drv' on 'ssh://root@107.23.226.1'...
-copying 1 paths...
-copying path '/nix/store/qshljjjasg2j5p1qjl8wfd8wv6q4yqm5-Main.hs' from 'ssh://root@107.23.226.1'...
-building '/nix/store/s8qv8k29f75rgpg65c83zk7zplyvm0w5-simple-twitter.drv' on 'ssh://root@107.23.226.1'...
-[1 of 1] Compiling Main             ( /nix/store/qshljjjasg2j5p1qjl8wfd8wv6q4yqm5-Main.hs, /nix/store/qshljjjasg2j5p1qjl8wfd8wv6q4yqm5-Main.o )
-Linking /nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-twitter/bin/simple-twitter ...
-copying 1 paths...
-copying path '/nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-twitter' from 'ssh://root@107.23.226.1'...
-…
-machine....> copying path '/nix/store/yhp38vsff6yc7p3x04zp0vwkg5f0i399-simple-twitter' to 'ssh://root@54.67.99.168'...
-…
 machine....> starting the following units: simple-twitter.service
 machine....> activation finished successfully
 simple-twitter> deployment finished successfully
-```
 
-# Testing our service
-
-```bash
-$ nixops info --deployment simple-twitter-iterate
+$ nixops info --deployment simple-twitter
 Network name: simple-twitter
 …
 
@@ -600,10 +491,7 @@ $ curl http://54.67.99.168
 "Hello, world!"
 ```
 
-Not covered in this talk:
-
-* How to register a domain name
-* How to enable HTTPS using Let's Encrypt (easy, but requires a domain)
+Not covered in this talk: how to register a domain name and enable HTTPS
 
 # Define our API
 
@@ -646,12 +534,19 @@ data Tweet = Tweet { name :: Text, contents :: Text }
     deriving anyclass (FromForm, FromRow)
 
 type API =
+        -- GET /
         Get '[HTML] Markup
+        -- POST /user
    :<|> "user" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup
+        -- GET /user?name=:name
    :<|> "user" :> QueryParam' '[Required, Strict] "name" User :> Get '[HTML] Markup
+        -- POST /user/delete
    :<|> "user" :> "delete" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup
+        -- GET /users
    :<|> "users" :> Get '[HTML] Markup
+        -- POST /tweet
    :<|> "tweet" :> ReqBody '[FormUrlEncoded] Tweet :> Post '[HTML] Markup
+        -- POST /follow
    :<|> "follow" :> ReqBody '[FormUrlEncoded] Follow :> Post '[HTML] Markup
 ```
 
@@ -772,3 +667,260 @@ let server = index
         :<|> createTweet
         :<|> follow
 ```
+
+# Overview
+
+* How web servers work
+* Deploy a blank server (NixOps)
+* Add the database (Postgres)
+* Add the web service (Haskell)
+* **Render the results (HTML + CSS)**
+* Conclusion
+
+# Rendering HTML
+
+We'll be using the following two packages to render HTML using Haskell code:
+
+* [`blaze-markup`](http://hackage.haskell.org/package/blaze-markup) -
+  Efficiently rendering HTML using Haskell code
+
+* [`servant-blaze`](https://hackage.haskell.org/package/servant-blaze) -
+  Glue layer between `servant` and `blaze-markup`
+
+The benefit of doing things this way is that:
+
+* `blaze-markup` eliminates certain classes of malformed HTML
+* We can take advantage of Haskell programming features to reduce repetition
+
+# Rendering code
+
+```haskell
+let submit label =
+            Html.button
+        !   Attr.type_ "submit"
+        !   Attr.class_ "btn btn-primary btn-sm"
+        $   label
+
+let field name = do
+        Html.div ! Attr.class_ "form-group" $ do
+            Html.input
+                !   Attr.type_ "text"
+                !   Attr.class_ "form-control form-control-sm"
+                !   Attr.name name
+                !   Attr.placeholder name
+
+let form action method html =
+        Html.div ! Attr.class_ "col-md-4" $ do
+            Html.form
+                !   Attr.action action
+                !   Attr.method method
+                !   Attr.class_ "border m-3 p-2 bg-light"
+                $   html
+
+let forms = do
+        Html.div ! Attr.class_ "row" $ do
+            form "/" "get" do
+                submit "Global timeline"
+
+        Html.div ! Attr.class_ "row" $ do
+            form "/user" "post" do
+                field "name"
+                submit "Create user"
+
+            form "/user/delete" "post" do
+                field "name"
+                submit "Delete user"
+
+            form "/users" "get" do
+                submit "Get users"
+
+        Html.div ! Attr.class_ "row" $ do
+            form "/tweet" "post" do
+                field "name"
+                field "contents"
+                submit "Create tweet"
+
+            form "/follow" "post" do
+                field "follower"
+                field "followed"
+                submit "Follow"
+
+            form "/user" "get" do
+                field "name"
+                submit "Get user"
+
+let ul html = Html.ul ! Attr.class_ "list-group" $ html
+
+let li html = Html.li ! Attr.class_ "list-group-item" $ html
+
+let wrap body =
+        Html.html do
+            Html.head do
+                Html.title "Simple Twitter"
+                Html.link
+                    ! Attr.rel "stylesheet"
+                    ! Attr.href "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+
+            Html.body do
+                Html.h1
+                    ! Attr.class_ "display-4 text-center"
+                    $ "Simple Twitter"
+
+                Html.div ! Attr.class_ "container" $ do
+                  Html.div ! Attr.class_ "row" $ do
+                      Html.div ! Attr.class_ "col-md-6" $ forms
+                      Html.div ! Attr.class_ "col-md-6" $ body
+
+let failWith message handler = do
+        let fallback :: SomeException -> Handler Markup
+            fallback _ = return (wrap (Html.toHtml message))
+
+        Catch.handle fallback handler
+
+let index :: Handler Markup
+    index = do
+        tweets <- query_ [sql|
+            SELECT "user".name, tweet.contents
+            FROM           "user"
+                INNER JOIN user_tweet ON "user".name = user_tweet."user"
+                INNER JOIN tweet      ON user_tweet.tweet = tweet.id
+            ORDER BY tweet.time DESC
+        |]
+
+        let renderTweet (Tweet {..}) =
+                li (Html.toHtml (name <> ": " <> contents))
+
+        return do
+            wrap (ul (traverse_ renderTweet tweets))
+
+let getUsers :: Handler Markup
+    getUsers = do
+        users <- query_ [sql|SELECT name FROM "user"|]
+
+        let renderUser (User {..}) = li (Html.toHtml name)
+
+        return (wrap (ul (traverse_ renderUser users)))
+
+let createUser :: User -> Handler Markup
+    createUser user@User{..} = do
+        let message =
+                "A user named '" <> name <> "' already exists"
+
+        failWith message do
+            execute user [sql|INSERT INTO "user" (name) VALUES (?)|]
+
+            getUsers
+
+let getUser :: User -> Handler Markup
+    getUser user@User{..} = do
+        let message =
+                "No user named '" <> name <> "' exists"
+
+        failWith message do
+            followeds <- query user [sql|
+                SELECT follows.followed
+                FROM           "user"
+                    INNER JOIN follows ON "user".name = follows.follower
+                WHERE "user".name = ?
+            |]
+
+            history <- query user [sql|
+                SELECT "user".name, tweet.contents
+                FROM           "user"
+                    INNER JOIN user_tweet ON "user".name = user_tweet."user"
+                    INNER JOIN tweet      ON user_tweet.tweet = tweet.id
+                WHERE "user".name = ?
+                ORDER BY tweet.time DESC
+            |]
+
+            timeline <- query user [sql|
+                SELECT follows.followed, tweet.contents
+                FROM           "user"
+                    INNER JOIN follows    ON "user".name = follows.follower
+                    INNER JOIN user_tweet ON follows.followed = user_tweet."user"
+                    INNER JOIN tweet      ON user_tweet.tweet = tweet.id
+                WHERE "user".name = ?
+                ORDER BY tweet.time DESC
+            |]
+
+            let renderHistory (Tweet { contents }) =
+                    li (Html.toHtml contents)
+
+            let renderTimeline (Tweet { name = followed, ..}) =
+                    li (Html.toHtml (followed <> ": " <> contents))
+
+            let renderUser (User { name = followed }) =
+                    li (Html.toHtml followed)
+
+            return do
+                wrap do
+                    Html.h2 (Html.toHtml name)
+                    Html.hr
+                    Monad.when (not (null history)) do
+                        Html.h3 "History"
+                        ul (traverse_ renderHistory history)
+
+                    Monad.when (not (null timeline)) do
+                        Html.h3 "Timeline"
+                        ul (traverse_ renderTimeline timeline)
+
+                    Monad.when (not (null followeds)) do
+                        Html.h3 "Follows"
+                        ul (traverse_ renderUser followeds)
+
+let deleteUser :: User -> Handler Markup
+    deleteUser user@User{..}= do
+        let message =
+                "No user named '" <> name <> "' exists"
+
+        failWith message do
+            execute user [sql|DELETE FROM "user" WHERE name = ?|]
+
+            getUsers
+
+let createTweet :: Tweet -> Handler Markup
+    createTweet (Tweet {..}) = do
+        rows <- query (Only contents) [sql|
+            INSERT INTO tweet (contents) VALUES (?) RETURNING (id)
+        |]
+
+        id <- case rows of
+            [ (id :: Only Integer) ] -> return id
+            _                        -> Catch.throwM Server.err500
+
+        execute (Only name :. id) [sql|
+            INSERT INTO user_tweet ("user", tweet) VALUES (?, ?)
+        |]
+
+        getUser (User {..})
+
+let follow :: Follow -> Handler Markup
+    follow f@Follow{..} = do
+        let message =
+                "'" <> follower <> "' already follows '" <> followed <> "'"
+        failWith message do
+            execute f [sql|
+                INSERT INTO follows (follower, followed) VALUES (?, ?)
+            |]
+
+            getUser (User { name = follower })
+```
+
+# Overview
+
+* How web servers work
+* Deploy a blank server (NixOps)
+* Add the database (Postgres)
+* Add the web service (Haskell)
+* Render the results (HTML + CSS)
+* **Conclusion**
+
+# Conclusion
+
+* Multi-page apps = old-fashioned / Single-page apps = modern
+* Don't repeat yourself!  Especially don't copy-and-paste HTML
+* Haskell + Nix + Postgres have the skillz to pay the billz
+
+You can find the complete code here:
+
+* [https://github.com/Gabriel439/simple-twitter](https://github.com/Gabriel439/simple-twitter)
