@@ -1,6 +1,6 @@
 % A bare-bones Twitter clone implemented with Haskell + Nix
 % Gabriel Gonzalez
-% April 18, 2017
+% November 21, 2019
 
 # Overview
 
@@ -17,6 +17,10 @@ The final implementation fits in a single file! (~450 lines of code)
 * ~340 lines of Haskell code
 * ~80 lines of Nix
 * ~30 lines of SQL
+
+You can follow along by visiting:
+
+* [https://github.com/Gabriel439/simple-twitter](https://github.com/Gabriel439/simple-twitter)
 
 # Overview
 
@@ -83,12 +87,10 @@ This is simple to demo, but not necessarily the approach I'd use in production
 # A blank EC2 server
 
 ```nix
-# ./simple-twitter.nix
-
 let
   region = "us-west-1";
 
-  accessKeyId = "personal";
+  accessKeyId = "default";
 
 in
   { machine = { resources, ... }: {
@@ -150,21 +152,14 @@ Nov 09 16:31:44 machine sshd[2087]: Starting session: shell on pts/0 for root fr
 # Configuring options
 
 ```nix
-let
-  …
-
-in
+…
   { machine = { resources, ... }: {
-      deployment = {
-        …
-      };
+      …
 
       networking.firewall.allowedTCPPorts = [ 80 ];  # ← New NixOS option
     };
 
-    resources = {
-      …
-    };
+    …
   }
 ```
 
@@ -347,7 +342,7 @@ type API = Get '[JSON] Text
 
 main :: IO ()
 main = do
-    Options {..} <- Options.getRecord "Simple Twitter"
+    Options{..} <- Options.getRecord "Simple Twitter"
 
     let connectInfo =
             PostgreSQL.defaultConnectInfo
@@ -521,13 +516,14 @@ type API =
 >>> :set -XDeriveGeneric -XDeriveAnyClass -XGeneralizedNewtypeDeriving -XDerivingStrategies
 >>> :set -XDataKinds -XTypeOperators
 >>> newtype User = User { name :: Text } deriving stock (Generic) deriving anyclass (FromForm) deriving newtype (FromHttpApiData)
+
 >>> :kind! Server (Get '[HTML] Markup)
 = Handler (MarkupM ())
+
 >>> :kind! Server ("user" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup)
 = User -> Handler (MarkupM ())
+
 >>> :kind! Server ("user" :> QueryParam' '[Required, Strict] "name" User :> Get '[HTML] Markup)
-= User -> Handler (MarkupM ())
->>> :kind! Server ("user" :> "delete" :> ReqBody '[FormUrlEncoded] User :> Post '[HTML] Markup)
 = User -> Handler (MarkupM ())
 ```
 
@@ -641,12 +637,17 @@ let server = index
 We'll use the `blaze-markup` package to render HTML using Haskell code:
 
 ```haskell
+-- <button type="submit" class="btn btn-primary btn-sm">${label}</button>
 let submit label =
             Html.button
         !   Attr.type_ "submit"
         !   Attr.class_ "btn btn-primary btn-sm"
         $   label
 
+{-  <div class="form-group">
+      <input type="text" class="form-control form-control-sm" name="${name}" placeholder="${name}">
+    </div>
+-}
 let field name = do
         Html.div ! Attr.class_ "form-group" $ do
             Html.input
@@ -655,6 +656,12 @@ let field name = do
                 !   Attr.name name
                 !   Attr.placeholder name
 
+{-  <div class="col-md-4">
+        <form action="${action}" method="${method}" class="border m-3 p-2 bg-light">
+        ${html}
+        </form>
+    </div>
+-}
 let form action method html =
         Html.div ! Attr.class_ "col-md-4" $ do
             Html.form
