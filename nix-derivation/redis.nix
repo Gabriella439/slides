@@ -1,17 +1,23 @@
+# ./redis.nix
+
 let
   pkgs = import <nixpkgs> { };
+
+  json = builtins.fromJSON (builtins.readFile ./redis.json);
 
 in
   pkgs.stdenv.mkDerivation {
     name = "redis";
+
+    makeFlags = "PREFIX=$(out)";
 
     src = pkgs.fetchFromGitHub {
       owner = "antirez";
 
       repo = "redis";
 
-      rev = "27fe8e9fb2f4adf5337e74280215680e7cd59442";
+      rev = json.rev;
 
-      sha256 = null;
+      sha256 = json.sha256;
     };
   }

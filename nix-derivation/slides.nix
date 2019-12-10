@@ -1,12 +1,11 @@
+# ./slides.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "slides";
+  pkgs.runCommand "slides.html" {} ''
+    mkdir $out
 
-    buildCommand = ''
-      mkdir $out
-      ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out/slides.html
-    '';
-  }
+    ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out/slides.html
+  ''

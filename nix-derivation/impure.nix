@@ -1,11 +1,9 @@
+# ./impure.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "impure";
-
-    buildCommand = ''
-      date > $out
-    '';
-  }
+  pkgs.runCommand "impure" {} ''
+    date > $out
+  ''

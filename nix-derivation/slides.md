@@ -1,10 +1,8 @@
 % How to write a Nix derivation
 % Gabriel Gonzalez
-% April 18, 2017
+% December 12, 2019
 
 # Goals
-
-**REMINDER: RECORD THIS TALK!**
 
 This talk will cover how to author a Nix derivation to build a package
 
@@ -25,17 +23,15 @@ A Nix derivation is a Bash script that creates a file or directory at `$out`
 The following minimal Nix derivation creates an empty file:
 
 ```haskell
+# ./example0.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "example0";
-
-    buildCommand = ''
-      touch $out
-    '';
-  }
+  pkgs.runCommand "example0" {} ''
+    touch $out
+  ''
 ```
 
 # Minimal derivation - result
@@ -43,19 +39,19 @@ in
 ```bash
 $ nix-build example0.nix
 these derivations will be built:
-  /nix/store/y12753lr5dcdg6i50kjg9xg9jc8jas1m-example0.drv
-building path(s) ‘/nix/store/mfpc8v8wqq40snm0klzyk372zy429y16-example0’
-/nix/store/mfpc8v8wqq40snm0klzyk372zy429y16-example0
+  /nix/store/fcwkn42mkjlz9c3p2b8wrlfv0wykfz37-example0.drv
+building '/nix/store/fcwkn42mkjlz9c3p2b8wrlfv0wykfz37-example0.drv'...
+/nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
 
-$ cat /nix/store/mfpc8v8wqq40snm0klzyk372zy429y16-example0
+$ cat /nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
 
 $ readlink result  # `nix-build` creates a symlink to the result named `result`
-/nix/store/mfpc8v8wqq40snm0klzyk372zy429y16-example0
+/nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
 
 $ cat result
 
 $ nix-build example0.nix  # The result is cached
-/nix/store/mfpc8v8wqq40snm0klzyk372zy429y16-example0
+/nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
 ```
 
 # Minimal derivation - `make`
@@ -67,9 +63,9 @@ example0:
     touch example0
 ```
 
-`Makefile`s are much simpler!
+The corresponding `Makefile` has less initial overhead
 
-`Makefile`s don't enforce that the command produces the declared product
+However, `Makefile`s don't ensure that the command produces the declared product
 
 For example, this is legal:
 
@@ -80,41 +76,35 @@ example0:
 
 This will keep "succeeding" with a false positive and never trigger a cache hit
 
+Nix makes this mistake impossible (because you don't control the output path)
+
 # Non-empty file
 
 Let's create a non-empty file:
 
 ```haskell
+# ./file.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "hello.txt";
-
-    buildCommand = ''
-      echo 'Hello, world!' > $out
-    '';
-  }
+  pkgs.runCommand "hello.txt" {} ''
+    echo 'Hello, world!' > $out
+  ''
 ```
 
 # Non-empty file - result
 
 ```bash
-$ nix-build file.nix 
-these derivations will be built:
-  /nix/store/r1jrs6fxw2gk3dar4z48vkg5qx8vgxfp-hello.txt.drv
-building path(s) ‘/nix/store/f5vjkqw8hnh9wzyjfi98xhr8l4rc6ry3-hello.txt’
-/nix/store/f5vjkqw8hnh9wzyjfi98xhr8l4rc6ry3-hello.txt
-
-$ cat /nix/store/f5vjkqw8hnh9wzyjfi98xhr8l4rc6ry3-hello.txt
-Hello, world!
+$ nix build --file file.nix  # We'll use `nix build` from now on
+[1 built, 0.0 MiB DL]
 
 $ cat result
 Hello, world!
 ```
 
-# File - Compare to `make`
+# Non-empty file - Compare to `make`
 
 ```make
 hello.txt:
@@ -124,6 +114,7 @@ hello.txt:
 ```bash
 $ make
 echo 'Hello, world!' > hello.txt
+
 $ make
 make: `hello.txt' is up to date.
 ```
@@ -147,27 +138,25 @@ make: `hello.txt' is up to date.
 Nix will rebuild if we change the instructions.  If we change the file to:
 
 ```haskell
+# ./file.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "hello.txt";
-
-    buildCommand = ''
-      echo 'Goodbye, world!' > $out
-    '';
-  }
+  pkgs.runCommand "goodbye.txt" {} ''
+    echo 'Goodbye, world!' > $out
+  ''
 ```
 
 ... then we trigger a rebuild:
 
 ```bash
-$ nix-build file.nix 
-these derivations will be built:
-  /nix/store/0r4pwm0f7508ab6l11h63hhn8cg2b8rv-hello.txt.drv
-building path(s) ‘/nix/store/2zf7pav7gmlq68qd71rw3nzbg1aj8dzc-hello.txt’
-/nix/store/2zf7pav7gmlq68qd71rw3nzbg1aj8dzc-hello.txt
+$ nix build --file file.nix
+[1 built, 0.0 MiB DL]
+
+$ cat result
+Goodbye, world!
 ```
 
 # Directory
@@ -177,38 +166,26 @@ The output of a derivation can be a file or a directory
 Whatever you save at the path `$out` is what gets stored in the `/nix/store`
 
 ```haskell
+# ./directory.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "directory";
+  pkgs.runCommand "directory" {} ''
+    mkdir $out
 
-    buildCommand = ''
-      mkdir $out
-      echo 'Hello!'   > $out/hello.txt
-      echo 'Goodbye!' > $out/goodbye.txt
-    '';
-  }
+    echo 'Hello!' > $out/hello.txt
+
+    echo 'Goodbye!' > $out/goodbye.txt
+  ''
 ```
 
 # Directory - result
 
 ```haskell
-$ nix-build directory.nix
-these derivations will be built:
-  /nix/store/mylmk5pvlm0qslvrv03z86x2zqj8xxq6-directory.drv
-building path(s) ‘/nix/store/wghprg0ifjq29rv6k54n7s0qqnamqhj4-directory’
-/nix/store/wghprg0ifjq29rv6k54n7s0qqnamqhj4-directory
-
-$ ls /nix/store/wghprg0ifjq29rv6k54n7s0qqnamqhj4-directory
-goodbye.txt	hello.txt
-
-$ cat /nix/store/wghprg0ifjq29rv6k54n7s0qqnamqhj4-directory/hello.txt
-Hello!
-
-$ cat /nix/store/wghprg0ifjq29rv6k54n7s0qqnamqhj4-directory/goodbye.txt
-Goodbye!
+$ nix build --file ./directory.nix 
+[1 built, 0.0 MiB DL]
 
 $ ls result
 goodbye.txt	hello.txt
@@ -233,10 +210,10 @@ This broadens Nix's utility to specify dependencies between multiple projects
 For example, here is a derivation that produces an entire package:
 
 ```bash
-$ nix-build -A libiconv '<nixpkgs>'
-/nix/store/65xh2q7v9mgbyqkyn1h7imaqkjyq4szq-libiconv-osx-10.9.5
-$ tree /nix/store/65xh2q7v9mgbyqkyn1h7imaqkjyq4szq-libiconv-osx-10.9.5
-/nix/store/65xh2q7v9mgbyqkyn1h7imaqkjyq4szq-libiconv-osx-10.9.5
+$ nix build --file '<nixpkgs>' libiconv
+
+$ tree result
+result
 ├── bin
 │   └── iconv
 ├── include
@@ -254,6 +231,8 @@ $ tree /nix/store/65xh2q7v9mgbyqkyn1h7imaqkjyq4szq-libiconv-osx-10.9.5
 │   ├── libiconv.2.dylib -> libiconv.2.4.0.dylib
 │   ├── libiconv.dylib
 │   └── libiconv.la
+├── nix-support
+│   └── setup-hook
 └── share
     ├── doc
     │   ├── iconv.1.html
@@ -262,10 +241,15 @@ $ tree /nix/store/65xh2q7v9mgbyqkyn1h7imaqkjyq4szq-libiconv-osx-10.9.5
     │   ├── iconv_open.3.html
     │   └── iconvctl.3.html
     └── man
-        └── man1
-            └── iconv.1.gz
+        ├── man1
+        │   └── iconv.1.gz
+        └── man3
+            ├── iconv.3.gz
+            ├── iconv_close.3.gz
+            ├── iconv_open.3.gz
+            └── iconvctl.3.gz
 
-7 directories, 20 files
+9 directories, 25 files
 ```
 
 # Interpolation
@@ -273,18 +257,17 @@ $ tree /nix/store/65xh2q7v9mgbyqkyn1h7imaqkjyq4szq-libiconv-osx-10.9.5
 You can reference the paths of other derivations:
 
 ```haskell
+# ./slides.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "slides.html";
+  pkgs.runCommand "slides.html" {} ''
+    mkdir $out
 
-    buildCommand = ''
-      mkdir $out
-      ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out/slides.html
-    '';
-  }
+    ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out/slides.html
+  ''
 ```
 
 A file is also treated as a derivation that adds that file to the `/nix/store`
@@ -292,11 +275,9 @@ A file is also treated as a derivation that adds that file to the `/nix/store`
 # Interpolation - result
 
 ```bash
-$ nix-build slides.nix
-these derivations will be built:
-  /nix/store/4n0lvh938d6p4fim0f8jdrh2sfgamikn-slides.html.drv
-building path(s) ‘/nix/store/hlqb1xj87vmf094nx3cx4jiyi5419aa3-slides.html’
-/nix/store/hlqb1xj87vmf094nx3cx4jiyi5419aa3-slides.html
+$ nix build --file ./slides.nix
+[1 built, 0.0 MiB DL]
+
 $ open result/slides.html
 ```
 
@@ -318,17 +299,15 @@ This means that if we change `pandoc` we won't trigger a rebuild
 This derivation stores the current time in `$out`:
 
 ```haskell
+# ./impure.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "impure";
-
-    buildCommand = ''
-      date > $out
-    '';
-  }
+  pkgs.runCommand "impure" {} ''
+    date > $out
+  ''
 ```
 
 This derivation is not deterministic!
@@ -336,21 +315,16 @@ This derivation is not deterministic!
 # Determinism - result
 
 ```bash
-$ nix-build impure.nix
-Gabriels-MacBook-Pro:nix-derivation gabriel$ nix-build impure.nix 
-these derivations will be built:
-  /nix/store/lhnnn1ci4w149nck13nzaz9sjksj5f58-impure.drv
-building path(s) ‘/nix/store/iz1fchxfqcaz2b9nfp3gb40f9bs9m736-impure’
-/nix/store/iz1fchxfqcaz2b9nfp3gb40f9bs9m736-impure
+$ nix build --file ./impure.nix
+[1 built, 0.0 MiB DL]
 
 $ cat result
-Tue Apr 18 21:39:54 UTC 2017
+Tue Dec 10 00:32:31 UTC 2019
 
-$ nix-build impure.nix  # The rebuild triggers a cache hit!
-/nix/store/iz1fchxfqcaz2b9nfp3gb40f9bs9m736-impure
+$ nix build --file ./impure.nix # The rebuild triggers a cache hit!
 
 $ cat result  # Still the same result
-Tue Apr 18 21:39:54 UTC 2017
+Tue Dec 10 00:32:31 UTC 2019
 ```
 
 Nix can't tell that our derivation is not deterministic
@@ -361,7 +335,9 @@ Nix assumes by default if the derivation didn't change then result didn't change
 
 `make` uses file timestamps to detect whether or not to rebuild
 
-Nix uses a hash of the derivation to detect whether or not to rebuild
+Nix by default uses a hash of the derivation to detect whether or not to rebuild
+
+Nix can optionally use a hash of the result instead (not covered in this talk)
 
 # Questions?
 
@@ -374,10 +350,13 @@ Nix uses a hash of the derivation to detect whether or not to rebuild
 Now let's do a more realistic derivation:
 
 ```haskell
+# ./hello.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
+  # This is our first time using `pkgs.stdenv.mkDerivation`
   pkgs.stdenv.mkDerivation {
     name = "hello";
 
@@ -391,35 +370,24 @@ in
 # Standard environment - result
 
 ```bash
-$ nix-build hello.nix 
-these derivations will be built:
-  /nix/store/k0p1x6prfw8zj9rg9mjibbl0wkm2y18r-2.10.tar.gz.drv
-  /nix/store/wvlmk5zg1748najgc25lsiq2wlyvmym9-hello.drv
-building path(s) ‘/nix/store/1n9ylz93pib1283xqy20a0146m4w4vq4-2.10.tar.gz’
+$ nix build --file ./hello.nix
+[2 built, 16 copied (9.1 MiB), 2.8 MiB DL]
 
-trying http://tarballs.nixos.org/sha256/0ssi1wpaf7plaswqqjwigppsg5fyh99vdlb9kzl7c9lng89ndq1i
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
-100  708k  100  708k    0     0   182k      0  0:00:03  0:00:03 --:--:--  545k
-building path(s) ‘/nix/store/r624zkk4xsxkv95s1i37s46p473fybfl-hello’
+$ nix-store --read-log result
+@nix { "action": "setPhase", "phase": "unpackPhase" }
 unpacking sources
 unpacking source archive /nix/store/1n9ylz93pib1283xqy20a0146m4w4vq4-2.10.tar.gz
 source root is hello-2.10
 setting SOURCE_DATE_EPOCH to timestamp 1416139241 of file hello-2.10/ChangeLog
+@nix { "action": "setPhase", "phase": "patchPhase" }
 patching sources
+@nix { "action": "setPhase", "phase": "configurePhase" }
 configuring
-configure flags: --disable-dependency-tracking --prefix=/nix/store/r624zkk4xsxkv95s1i37s46p473fybfl-hello  
-checking for a BSD-compatible install... /nix/store/dsahcq73w60qbcmf8qdxbfs49v8kg40a-coreutils-8.25/bin/install -c
-checking whether build environment is sane... yes
-checking for a thread-safe mkdir -p... /nix/store/dsahcq73w60qbcmf8qdxbfs49v8kg40a-coreutils-8.25/bin/mkdir -p
-checking for gawk... gawk
-checking whether make sets $(MAKE)... yes
+configure flags: --disable-dependency-tracking --prefix=/nix/store/30xjvvcyp1c7psk7h517xpysb3irmyzw-hello
 ...
-/nix/store/r624zkk4xsxkv95s1i37s46p473fybfl-hello
 
-$ tree /nix/store/r624zkk4xsxkv95s1i37s46p473fybfl-hello
-/nix/store/r624zkk4xsxkv95s1i37s46p473fybfl-hello
+$ tree result
+result
 ├── bin
 │   └── hello
 └── share
@@ -465,7 +433,7 @@ This default script is customizable to a fault:
 
 The default script also has several useful utilities in scope:
 
-* Substitute hard-coded paths with `/nix/store` paths
+* Substitute hard-coded paths (like `/bin/sh`) with `/nix/store` paths
 * Automatically unpack any type of archive
 * Tweak the runtime environment of built executables
 
@@ -487,7 +455,7 @@ $ patchPhase
 
 $ configurePhase  # ./configure --prefix=$out
 ...
-checking whether your system is literally a potato
+checking whether your system is a Linux distribution installed on a potato
 ...
 
 $ buildPhase  # make
@@ -510,7 +478,7 @@ Testsuite summary for GNU Hello 2.10
 
 $ installPhase  # make install (Should fail, because we already installed this)
 ...
-/nix/store/dsahcq73w60qbcmf8qdxbfs49v8kg40a-coreutils-8.25/bin/install: cannot remove '/nix/store/r624zkk4xsxkv95s1i37s46p473fybfl-hello/bin/hello': Permission denied
+install: cannot remove '/nix/store/30xjvvcyp1c7psk7h517xpysb3irmyzw-hello/bin/hello': Permission denied
 ...
 ```
 
@@ -519,6 +487,8 @@ $ installPhase  # make install (Should fail, because we already installed this)
 Let's build `redis`!
 
 ```haskell
+# ./redis.nix
+
 let
   pkgs = import <nixpkgs> { };
 
@@ -543,30 +513,11 @@ in
 # Fetching from GitHub - result
 
 ```bash
-$ nix-build redis.nix
-these derivations will be built:
-  /nix/store/nrf5qk7bpzvmnqxqqnp46gnilwb82hxm-redis-27fe8e9fb2f4adf5337e74280215680e7cd59442-src.drv
-  /nix/store/pb47d49p3gkgdzx32r0jsq04xfsb9swx-redis.drv
-building path(s) ‘/nix/store/cs4qvm3arwss65x665a4y9f2zlxfa47s-redis-27fe8e9fb2f4adf5337e74280215680e7cd59442-src’
+$ nix build --file ./redis.nix
+[2 built, 1 copied (0.5 MiB), 0.1 MiB DL]
 
-trying https://github.com/antirez/redis/archive/27fe8e9fb2f4adf5337e74280215680e7cd59442.tar.gz
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   155    0   155    0     0    187      0 --:--:-- --:--:-- --:--:--   188
-100 1738k    0 1738k    0     0   244k      0 --:--:--  0:00:07 --:--:--  385k
-unpacking source archive /private/var/folders/c9/zf_25xbx7bx8yhsxm4q4vw6m0000gn/T/nix-build-redis-27fe8e9fb2f4adf5337e74280215680e7cd59442-s
-...
-    INSTALL install
-    INSTALL install
-    INSTALL install
-    INSTALL install
-    INSTALL install
-make[1]: Leaving directory '/private/var/folders/c9/zf_25xbx7bx8yhsxm4q4vw6m0000gn/T/nix-build-redis.drv-0/redis-27fe8e9fb2f4adf5337e74280215680e7cd59442-src/src'
-post-installation fixup
-patching script interpreter paths in /nix/store/cd3ph0x276kb80iyfmhz8lrc37pnwszf-redis
-/nix/store/cd3ph0x276kb80iyfmhz8lrc37pnwszf-redis
-
-$ tree /nix/store/cd3ph0x276kb80iyfmhz8lrc37pnwszf-redis
+$ tree result
+result
 
 0 directories, 0 files
 ```
@@ -578,6 +529,8 @@ Oops!
 The `README` says to use `make PREFIX=/some/other/directory install`
 
 ```haskell
+# ./redis.nix
+
 let
   pkgs = import <nixpkgs> { };
 
@@ -606,12 +559,11 @@ Let's see where that flag is used:
 # Fixing redis - result
 
 ```bash
-$ nix-build redis2.nix
-...
-/nix/store/7cgfazky8jrjia56hi1lxdaf6djhiw4m-redis
+$ nix build --file ./redis.nix
+[1 built, 0.0 MiB DL]
 
-$ tree /nix/store/7cgfazky8jrjia56hi1lxdaf6djhiw4m-redis
-/nix/store/7cgfazky8jrjia56hi1lxdaf6djhiw4m-redis
+$ tree result
+result
 └── bin
     ├── redis-benchmark
     ├── redis-check-aof
@@ -623,17 +575,17 @@ $ tree /nix/store/7cgfazky8jrjia56hi1lxdaf6djhiw4m-redis
 1 directory, 6 files
 
 $ result/bin/redis-server 
-98937:C 18 Apr 20:20:56.150 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
-98937:C 18 Apr 20:20:56.151 # Redis version=999.999.999, bits=64, commit=00000000, modified=0, pid=98937, just started
-98937:C 18 Apr 20:20:56.151 # Warning: no config file specified, using the default config. In order to specify a config file use result/bin/redis-server /path/to/redis.conf
-98937:M 18 Apr 20:20:56.151 * Increased maximum number of open files to 10032 (it was originally set to 256).
+51138:C 09 Dec 16:47:02.276 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+51138:C 09 Dec 16:47:02.277 # Redis version=999.999.999, bits=64, commit=00000000, modified=0, pid=51138, just started
+51138:C 09 Dec 16:47:02.277 # Warning: no config file specified, using the default config. In order to specify a config file use result/bin/redis-server /path/to/redis.conf
+51138:M 09 Dec 16:47:02.278 * Increased maximum number of open files to 10032 (it was originally set to 256).
                 _._                                                  
            _.-``__ ''-._                                             
       _.-``    `.  `_.  ''-._           Redis 999.999.999 (00000000/0) 64 bit
   .-`` .-```.  ```\/    _.,_ ''-._                                   
  (    '      ,       .-`  | `,    )     Running in standalone mode
  |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
- |    `-._   `._    /     _.-'    |     PID: 98937
+ |    `-._   `._    /     _.-'    |     PID: 51138
   `-._    `-._  `-./  _.-'    _.-'                                   
  |`-._`-._    `-.__.-'    _.-'_.-'|                                  
  |    `-._`-._        _.-'_.-'    |           http://redis.io        
@@ -645,9 +597,8 @@ $ result/bin/redis-server
           `-._        _.-'                                           
               `-.__.-'                                               
 
-98937:M 18 Apr 20:20:56.152 # Server initialized
-98937:M 18 Apr 20:20:56.153 * DB loaded from disk: 0.000 seconds
-98937:M 18 Apr 20:20:56.153 * Ready to accept connections
+51138:M 09 Dec 16:47:02.279 # Server initialized
+51138:M 09 Dec 16:47:02.279 * Ready to accept connections
 ```
 
 # Pinning `git`
@@ -656,29 +607,31 @@ You can use a handy tool called `nix-prefetch-git` to obtain `git` info as JSON
 
 ```bash
 $ nix-prefetch-git https://github.com/antirez/redis.git > redis.json
-Initialized empty Git repository in /private/var/folders/c9/zf_25xbx7bx8yhsxm4q4vw6m0000gn/T/git-checkout-tmp-1yrAOg1g/redis/.git/
-remote: Counting objects: 697, done.
-remote: Compressing objects: 100% (595/595), done.
-remote: Total 697 (delta 110), reused 444 (delta 79), pack-reused 0
-Receiving objects: 100% (697/697), 1.89 MiB | 649.00 KiB/s, done.
-Resolving deltas: 100% (110/110), done.
+Initialized empty Git repository in /private/var/folders/c9/zf_25xbx7bx8yhsxm4q4vw6m0000gn/T/git-checkout-tmp-VnvwUYA9/redis/.git/
+remote: Enumerating objects: 860, done.
+remote: Counting objects: 100% (860/860), done.
+remote: Compressing objects: 100% (764/764), done.
+remote: Total 860 (delta 104), reused 535 (delta 68), pack-reused 0
+Receiving objects: 100% (860/860), 2.29 MiB | 4.21 MiB/s, done.
+Resolving deltas: 100% (104/104), done.
 From https://github.com/antirez/redis
  * branch            HEAD       -> FETCH_HEAD
 Switched to a new branch 'fetchgit'
 removing `.git'...
 
-git revision is 27fe8e9fb2f4adf5337e74280215680e7cd59442
-path is /nix/store/lv83i05jg78wzasx7hp12iwcsilgj1h8-redis
+git revision is 14045adf9211179687ebd694197643a0fca0116a
+path is /nix/store/8ywf860k36a89xywdbrggyi42qgpbag6-redis
 git human-readable version is -- none --
-Commit date is 2017-04-18 16:31:18 +0200
-hash is 0ndkqw26p49nh030nj5hgxbd1h8sra9f3hj5asjss3p22a12vjg5
+Commit date is 2019-12-09 10:41:14 +0100
+hash is 03afyqhk9hhxixg1k1b752d34879aaam0wqhxd57kgykxgymmkla
 
-$ cat redis.json
+$ cat redis.json 
 {
   "url": "https://github.com/antirez/redis.git",
-  "rev": "27fe8e9fb2f4adf5337e74280215680e7cd59442",
-  "date": "2017-04-18T16:31:18+02:00",
-  "sha256": "0ndkqw26p49nh030nj5hgxbd1h8sra9f3hj5asjss3p22a12vjg5"
+  "rev": "14045adf9211179687ebd694197643a0fca0116a",
+  "date": "2019-12-09T10:41:14+01:00",
+  "sha256": "03afyqhk9hhxixg1k1b752d34879aaam0wqhxd57kgykxgymmkla",
+  "fetchSubmodules": false
 }
 ```
 
@@ -687,6 +640,8 @@ $ cat redis.json
 We can reference this JSON in our Nix derivation:
 
 ```haskell
+# ./redis.nix
+
 let
   pkgs = import <nixpkgs> { };
 
@@ -711,9 +666,8 @@ in
 ```
 
 ```haskell
-$ nix-build redis3.nix
-...
-/nix/store/33xb2pvywkx1iz5nkikxn4622ksw5ibv-redis
+$ nix build --file redis.nix
+[2 built, 0.0 MiB DL]
 ```
 
 # Questions?
@@ -731,12 +685,3 @@ Nix fixes many of the design flaws in `make`:
 * More accurate rebuild detection
 * Better suitability for cross-project builds
 * Nix is a real programming language (not covered)
-
-# Future topic ideas
-
-Some suggestions:
-
-* Debugging failed derivations
-* Writing more complex derivations
-
-Any other ideas for upcoming topics?

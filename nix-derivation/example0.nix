@@ -1,11 +1,9 @@
+# ./example0.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.stdenv.mkDerivation {
-    name = "example0";
-
-    buildCommand = ''
-      touch $out
-    '';
-  }
+  pkgs.runCommand "example0" {} ''
+    touch $out
+  ''

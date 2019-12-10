@@ -1,7 +1,10 @@
+# ./hello.nix
+
 let
   pkgs = import <nixpkgs> { };
 
 in
+  # This is our first time using `pkgs.stdenv.mkDerivation`
   pkgs.stdenv.mkDerivation {
     name = "hello";
 
