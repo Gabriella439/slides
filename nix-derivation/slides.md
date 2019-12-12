@@ -37,13 +37,8 @@ in
 # Minimal derivation - result
 
 ```bash
-$ nix-build example0.nix
-these derivations will be built:
-  /nix/store/fcwkn42mkjlz9c3p2b8wrlfv0wykfz37-example0.drv
-building '/nix/store/fcwkn42mkjlz9c3p2b8wrlfv0wykfz37-example0.drv'...
-/nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
-
-$ cat /nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
+$ nix build --file file.nix
+[1 built, 0.0 MiB DL]
 
 $ readlink result  # `nix-build` creates a symlink to the result named `result`
 /nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
@@ -51,7 +46,6 @@ $ readlink result  # `nix-build` creates a symlink to the result named `result`
 $ cat result
 
 $ nix-build example0.nix  # The result is cached
-/nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
 ```
 
 # Minimal derivation - `make`
@@ -97,7 +91,7 @@ in
 # Non-empty file - result
 
 ```bash
-$ nix build --file file.nix  # We'll use `nix build` from now on
+$ nix build --file file.nix
 [1 built, 0.0 MiB DL]
 
 $ cat result
@@ -514,12 +508,19 @@ in
 
 ```bash
 $ nix build --file ./redis.nix
-[2 built, 1 copied (0.5 MiB), 0.1 MiB DL]
-
-$ tree result
-result
-
-0 directories, 0 files
+builder for '/nix/store/sqn6nb7a00g01mwawibq7wz334yirnf4-redis.drv' failed with exit code 2; last 10 log lines:
+  make[1]: Entering directory '/private/var/folders/dt/650nlx5n4cx7jt9mk6w4r2s00000gn/T/nix-build-redis.drv-0/source/src'
+      CC Makefile.dep
+  
+  Hint: It's a good idea to run 'make test' ;)
+  
+      INSTALL install
+  install: cannot create regular file '/usr/local/bin/redis-server': Permission denied
+  make[1]: *** [Makefile:280: install] Error 1
+  make[1]: Leaving directory '/private/var/folders/dt/650nlx5n4cx7jt9mk6w4r2s00000gn/T/nix-build-redis.drv-0/source/src'
+  make: *** [Makefile:9: install] Error 2
+[0 built (1 failed)]
+error: build of '/nix/store/sqn6nb7a00g01mwawibq7wz334yirnf4-redis.drv' failed
 ```
 
 Oops!
