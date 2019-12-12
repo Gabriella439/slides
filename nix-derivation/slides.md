@@ -686,3 +686,5 @@ Nix fixes many of the design flaws in `make`:
 * More accurate rebuild detection
 * Better suitability for cross-project builds
 * Nix is a real programming language (not covered)
+
+![](awake-blue.png)
