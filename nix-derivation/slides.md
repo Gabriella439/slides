@@ -138,7 +138,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "goodbye.txt" {} ''
+  pkgs.runCommand "hello.txt" {} ''
     echo 'Goodbye, world!' > $out
   ''
 ```
