@@ -37,7 +37,7 @@ in
 # Minimal derivation - result
 
 ```bash
-$ nix build --file file.nix
+$ nix build --file ./example0.nix
 [1 built, 0.0 MiB DL]
 
 $ readlink result  # `nix-build` creates a symlink to the result named `result`
@@ -45,7 +45,7 @@ $ readlink result  # `nix-build` creates a symlink to the result named `result`
 
 $ cat result
 
-$ nix-build example0.nix  # The result is cached
+$ nix build --file ./example0.nix  # The result is cached
 ```
 
 # Minimal derivation - `make`
