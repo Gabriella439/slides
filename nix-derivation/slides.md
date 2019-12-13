@@ -18,7 +18,7 @@ I will translate `make` idioms to Nix idioms and compare and contrast the two
 
 # Minimal derivation
 
-A Nix derivation is a Bash script that creates a file or directory at `$out`
+A Nix derivation is a script that creates a file or directory at `$out`
 
 The following minimal Nix derivation creates an empty file:
 
