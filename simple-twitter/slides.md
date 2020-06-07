@@ -1,6 +1,15 @@
 % A bare-bones Twitter clone implemented with Haskell + Nix
 % Gabriel Gonzalez
-% November 21, 2019
+% June 13, 2020
+
+# Simplified explanation of Twitter
+
+Twitter is a social media site where users can tweet and follow other users.
+
+The original Twitter timeline showed tweets from people you followed in reverse
+chronological order.
+
+![](./twitter.png)
 
 # Overview
 
@@ -12,13 +21,13 @@ This talk illustrates how to implement and deploy a:
 
 ... using Haskell and Nix
 
-The final implementation fits in a single file! (~450 lines of code)
+The final implementation fits in a single file! (~470 lines of code)
 
 * ~340 lines of Haskell code
-* ~80 lines of Nix
+* ~100 lines of Nix
 * ~30 lines of SQL
 
-You can follow along by visiting:
+You can find the final result of this presentation at:
 
 * [https://github.com/Gabriel439/simple-twitter](https://github.com/Gabriel439/simple-twitter)
 
@@ -281,7 +290,7 @@ simple-twitter> deployment finished successfully
 
 $ nixops ssh --deployment simple-twitter machine
 
-[root@machine:~]# sudo -u postgres psql
+[root@machine:~]# sudo --user postgres psql
 psql (11.5)
 Type "help" for help.
 
@@ -366,8 +375,6 @@ main = do
 ```nix
 …
   { machine = { config, pkgs, resources, ... }: {
-      …
-
       systemd.services.simple-twitter = {
         wantedBy = [ "multi-user.target" ];
 
@@ -409,11 +416,34 @@ main = do
     resources = {
       …
 
-      ec2SecurityGroups."http" = {
-        inherit accessKeyId region;
+      ec2SecurityGroups = {
+        "http" = {
+          inherit accessKeyId region;
 
-        rules = [
-          { fromPort = 80; toPort = 80; sourceIp = "0.0.0.0/0"; }
+          rules = [
+            { fromPort = 80; toPort = 80; sourceIp = "0.0.0.0/0"; }
+          ];
+        };
+
+        "ssh" = {
+          inherit accessKeyId region;
+
+          rules = [
+            { fromPort = 22; toPort = 22; sourceIp = "0.0.0.0/0"; }
+          ];
+        };
+      };
+    };
+
+    deployment = {
+      …
+
+      ec2 = {
+        …
+
+        securityGroups = [
+          resources.ec2SecurityGroups."http"
+          resources.ec2SecurityGroups."ssh"
         ];
       };
     };
