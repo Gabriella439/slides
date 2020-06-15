@@ -118,6 +118,16 @@ in
 
     resources = {
       ec2KeyPairs.my-key-pair = { inherit region accessKeyId; };
+
+      ec2SecurityGroups = {
+        "ssh" = {
+          inherit accessKeyId region;
+
+          rules = [
+            { fromPort = 22; toPort = 22; sourceIp = "0.0.0.0/0"; }
+          ];
+        };
+      };
     };
   }
 ```
@@ -425,13 +435,7 @@ main = do
           ];
         };
 
-        "ssh" = {
-          inherit accessKeyId region;
-
-          rules = [
-            { fromPort = 22; toPort = 22; sourceIp = "0.0.0.0/0"; }
-          ];
-        };
+        …
       };
     };
 
