@@ -21,16 +21,13 @@ You are my target audience if you:
 
 You are not my target audience if you:
 
-* … were hoping for a technical presentation with code
+* … were hoping for a presentation with code
 * … have given up hope on Haskell becoming mainstream
-
-# Question for the audience
-
-How would you know when Haskell had gone mainstream?
 
 # Overview
 
 * What is "marketing"?
+* Segmentation
 
 # Everything you know about marketing is wrong
 
@@ -92,12 +89,188 @@ The book "Crossing the Chasm" provides an excellent definition of "marketing":
 
 The key concepts are:
 
-* Prioritization: Marketing is about what you choose __not to do__
+* Prioritization: Marketing is about what you choose __not to build__
 
-* Self-referencing groups: Marketing is about who you choose __not to convince__
+* Segmentation: Marketing is about who you choose __not to persuade__
 
-In other words, marketing is the art of saying "no", either to potential
-projects or potential users
+In other words, marketing is the art of saying __NO__, either to potential
+features or potential users
+
+# Marketing is a force for good
+
+Marketing is actually a noble task, which the book captures well in this quote:
+
+> "Marketing's purpose, therefore, is to develop and shape something that is
+> real, and not, as people sometimes want to believe, to create illusions.  In
+> other words, we are dealing with a discipline more akin to gardening or
+> sculpting than, say, to spray painting or hypnotism."
+
+In other words, if you market a tool well, no deception, hype, or promotion is
+necessary.
+
+# Questions?
+
+* What is "marketing"?
+* Segmentation
+
+# Traction - Slow death
+
+Credit: Simon Peyton Jones - "A taste of Haskell"
+
+![](./slow-death.png)
+
+# Traction - Immortality
+
+Credit: Simon Peyton Jones - "A taste of Haskell"
+
+![](./immortality.png)
+
+# Why are outcomes so bimodal?
+
+I like to think of tool adoption as analogous to a nuclear chain reaction:
+
+* If the adoption reaches a critical mass then adoption grows uncontrollably
+
+  What Simon Peyton Jones calls "the complete absence of death"
+
+* Otherwise adoption "fizzles out"
+
+  What Simon Peyton Jones calls "the slow death"
+
+Market "segmentation" is a general trick to stimulate a chain reaction
+
+# Amplification
+
+When positive references "collide", magic happens:
+
+* 🌱 Organization adopts tool
+* 🎓 New developers trained
+* 🔨 Contributions made back to ecosystem
+* 💖 More positive references created
+
+```
+     Before:         Middle:         After:
++---------------+---------------+---------------+
+|               |               |               |
+|               |               |      ○        |
+|               |               |      |        |
+|    -○  ○-     |      💥       |   ○-   -○     |
+|               |               |      |        |
+|               |               |      ○        |
+|               |               |               |
++---------------+---------------+---------------+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Cancellation
+
+Negative references neutralize positive references:
+
+🤓: I heard great things about Haskell
+
+🙃: I thought nobody used Pascal these days
+
+```
+     Before:         Middle:         After:
++---------------+---------------+---------------+
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|    -○  ●-     |      🌧       |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
++---------------+---------------+---------------+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Segmentation
+
+Positive and negative references stay within their respective markets
+
+```
+     Market A        Market B        Market C
++---------------+---------------+---------------+
+|               |            -○ | ○-            |
+|               |               |               |  Before
+|            -● | ○-            |               |
++---------------+---------------+---------------+
+
++---------------+---------------+---------------+
+|               |              ○|○              |
+|               |               |               |  Middle
+|              ●|○              |               |
++---------------+---------------+---------------+
+
++---------------+---------------+---------------+
+|               |            ○- | -○            |
+|               |               |               |  After
+|            ●- | -○            |               |
++---------------+---------------+---------------+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Spreading yourself thin
+
+Positive and negative references tend to stay 
+
+```
+    Market A        Market B        Market C
++---------------+---------------+---------------+
+| ○             |               |       ●-    ○ |
+|               |   ●-          |               |
+|      -●  ○-   |        |      |  ○            |
+|               |        ○      |         -●    |
+|      ○        |               |       |       |
+|               |               |       ●       |
+|               |   -○          |               |
+|    ●          |               |               |
+|        -○     |               |               |
+|  ○            |               |      -○   ○-  |
+|  |            |               |   -●          |
++---------------+---------------+---------------+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Scratch
+
+```
+    Market A        Market B        Market C
++---------------+---------------+---------------+
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
+|               |               |               |
++---------------+---------------+---------------+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
 
 # Ideas
 
