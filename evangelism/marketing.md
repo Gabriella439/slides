@@ -52,7 +52,7 @@ Do you believe that popular tools thrive because of __misleading claims__?
 
 People who believe this will conclude:
 
-🤓💭 "I will steer conversations away from Haskell's poor IDE support"
+🧐💭 "I will steer conversations away from Haskell's poor IDE support"
 
 # Misconception #2: Marketing = Hype
 
@@ -64,7 +64,7 @@ Do you believe that popular tools thrive because of __hype__?
 
 People who believe this will conclude:
 
-🤓💭 "I should spend more time cheerleading about Haskell on social media"
+🧐💭 "I should spend more time cheerleading about Haskell on social media"
 
 # Misconception #3: Marketing = Paid promotion
 
@@ -76,7 +76,7 @@ Do you believe that popular tools thrive because of __corporate backing__?
 
 People who believe this will conclude:
 
-🤓💭 "Facebook adopting Haskell will save the language"
+🧐💭 "Facebook adopting Haskell will save the language"
 
 # So what is marketing?
 
@@ -96,7 +96,7 @@ The key concepts are:
 In other words, marketing is the art of saying __NO__, either to potential
 features or potential users
 
-# Marketing is a force for good
+# Marketing is virtuous
 
 Marketing is actually a noble task, which the book captures well in this quote:
 
@@ -137,7 +137,7 @@ I like to think of tool adoption as analogous to a nuclear chain reaction:
 
   What Simon Peyton Jones calls "the slow death"
 
-Market "segmentation" is a general trick to stimulate a chain reaction
+Understanding "market segmentation" helps to stimulate a chain reaction
 
 # Amplification
 
@@ -170,7 +170,7 @@ Legend:
 
 Negative references neutralize positive references:
 
-🤓: I heard great things about Haskell
+🧐: I heard great things about Haskell
 
 🙃: I thought nobody used Pascal these days
 
@@ -195,6 +195,8 @@ Legend:
 # Segmentation
 
 Positive and negative references stay within their respective markets
+
+Actually, this is a half truth.  We'll get to the full truth later on
 
 ```
      Market A        Market B        Market C
