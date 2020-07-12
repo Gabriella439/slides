@@ -2,14 +2,14 @@
 % Gabriel Gonzalez
 % July 31, 2020
 
+# Source material
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tonsky/FiraCode@4/distr/fira_code.css">
 <style>
 code {
   font-family: "Fira Code";
 }
 </style>
-
-# Source material
 
 This talk draws inspiration from the following book:
 
@@ -36,6 +36,7 @@ You are not my target audience if you:
 * What is "marketing"?
 * The chasm
 * Crossing the chasm
+* Market selection
 
 # Everything you know about marketing is wrong
 
@@ -50,7 +51,7 @@ I'll go through a few marketing misconceptions, using MongoDB as the "foil"
 
 (Sorry, MongoDB)
 
-# Misconception #1: Marketing = Deception
+# Misconception #1: Marketing = Misleading claims
 
 Do you believe that popular tools thrive because of __misleading claims__?
 
@@ -74,7 +75,7 @@ People who believe this will conclude:
 
 🧐💭 "I should spend more time cheerleading about Haskell on social media"
 
-# Misconception #3: Marketing = Paid promotion
+# Misconception #3: Marketing = Corporate backing
 
 Do you believe that popular tools thrive because of __corporate backing__?
 
@@ -113,32 +114,15 @@ Marketing is actually a noble task, which the book captures well in this quote:
 > other words, we are dealing with a discipline more akin to gardening or
 > sculpting than, say, to spray painting or hypnotism."
 
-In other words, if you market a tool well, no deception, hype, or promotion is
-necessary.
+In other words, if you market a tool well, no misleading claims, hype, nor
+corporate backing is necessary.
 
 # Questions?
 
 * What is "marketing"?
 * The chasm
 * Crossing the chasm
-
-# Slow death
-
-Credit: Simon Peyton Jones - "A taste of Haskell"
-
-![](./slow-death.png)
-
-# Immortality
-
-Credit: Simon Peyton Jones - "A taste of Haskell"
-
-![](./immortality.png)
-
-# Stagnation
-
-Credit: Simon Peyton Jones - "A taste of Haskell"
-
-![](./ambiguous.png)
+* Market selection
 
 # The Technology Adoption Life Cycle
 
@@ -147,9 +131,9 @@ The technology adoption life cycle models adoption of _discontinuous_ changes
 * Continuous change: Upgrading `aeson` to improve runtime performance
 * Discontinuous change: Switching from Python to Haskell
 
-__Early adopters__ are visionaries: they prefer new technologies
+Early adopters are __visionaries__: they prefer new technologies
 
-__Early majority__ are pragmatists: they prefer proven technologies
+Early majority are __pragmatists__: they prefer proven technologies
 
 We won't cover late majority or laggards in this talk
 
@@ -157,31 +141,49 @@ We won't cover late majority or laggards in this talk
 
 # The chasm
 
-The "chasm" refers to a large gap between early adopters and the early majority
+The "chasm" refers to a large gap between visionaries and pragmatists
 
 ![](./chasm-2.png)
 
-Symptoms of being in the chasm:
+Symptoms of being stuck in the chasm:
 
-* Burst of enthusiasm and adoption followed by "hitting a wall"
-* Early adopters love you, but mainstream adopters are suspicious
-* Nothing ever officially supports you
+> * Burst of enthusiasm and adoption followed by "hitting a wall"
+> * Visionaries adore you, but pragmatists are suspicious
+> * Nothing important ever officially supports you
+
+# Visionaries
+
+Credit: Simon Peyton Jones - "A taste of Haskell"
+
+![](./slow-death.png)
+
+# Pragmatists
+
+Credit: Simon Peyton Jones - "A taste of Haskell"
+
+![](./immortality.png)
+
+# Stuck in the chasm
+
+Credit: Simon Peyton Jones - "A taste of Haskell"
+
+![](./ambiguous.png)
 
 # Why does the chasm exist?
 
-Early adopters are not good references for the early majority
+Visionaries are __negative__ references for pragmatists
 
-In fact, early adopters are __negative__ references for the early majority
+In other words: evangelism from visionaries turns off pragmatists
 
 This happens for the following reasons:
 
-* Lack of respect for the value of colleague's experiences
-
-* Taking a greater interest in technology than in their industry
-
-* Failing to recognize the importance of existing product infrastructure
-
-* Overall disruptiveness
+> * Lack of respect for the value of colleague's experiences
+> 
+> * Taking a greater interest in technology than in their industry
+> 
+> * Failing to recognize the importance of existing product infrastructure
+> 
+> * Overall disruptiveness
 
 # Lack of respect
 
@@ -202,8 +204,8 @@ This happens for the following reasons:
 > references, and they want a good number to come from companies in their own
 > industry segment.  This, as we have already noted, creates a catch-22
 > situation;  since there are usually only one or two visionaries per industry
-> segment, __how can you accumulate the number of references a pragmatist
-> requires, when virtually everyone left to call on is also a pragmatist?__
+> segment, how can you accumulate the number of references a pragmatist
+> requires, when virtually everyone left to call on is also a pragmatist?
 
 🤔: Then why are so few companies using Haskell?
 
@@ -223,8 +225,8 @@ This happens for the following reasons:
 > things__.  They see themselves more in present-day terms, as the people
 > devoted to making the wheels of their industry turn.  Therefore, they tend to
 > invest their convention time in industry-specific issues.  Where pragmatists
-> are concerned, __sweeping changes and global advantages may make for fine
-> speeches, but not much else__.
+> are concerned, sweeping changes and global advantages may make for fine
+> speeches, but not much else.
 
 🤔: I can already write a web server in Python, so why learn a new language?
 
@@ -240,90 +242,176 @@ This happens for the following reasons:
 🧐: No OAuth package?  No problem; I can probably whip up my own
 
 > Pragmatists expect all these things.  __When they see visionaries going their
-> own route with little or no thought of connecting with the mainstream
-> practices in their industry, they shudder.__  Pragmatists have based their
+> own route__ with little or no thought of connecting with the mainstream
+> practices in their industry, __they shudder.__  Pragmatists have based their
 > careers on such connections: Once again, it is painfully obvious that
 > visionaries, as a group, make a very poor reference base for pragmatists.
 
-🤔: Seriously? No OAuth support?  I'll revisit Haskell it's more mature
+🤔: No OAuth package?  I'll revisit Haskell when the ecosystem is more mature
 
 # Overall disruptiveness
 
 > From a pragmatist's point of view, visionaries are the people who come in and
 > soak up all the budget for their projects.  If the project is a success, they
-> take all the credit, while the pragmatists get stuck trying to maintain a
+> take all the credit, while the __pragmatists get stuck trying to maintain a
 > system that is so "state-of-the-art" no one is quite sure how to keep it
-> working.  If the project fails, visionaries always seem to be a step ahead of
-> the disaster, getting out of town while they can, and leaving the pragmatists
-> to clean up the mess.
+> working__.  If the project fails, visionaries always seem to be a step ahead
+> of the disaster, getting out of town while they can, and leaving the
+> pragmatists to clean up the mess.
 
 🧐: Rewriting this project in Haskell would solve our problems
 
 > Visionaries, successful or not, don't plan to stick around long.  They see
 > themselves on a fast track that has them leapfrogging up the corporate ladder
-> and across corporations.  Pragmatists, on the other hand, tend to be
-> committed long term to their profession and the company at which they work
+> and across corporations.  __Pragmatists, on the other hand, tend to be
+> committed long term to their profession and the company at which they work.__
 > They are very cautious about grandiose schemes because they know they will
 > have to live with the results.
 
 🤔: Will I have to learn Haskell if you abandon this project?
 
-# Is there any hope?
+# Is all hope lost?
 
-So how can early adopters like us persuade mainstream adopters?
+So how on earth can visionaries convince pragmatists to adopt?
 
 We don't want to evangelize more (that makes things worse!)
 
-We also don't want to burn out building an enormous ecosystem for free
+We also don't want to sell out 💰 or burn out 😰 to build an enormous ecosystem
 
-Instead, we need to understand how _markets_ work (i.e. "marketing")
+# Visionaries vs. Pragmatists
+
+The solution is to understand the following fundamental difference:
+
+* Visionaries are __project-oriented__
+
+  🧐: Is Haskell the best tool for my project?
+
+* Pragmatists are __market-oriented__
+
+  🤔: Is Haskell is the best tool for my industry?
+
+We need to think/speak/act in a __market-oriented__ way to convince pragmatists
+
+This is why the discipline is called __market__-ing
 
 # Questions?
 
 * What is "marketing"?
 * The chasm
 * Crossing the chasm
+* Market selection
 
 # Crossing the chasm
 
-"Crossing the chasm" refers to jumping the gap from early adopters to the
-majority
+"Crossing the chasm" means jumping the gap between visionaries and pragmatists
+
+![](./chasm-2.png)
 
 As noted previously, this appears to be a chicken-and-egg problem:
 
-> Pragmatists, on the other hand, __deeply value the experience of their
-> colleagues__ in other companies.  When they buy, they expect extensive
+> Pragmatists, on the other hand, deeply value the experience of their
+> colleagues in other companies.  When they buy, they expect extensive
 > references, and they want a good number to come from companies in their own
 > industry segment.  This, as we have already noted, creates a catch-22
 > situation;  since there are usually only one or two visionaries per industry
 > segment, __how can you accumulate the number of references a pragmatist
 > requires, when virtually everyone left to call on is also a pragmatist?__
 
-... but we can bootstrap positive references from mainstream programmers!
+# Pragmatists are loyal
 
-However, doing so requires some marketing basics
+Pragmatists are picky as hell, but they can become your greatest ally
 
-# Chain reaction
+> …, __once a start-up has earned its spurs with the pragmatist buyers within a
+> given market, they tend to be very loyal to it, and even go out of their way
+> to help it suceed__.  When this happens, the cost of sales goes way down, and
+> the leverage on incremental R&D to support any given customer goes way up.
+> That's one of the reasons pragmatists make such a great market.
 
-I like to think of mainstream adoption as analogous to a nuclear chain reaction:
+🧐: Haskell is the best language for building interpreters.  Ask your
+    colleagues if you don't believe me
 
-* If the adoption reaches a critical mass then adoption grows uncontrollably
+🤔: You're right.  My colleagues and I will ensure that Haskell remains the
+    language of choice
+
+This is because pragmatists are __market-oriented__
+
+They want their tools to be "official" or "standard" for their industry
+
+# A recipe for success
+
+* First, solve an enormous problem
+
+  The problem has to be so bad that a few pragmatists _have_ to use your tool
+
+  🤔: I'd rather not try something new, but I have to use Haskell in anger
+
+* Provide a best-in-class experience
+
+  It's not enough to be good, you need to be the best (for that market)
+
+  🤔: Wow, Haskell is way better than I thought.  It blows away the competition
+
+* Focus your effort on one market at a time
+
+  ... because you can't build a top notch experience otherwise
+
+  🤔: Haskell may not be a good fit for other industries, but I'm okay with that
+
+# A recipe for failure
+
+* Solve a problem that has already been solved
+
+  🧐: Did you know that you can build a web server in Haskell?
+
+* Litter the ecosystem with half-baked projects
+
+  🧐: I can write the documentation later.  Better yet, someone else can
+
+* Spread yourself thin
+
+  🧐: Haskell is a general-purpose programming language
+
+# The importance of focus
+
+I like to think of tool adoption as analogous to a nuclear chain reaction:
+
+* If adoption reaches a critical mass within a market then adoption grows
+  uncontrollably
 
   "the complete absence of death"
 
-* Otherwise adoption "fizzles out"
+* Otherwise adoption fizzles out
 
   "the slow death"
 
-Understanding "market segmentation" helps to stimulate such a chain reaction
+Many understand this but try to manufacture hype to stimulate the reaction
+
+Artificial hype doesn't work in practice because pragmatists are hard to fool
+
+🧐: Haskell has top notch tooling, like a strong type system, and Hoogle, and…
+
+🤔: What about IDE support?
+
+Let's talk about how to create legitimate hype
 
 # Amplification
 
-When positive references "collide", magic happens:
+When positive references from pragmatists "collide", magic happens:
+
+🤔: Should we give Haskell a try?
+
+🙂: I've heard great things about Haskell
+
+🙂: Me, too!  I used Haskell myself and I'd recommend it without hesitation
+
+🤔: Great!  Let's give it a trial run
+
+# Amplification
 
 * 🌱 Organization adopts tool
 * 🎓 New developers trained
 * 🔨 Contributions made back to ecosystem
+* 📐 Standards drafted
 * 💖 More positive references created
 
 ```
@@ -346,9 +434,13 @@ Legend:
 
 Negative references neutralize positive references:
 
-🧐: I heard great things about Haskell
+🤔: Should we give Haskell a try?
 
-🙃: Haskell has been the butt end of a joke for years
+🙂: I've heard great things about Haskell
+
+🙃: Nah, I tried Haskell and was thoroughly disappointed with the ecosystem
+
+🤔: Hmmm.  Maybe we're not yet ready to invest in Haskell
 
 ```
      Before           Middle          After
@@ -395,12 +487,36 @@ Legend:
 ●: Negative reference
 ```
 
-# Slow death
+# Markets
 
-If you spread yourself thin, no chain reaction ever occurs
+A market is:
+
+> * a set of actual or potential customers
+> * for a given set of products or services
+> * who have a common set of needs or wants, and
+> * who reference each other when making a buying decision
+
+# Examples
+
+A market corresponds to an "application domain" or "vertical", such as:
+
+* Interpreters
+* Distributed systems
+* Ops
+
+The following are __not__ markets because they are "horizontal" concerns:
+
+* Concurrency
+* Type safety
+* Immutability
+
+# Subcritical markets
+
+If a language community spreads themselves thin, no chain reaction ever occurs
 
 ```
-     Market A        Market B        Market C
+                   Distributed
+       Ops           Systems       Interpreters
 ┌───────────────┬───────────────┬───────────────┐
 │ ●        ○    │ ●       ○     │     ○         │
 │               │    ○          │○        ● ○   │
@@ -425,12 +541,13 @@ Legend:
 ●: Negative reference
 ```
 
-# Slow death
+# Supercritical market
 
 Focus your efforts on one market to trigger a self-sustaining chain reaction
 
 ```
-     Market A        Market B        Market C
+                   Distributed
+       Ops           Systems       Interpreters
 ┌───────────────┬───────────────┬───────────────┐
 │ ●        ○    │ ●       ○     │     ○         │
 │               │    ●          │○        ● ○   │
@@ -455,12 +572,153 @@ Legend:
 ●: Negative reference
 ```
 
+# Market overlap
+
+Markets are not completely isolated, they slightly overlap
+
+This means that a chain reaction in one market can stimulate an adjacent one
+
+```
+                             Interpreters
+              Distributed ┌───────────────┐
+                 Systems  │  ○○    ○    ○ │
+             ┌────────────┼──┐    ○   ○○  │
+     Ops     │  ○         │ ○│  ○  ○  ○   │
+┌────────────┼──┐         │○○│   ●   ○   ○│
+│       ●    │○ │      ○  │  │ ○   ○ ○  ○ │
+│     ○      │  │  ●      │○ │ ○  ○    ○  │
+│            │  │         └──┼────────────┘
+│            │  │ ●          │
+│  ●         └──┼────────────┘
+│        ○      │
+└───────────────┘
+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Market overlap
+
+Markets are not completely isolated, they slightly overlap
+
+This means that a chain reaction in one market can stimulate an adjacent one
+
+```
+                             Interpreters
+              Distributed ┌───────────────┐
+                 Systems  │   ○      ○    │
+             ┌────────────┼──┐   ○   ○   ○│
+     Ops     │  ○    ○ ○  │○○│ ○  ○   ○   │
+┌────────────┼──┐  ○      │  │○  ○○       │
+│            │○ │ ○○   ○  │ ○│   ○   ●  ○ │
+│     ●      │ ○│  ○    ○ │ ○│ ○    ○    ○│
+│   ○        │○○│       ○ └──┼────────────┘
+│            │○ │ ● ○     ○  │
+│     ●      └──┼────────────┘
+│           ○   │
+└───────────────┘
+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Market overlap
+
+Markets are not completely isolated, they slightly overlap
+
+This means that a chain reaction in one market can stimulate an adjacent one
+
+```
+                             Interpreters
+              Distributed ┌───────────────┐
+                 Systems  │○  ○       ○●  │
+             ┌────────────┼──┐  ○ ○     ○○│
+     Ops     │   ○  ○     │ ○│○     ○     │
+┌────────────┼──┐○ ○○   ○ │  │   ○      ○ │
+│ ●    ○   ○○│ ○│   ○ ○   │○ │ ○  ○   ○   │
+│     ○○     │○ │         │○○│    ○     ○ │
+│ ○      ○   │○ │○○●    ○ └──┼────────────┘
+│      ○     │○ │     ○    ○ │
+│ ○  ○     ○ └──┼────────────┘
+│○       ○   ○  │
+└───────────────┘
+
+
+Legend:
+
+○: Positive reference
+●: Negative reference
+```
+
+# Questions?
+
+* What is "marketing"?
+* The chasm
+* Crossing the chasm
+* Market selection
+
+# Which market should we focus on?
+
+Picking a market to focus on is hard
+
+… typically because there are too many good choices!
+
+Should Haskell focus on:
+
+> * __Interpreters?__
+> 
+>   Haskell's original _raison d'être_ is being the standard language for PLT
+> 
+> * __Web development?__
+> 
+>   Michael Snoyman pioneered Haskell in this area, which remains highly active
+> 
+> * __Data science?__
+> 
+>   The [Data Haskell](https://www.datahaskell.org/) group was created for this
+>   purpose
+>
+> * __Finance / Cryptocurrency?__
+>
+>   One of the largest source of Haskell jobs
+
+# Basics of market selection
+
+The most important factors are:
+
+> * __Target "customer"__
+>
+>   Is there a single, identifiable person/lead/manager within a software
+>   engineering organization with the technical authority to adopt our tool?
+>
+> * __Compelling reason to adopt__
+>
+>   Can they live with the problem for another year or not?
+>
+> * __Whole product__
+>
+>   Do we have enough volunteers to build a best-in-class solution to the
+>   problem?
+>
+> * __Competition__
+>
+>   Has this problem already been addressed by another tool?
+
+For this talk I will only focus on the "Whole Product"
+
+# The whole product
+
+![](./whole-product.png)
+
 # Ideas
 
 * Why did Rust succeed much more quickly than Haskell?
 * Crib ideas from podcast discussion
 * Critique "Simple Haskell" movement
-
-# TODO
-
 * Use something other than `pandoc` to render the slides
