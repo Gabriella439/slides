@@ -17,8 +17,6 @@ This talk draws inspiration from the following book:
 
 The book addressed startups, but the advice is highly relevant to Haskell
 
-I will substantiate the book's message with my own experiences promoting Haskell
-
 # Who needs to hear this?
 
 You are my target audience if you:
@@ -486,15 +484,6 @@ Legend:
 ○: Positive reference
 ●: Negative reference
 ```
-
-# Markets
-
-A market is:
-
-> * a set of actual or potential customers
-> * for a given set of products or services
-> * who have a common set of needs or wants, and
-> * who reference each other when making a buying decision
 
 # Examples
 
