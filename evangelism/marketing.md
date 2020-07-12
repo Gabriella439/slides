@@ -363,7 +363,7 @@ They want their tools to be "official" or "standard" for their industry
 
 * Litter the ecosystem with half-baked projects
 
-  🧐: I can write the documentation later.  Better yet, someone else can
+  🧐: I can write the documentation later
 
 * Spread yourself thin
 
@@ -490,8 +490,8 @@ Legend:
 A market corresponds to an "application domain" or "vertical", such as:
 
 * Interpreters
+* Finance
 * Distributed systems
-* Ops
 
 The following are __not__ markets because they are "horizontal" concerns:
 
@@ -504,8 +504,8 @@ The following are __not__ markets because they are "horizontal" concerns:
 If a language community spreads themselves thin, no chain reaction ever occurs
 
 ```
-                   Distributed
-       Ops           Systems       Interpreters
+   Distributed
+     Systems         Finance       Interpreters
 ┌───────────────┬───────────────┬───────────────┐
 │ ●        ○    │ ●       ○     │     ○         │
 │               │    ○          │○        ● ○   │
@@ -535,8 +535,8 @@ Legend:
 Focus your efforts on one market to trigger a self-sustaining chain reaction
 
 ```
-                   Distributed
-       Ops           Systems       Interpreters
+   Distributed
+     Systems         Finance       Interpreters
 ┌───────────────┬───────────────┬───────────────┐
 │ ●        ○    │ ●       ○     │     ○         │
 │               │    ●          │○        ● ○   │
@@ -569,10 +569,10 @@ This means that a chain reaction in one market can stimulate an adjacent one
 
 ```
                              Interpreters
-              Distributed ┌───────────────┐
-                 Systems  │  ○○    ○    ○ │
-             ┌────────────┼──┐    ○   ○○  │
-     Ops     │  ○         │ ○│  ○  ○  ○   │
+                          ┌───────────────┐
+                 Finance  │  ○○    ○    ○ │
+ Distributed ┌────────────┼──┐    ○   ○○  │
+   Systems   │  ○         │ ○│  ○  ○  ○   │
 ┌────────────┼──┐         │○○│   ●   ○   ○│
 │       ●    │○ │      ○  │  │ ○   ○ ○  ○ │
 │     ○      │  │  ●      │○ │ ○  ○    ○  │
@@ -597,10 +597,10 @@ This means that a chain reaction in one market can stimulate an adjacent one
 
 ```
                              Interpreters
-              Distributed ┌───────────────┐
-                 Systems  │   ○      ○    │
-             ┌────────────┼──┐   ○   ○   ○│
-     Ops     │  ○    ○ ○  │○○│ ○  ○   ○   │
+                          ┌───────────────┐
+                 Finance  │   ○      ○    │
+ Distributed ┌────────────┼──┐   ○   ○   ○│
+   Systems   │  ○    ○ ○  │○○│ ○  ○   ○   │
 ┌────────────┼──┐  ○      │  │○  ○○       │
 │            │○ │ ○○   ○  │ ○│   ○   ●  ○ │
 │     ●      │ ○│  ○    ○ │ ○│ ○    ○    ○│
@@ -625,10 +625,10 @@ This means that a chain reaction in one market can stimulate an adjacent one
 
 ```
                              Interpreters
-              Distributed ┌───────────────┐
-                 Systems  │○  ○       ○●  │
-             ┌────────────┼──┐  ○ ○     ○○│
-     Ops     │   ○  ○     │ ○│○     ○     │
+                          ┌───────────────┐
+                 Finance  │○  ○       ○●  │
+ Distributed ┌────────────┼──┐  ○ ○     ○○│
+   Systems   │   ○  ○     │ ○│○     ○     │
 ┌────────────┼──┐○ ○○   ○ │  │   ○      ○ │
 │ ●    ○   ○○│ ○│   ○ ○   │○ │ ○  ○   ○   │
 │     ○○     │○ │         │○○│    ○     ○ │
@@ -699,15 +699,79 @@ The most important factors are:
 >
 >   Has this problem already been addressed by another tool?
 
-For this talk I will only focus on the "Whole Product"
+Based on that which market do I believe Haskell target?
 
-# The whole product
+# Interpreters
 
-![](./whole-product.png)
+If I had to suggest a market, I would focus on interpreters:
 
-# Ideas
+> * Target customer
+> 
+>   The next generation of tech companies need dedicated language teams
+> 
+> * Compelling reason to adopt
+> 
+>   Startups can't afford to hire a professional language team
+>
+>   Nobody has solved the "amateur language developer" problem
+> 
+> * Whole product
+> 
+>   Haskell's ecosystem for interpreters is "the total package"
+>
+> * Competition
+> 
+>   Nonexistent
 
-* Why did Rust succeed much more quickly than Haskell?
-* Crib ideas from podcast discussion
-* Critique "Simple Haskell" movement
-* Use something other than `pandoc` to render the slides
+# What about the other options?
+
+> * Web development
+>
+>   The problem is with the _compelling reason to adopt_.  There are problems
+>   with web development, but people can live with them.
+>
+> * Data science
+>
+>   The problem is with the _whole product_.  We don't have enough interest or
+>   volunteers to build an ecosystem that is better than R or Python.
+>
+> * Finance / cryptocurrency
+>
+>   Perhaps this also could have been the selection, but I'm less informed on
+>   this market so I can't speak with authority.
+
+# Next steps
+
+Here are the remaining things we can do to polish interpreter ecosystem
+
+> * Document packages
+>
+>   You only need a small self-contained example and decent haddock coverage
+>
+> * Language server that is easy to install and setup
+>
+>   IDE support is still table stakes to go mainstream
+>
+> * Provide easy-to-fork GitHub repositories implementing interpreted languages
+>
+>   Preferably ones with type inference using best practices
+>
+> * Build pipelines for Haskell PhDs in PLT to commercial opportunities
+>
+>   This will stimulate research and also increase industry confidence in hiring
+>
+> * Publish a book on how to use Haskell for writing an interpreter
+>
+>   ... and maybe even make some money from doing so!
+
+... and that's it.  As far as I can tell, everything else we need is in place.
+
+# Conclusion
+
+The important take-away from this talk is to think in a __market-oriented__ way
+
+I can't force people to work on any given market (nor do I want to)
+
+However, I do hope this talk will help people achieve more with less work
+
+Read [Crossing the Chasm](https://www.amazon.com/Crossing-Chasm-Marketing-High-Tech-Mainstream/dp/0060517123) if this talk interested you
