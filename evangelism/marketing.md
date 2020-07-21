@@ -1,6 +1,6 @@
 % How to market Haskell
 % Gabriel Gonzalez
-% July 31, 2020
+% August 1, 2020
 
 # Source material
 
@@ -22,7 +22,7 @@ The book addressed startups, but the advice is highly relevant to Haskell
 You are my target audience if you:
 
 * … wish there were more Haskell jobs
-* … wonder why Haskell fails to gain mainstream traction
+* … would like to help Haskell gain mainstream traction
 
 You are not my target audience if you:
 
@@ -45,7 +45,7 @@ Haskell to mainstream programmers
 
 In fact, I'll wager that you misunderstand marketing _in general_
 
-I'll go through a few marketing misconceptions, using MongoDB as the "foil"
+I'll go through a few marketing misconceptions, using MongoDB as the bad guy
 
 (Sorry, MongoDB)
 
@@ -71,7 +71,7 @@ Do you believe that popular tools thrive because of __hype__?
 
 People who believe this will conclude:
 
-🧐💭 "I should spend more time cheerleading about Haskell on social media"
+🧐💭 "I should spend more time praising Haskell on social media"
 
 # Misconception #3: Marketing = Corporate backing
 
@@ -274,7 +274,7 @@ So how on earth can visionaries convince pragmatists to adopt?
 
 We don't want to evangelize more (that makes things worse!)
 
-We also don't want to sell out 💰 or burn out 😰 to build an enormous ecosystem
+We also don't want to sell out 💰 or burn out 😰 to satisfy pragmatists
 
 # Visionaries vs. Pragmatists
 
@@ -288,9 +288,29 @@ The solution is to understand the following fundamental difference:
 
   🤔: Is Haskell is the best tool for my industry?
 
-We need to think/speak/act in a __market-oriented__ way to convince pragmatists
+We need to think/speak/build in a __market-oriented__ way to convince
+pragmatists
 
 This is why the discipline is called __market__-ing
+
+# Why do we care about pragmatists?
+
+Pragmatists are picky as hell, but they can become your greatest ally
+
+> …, __once a start-up has earned its spurs with the pragmatist buyers within a
+> given market, they tend to be very loyal to it, and even go out of their way
+> to help it suceed__.  When this happens, the cost of sales goes way down, and
+> the leverage on incremental R&D to support any given customer goes way up.
+> That's one of the reasons pragmatists make such a great market.
+
+🧐: Haskell is the best for interpreters.  Ask your friends if you
+    don't believe me
+
+🤔: You're right.  Let us help things stay that way
+
+This is because pragmatists are __market-oriented__
+
+They want their tools to be "official" or "standard" for their industry
 
 # Questions?
 
@@ -315,27 +335,7 @@ As noted previously, this appears to be a chicken-and-egg problem:
 > segment, __how can you accumulate the number of references a pragmatist
 > requires, when virtually everyone left to call on is also a pragmatist?__
 
-# Pragmatists are loyal
-
-Pragmatists are picky as hell, but they can become your greatest ally
-
-> …, __once a start-up has earned its spurs with the pragmatist buyers within a
-> given market, they tend to be very loyal to it, and even go out of their way
-> to help it suceed__.  When this happens, the cost of sales goes way down, and
-> the leverage on incremental R&D to support any given customer goes way up.
-> That's one of the reasons pragmatists make such a great market.
-
-🧐: Haskell is the best language for building interpreters.  Ask your
-    colleagues if you don't believe me
-
-🤔: You're right.  My colleagues and I will ensure that Haskell remains the
-    language of choice
-
-This is because pragmatists are __market-oriented__
-
-They want their tools to be "official" or "standard" for their industry
-
-# A recipe for success
+# The recipe for success
 
 * First, solve an enormous problem
 
@@ -355,7 +355,7 @@ They want their tools to be "official" or "standard" for their industry
 
   🤔: Haskell may not be a good fit for other industries, but I'm okay with that
 
-# A recipe for failure
+# The recipe for failure
 
 * Solve a problem that has already been solved
 
@@ -384,7 +384,7 @@ I like to think of tool adoption as analogous to a nuclear chain reaction:
 
 Many understand this but try to manufacture hype to stimulate the reaction
 
-Artificial hype doesn't work in practice because pragmatists are hard to fool
+Artificial hype doesn't work because pragmatists are hard to fool
 
 🧐: Haskell has top notch tooling, like a strong type system, and Hoogle, and…
 
@@ -398,7 +398,7 @@ When positive references from pragmatists "collide", magic happens:
 
 🤔: Should we give Haskell a try?
 
-🙂: I've heard great things about Haskell
+🙂: I've had great experiences with Haskell
 
 🙂: Me, too!  I used Haskell myself and I'd recommend it without hesitation
 
@@ -436,7 +436,7 @@ Negative references neutralize positive references:
 
 🙂: I've heard great things about Haskell
 
-🙃: Nah, I tried Haskell and was thoroughly disappointed with the ecosystem
+🙃: Nah, I tried Haskell and was disappointed with the ecosystem
 
 🤔: Hmmm.  Maybe we're not yet ready to invest in Haskell
 
@@ -484,20 +484,6 @@ Legend:
 ○: Positive reference
 ●: Negative reference
 ```
-
-# Examples
-
-A market corresponds to an "application domain" or "vertical", such as:
-
-* Interpreters
-* Finance
-* Distributed systems
-
-The following are __not__ markets because they are "horizontal" concerns:
-
-* Concurrency
-* Type safety
-* Immutability
 
 # Subcritical markets
 
@@ -675,7 +661,7 @@ Should Haskell focus on:
 >
 > * __Finance / Cryptocurrency?__
 >
->   One of the largest source of Haskell jobs
+>   One of the largest sources of Haskell jobs
 
 # Basics of market selection
 
@@ -684,7 +670,8 @@ The most important factors are:
 > * __Target "customer"__
 >
 >   Is there a single, identifiable person/lead/manager within a software
->   engineering organization with the technical authority to adopt our tool?
+>   engineering organization with the technical authority to adopt our tool
+>   on behalf of the rest of the organization?
 >
 > * __Compelling reason to adopt__
 >
@@ -692,8 +679,7 @@ The most important factors are:
 >
 > * __Whole product__
 >
->   Do we have enough volunteers to build a best-in-class solution to the
->   problem?
+>   Are we close to building  a best-in-class solution to the problem?
 >
 > * __Competition__
 >
@@ -701,23 +687,42 @@ The most important factors are:
 
 Based on that which market do I believe Haskell target?
 
+# Lots of caveats
+
+Please take the upcoming suggestions with a very large grain of salt:
+
+> * I don't mean to suggest that all other work is useless
+>
+> * Volunteers can do whatever they want with their time
+>
+>   This advice is for people looking for new ways to contribute
+>
+> * I could be wrong
+>
+>   My viewpoint is biased by my own experiences
+>
+> * Going mainstream is not the be-all and end-all
+>
+>   We Haskell programmers avoid (success at all costs)
+
 # Interpreters
 
 If I had to suggest a market, I would focus on interpreters:
 
 > * Target customer
 > 
->   The next generation of tech companies need dedicated language teams
+>   One person "team" tasked with building a programmable DSL for a product
 > 
 > * Compelling reason to adopt
 > 
->   Startups can't afford to hire a professional language team
+>   Small businesses can't afford to hire a professional programming language
+>   team
 >
->   Nobody has solved the "amateur language developer" problem
+>   Nobody has solved the "casual language developer" problem
 > 
 > * Whole product
 > 
->   Haskell's ecosystem for interpreters is "the total package"
+>   Haskell's ecosystem for interpreters is pretty close to "the total package"
 >
 > * Competition
 > 
@@ -728,21 +733,22 @@ If I had to suggest a market, I would focus on interpreters:
 > * Web development
 >
 >   The problem is with the _compelling reason to adopt_.  There are problems
->   with web development, but people can live with them.
+>   with existing web development stacks, but people can live with them.
 >
 > * Data science
 >
->   The problem is with the _whole product_.  We don't have enough interest or
->   volunteers to build an ecosystem that is better than R or Python.
+>   The problem is with the _whole product_.  We're still far from building an
+>   ecosystem that is better than Python.
 >
 > * Finance / cryptocurrency
 >
 >   Perhaps this also could have been the selection, but I'm less informed on
 >   this market so I can't speak with authority.
 
-# Next steps
+# Next steps for interpreters
 
-Here are the remaining things we can do to polish interpreter ecosystem
+Here are the remaining things we can do to build the "whole product" for the
+interpreter ecosystem:
 
 > * Document packages
 >
@@ -750,21 +756,15 @@ Here are the remaining things we can do to polish interpreter ecosystem
 >
 > * Language server that is easy to install and setup
 >
->   IDE support is still table stakes to go mainstream
+>   IDE support is always an important component of the "whole product"
 >
 > * Provide easy-to-fork GitHub repositories implementing interpreted languages
 >
 >   Preferably ones with type inference using best practices
 >
-> * Build pipelines for Haskell PhDs in PLT to commercial opportunities
->
->   This will stimulate research and also increase industry confidence in hiring
->
-> * Publish a book on how to use Haskell for writing an interpreter
+> * Publish an authoritative book on how to use Haskell to build an interpreter
 >
 >   ... and maybe even make some money from doing so!
-
-... and that's it.  As far as I can tell, everything else we need is in place.
 
 # Conclusion
 
