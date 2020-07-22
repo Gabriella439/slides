@@ -355,20 +355,6 @@ As noted previously, this appears to be a chicken-and-egg problem:
 
   🤔: Haskell may not be a good fit for other industries, but I'm okay with that
 
-# The recipe for failure
-
-* Solve a problem that has already been solved
-
-  🧐: Did you know that you can build a web server in Haskell?
-
-* Litter the ecosystem with half-baked projects
-
-  🧐: I can write the documentation later
-
-* Spread yourself thin
-
-  🧐: Haskell is a general-purpose programming language
-
 # The importance of focus
 
 I like to think of tool adoption as analogous to a nuclear chain reaction:
@@ -680,10 +666,6 @@ The most important factors are:
 > * __Whole product__
 >
 >   Are we close to building  a best-in-class solution to the problem?
->
-> * __Competition__
->
->   Has this problem already been addressed by another tool?
 
 Based on that which market do I believe Haskell target?
 
@@ -723,10 +705,6 @@ If I had to suggest a market, I would focus on interpreters:
 > * Whole product
 > 
 >   Haskell's ecosystem for interpreters is pretty close to "the total package"
->
-> * Competition
-> 
->   Nonexistent
 
 # What about the other options?
 
