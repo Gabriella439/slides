@@ -1,4 +1,4 @@
-% How to market Haskell
+% How to market Haskell to mainstream programmers
 % Gabriel Gonzalez
 % August 1, 2020
 
@@ -17,33 +17,14 @@ This talk draws inspiration from the following book:
 
 The book addressed startups, but the advice is highly relevant to Haskell
 
-# Who needs to hear this?
-
-You are my target audience if you:
-
-* … wish there were more Haskell jobs
-* … would like to help Haskell gain mainstream traction
-
-You are not my target audience if you:
-
-* … were hoping for a presentation with code
-* … have given up hope on Haskell becoming mainstream
-
-# Overview
-
-* What is "marketing"?
-* The chasm
-* Crossing the chasm
-* Market selection
-
 # Everything you know about marketing is wrong
 
-This is my one 🔥inflammatory🔥 slide for the talk
+This is my one 🔥hot take🔥 for the talk
 
-I'm confident that most of my audience (yes, you!) doesn't know how to market
+I'm confident that most Haskell programmers (yes, you!) don't know how to market
 Haskell to mainstream programmers
 
-In fact, I'll wager that you misunderstand marketing _in general_
+In fact, I'll wager that they will misunderstand marketing _in general_
 
 I'll go through a few marketing misconceptions, using MongoDB as the bad guy
 
@@ -115,13 +96,6 @@ Marketing is actually a noble task, which the book captures well in this quote:
 In other words, if you market a tool well, no misleading claims, hype, nor
 corporate backing is necessary.
 
-# Questions?
-
-* What is "marketing"?
-* The chasm
-* Crossing the chasm
-* Market selection
-
 # The Technology Adoption Life Cycle
 
 The technology adoption life cycle models adoption of _discontinuous_ changes
@@ -173,31 +147,21 @@ Visionaries are __negative__ references for pragmatists
 
 In other words: evangelism from visionaries turns off pragmatists
 
-This happens for the following reasons:
+Why is that?
 
-> * Lack of respect for the value of colleague's experiences
-> 
-> * Taking a greater interest in technology than in their industry
-> 
-> * Failing to recognize the importance of existing product infrastructure
-> 
-> * Overall disruptiveness
+# Lack of respect for the value of colleague's experiences
 
-# Lack of respect
-
-> Visionaries are the first people in their industry to see the potential of the
-> new technology.  Fundamentally, __they see themselves as smarter than their
-> opposite numbers in companies__ -- and, quite often, they are.  Indeed, it is
+> __Visionaries are the first people in their industry to see the potential of the
+> new technology.  Fundamentally, they see themselves as smarter than their
+> opposite numbers in companies -- and, quite often, they are.  Indeed, it is
 > their ability to see things first that they want to leverage into a
 > competitive advantage.  That advantage can only come about if no one else has
 > discovered it.  They do not expect, therefore, to be buying a well-tested
-> product with an extensive list of industry references.  Indeed, __if such a
-> reference base exists, it may actually turn them off__, indicating that for
-> this technology, at any rate, they are already too late.
+> product with an extensive list of industry references.  Indeed, if such a
+> reference base exists, it may actually turn them off, indicating that for
+> this technology, at any rate, they are already too late.__
 
-🧐: Haskell is a secret weapon.  Other languages are toys in comparison
-
-> Pragmatists, on the other hand, __deeply value the experience of their
+> __Pragmatists, on the other hand, deeply value the experience of their
 > colleagues__ in other companies.  When they buy, they expect extensive
 > references, and they want a good number to come from companies in their own
 > industry segment.  This, as we have already noted, creates a catch-22
@@ -205,30 +169,24 @@ This happens for the following reasons:
 > segment, how can you accumulate the number of references a pragmatist
 > requires, when virtually everyone left to call on is also a pragmatist?
 
-🤔: Then why are so few companies using Haskell?
-
-# Interest in technology
+# Taking a greater interest in technology than in their own industry
 
 > Visionaries are defining the future.  You meet them at technology conferences 
 > and other futurist forums where people gather to forecast trends and seek out
 > new market opportunities.  They are easy to strike up a conversation with, and
 > they understand and appreciate what high-tech companies and high-tech products
 > are trying to do.  They want to talk ideas with bright people.  __They are
-> bored with the mundane details__ of their own industries.  __They like to talk
+> bored with the mundane details of their own industries.  They like to talk
 > and think high tech__.
 
-🧐: Profunctor optics are the future of lenses
-
-> Pragmatists, on the other hand, __don't put a lot of stake in futuristic
+> __Pragmatists, on the other hand, don't put a lot of stake in futuristic
 > things__.  They see themselves more in present-day terms, as the people
 > devoted to making the wheels of their industry turn.  Therefore, they tend to
 > invest their convention time in industry-specific issues.  Where pragmatists
 > are concerned, sweeping changes and global advantages may make for fine
 > speeches, but not much else.
 
-🤔: I can already write a web server in Python, so why learn a new language?
-
-# Failing to recognize existing infrastructure
+# Failing to recognize the importance of existing product infrastructure
 
 > Visionaries are building systems from the ground up.  They are incarnating
 > their vision.  __They do not expect to find components for these systems
@@ -237,36 +195,28 @@ This happens for the following reasons:
 > groups to be in place, procedures to have been established, or third parties
 > to be available to share in the workload and the responsibility.
 
-🧐: No OAuth package?  No problem; I can probably whip up my own
-
 > Pragmatists expect all these things.  __When they see visionaries going their
 > own route__ with little or no thought of connecting with the mainstream
 > practices in their industry, __they shudder.__  Pragmatists have based their
 > careers on such connections: Once again, it is painfully obvious that
 > visionaries, as a group, make a very poor reference base for pragmatists.
 
-🤔: No OAuth package?  I'll revisit Haskell when the ecosystem is more mature
-
 # Overall disruptiveness
 
-> From a pragmatist's point of view, visionaries are the people who come in and
+> __From a pragmatist's point of view, visionaries are the people who come in and
 > soak up all the budget for their projects.  If the project is a success, they
-> take all the credit, while the __pragmatists get stuck trying to maintain a
+> take all the credit, while the pragmatists get stuck trying to maintain a
 > system that is so "state-of-the-art" no one is quite sure how to keep it
 > working__.  If the project fails, visionaries always seem to be a step ahead
 > of the disaster, getting out of town while they can, and leaving the
 > pragmatists to clean up the mess.
 
-🧐: Rewriting this project in Haskell would solve our problems
-
 > Visionaries, successful or not, don't plan to stick around long.  They see
 > themselves on a fast track that has them leapfrogging up the corporate ladder
 > and across corporations.  __Pragmatists, on the other hand, tend to be
-> committed long term to their profession and the company at which they work.__
+> committed long term to their profession and the company at which they work.
 > They are very cautious about grandiose schemes because they know they will
-> have to live with the results.
-
-🤔: Will I have to learn Haskell if you abandon this project?
+> have to live with the results.__
 
 # Is all hope lost?
 
@@ -282,11 +232,7 @@ The solution is to understand the following fundamental difference:
 
 * Visionaries are __project-oriented__
 
-  🧐: Is Haskell the best tool for my project?
-
 * Pragmatists are __market-oriented__
-
-  🤔: Is Haskell is the best tool for my industry?
 
 We need to think/speak/build in a __market-oriented__ way to convince
 pragmatists
@@ -303,21 +249,9 @@ Pragmatists are picky as hell, but they can become your greatest ally
 > the leverage on incremental R&D to support any given customer goes way up.
 > That's one of the reasons pragmatists make such a great market.
 
-🧐: Haskell is the best for interpreters.  Ask your friends if you
-    don't believe me
-
-🤔: You're right.  Let us help things stay that way
-
 This is because pragmatists are __market-oriented__
 
 They want their tools to be "official" or "standard" for their industry
-
-# Questions?
-
-* What is "marketing"?
-* The chasm
-* Crossing the chasm
-* Market selection
 
 # Crossing the chasm
 
@@ -372,25 +306,9 @@ Many understand this but try to manufacture hype to stimulate the reaction
 
 Artificial hype doesn't work because pragmatists are hard to fool
 
-🧐: Haskell has top notch tooling, like a strong type system, and Hoogle, and…
-
-🤔: What about IDE support?
-
-Let's talk about how to create legitimate hype
-
 # Amplification
 
 When positive references from pragmatists "collide", magic happens:
-
-🤔: Should we give Haskell a try?
-
-🙂: I've had great experiences with Haskell
-
-🙂: Me, too!  I used Haskell myself and I'd recommend it without hesitation
-
-🤔: Great!  Let's give it a trial run
-
-# Amplification
 
 * 🌱 Organization adopts tool
 * 🎓 New developers trained
@@ -417,14 +335,6 @@ Legend:
 # Cancellation
 
 Negative references neutralize positive references:
-
-🤔: Should we give Haskell a try?
-
-🙂: I've heard great things about Haskell
-
-🙃: Nah, I tried Haskell and was disappointed with the ecosystem
-
-🤔: Hmmm.  Maybe we're not yet ready to invest in Haskell
 
 ```
      Before           Middle          After
@@ -617,13 +527,6 @@ Legend:
 ●: Negative reference
 ```
 
-# Questions?
-
-* What is "marketing"?
-* The chasm
-* Crossing the chasm
-* Market selection
-
 # Which market should we focus on?
 
 Picking a market to focus on is hard
@@ -736,9 +639,9 @@ interpreter ecosystem:
 >
 >   IDE support is always an important component of the "whole product"
 >
-> * Provide easy-to-fork GitHub repositories implementing interpreted languages
+> * Provide easy-to-fork GitHub repositories implementing an interpreted language
 >
->   Preferably ones with type inference using best practices
+>   Preferably one with type inference using best practices
 >
 > * Publish an authoritative book on how to use Haskell to build an interpreter
 >
