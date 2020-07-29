@@ -21,8 +21,8 @@ The book addressed startups, but the advice is highly relevant to Haskell
 
 This is my one 🔥hot take🔥 for the talk
 
-I'm confident that most Haskell programmers (yes, you!) don't know how to market
-Haskell to mainstream programmers
+I'm confident that most Haskell programmers don't know how to market to
+mainstream programmers
 
 In fact, I'll wager that they will misunderstand marketing _in general_
 
@@ -68,8 +68,6 @@ People who believe this will conclude:
 
 # So what is marketing?
 
-There is a kernel of truth to each misconception, but they each miss the point
-
 The book "Crossing the Chasm" provides an excellent definition of "marketing":
 
 > "Marketing" is prioritizing the needs of a "market".  A "market" is a
@@ -99,9 +97,6 @@ corporate backing is necessary.
 # The Technology Adoption Life Cycle
 
 The technology adoption life cycle models adoption of _discontinuous_ changes
-
-* Continuous change: Upgrading `aeson` to improve runtime performance
-* Discontinuous change: Switching from Python to Haskell
 
 Early adopters are __visionaries__: they prefer new technologies
 
@@ -151,15 +146,15 @@ Why is that?
 
 # Lack of respect for the value of colleague's experiences
 
-> __Visionaries are the first people in their industry to see the potential of the
+> Visionaries are the first people in their industry to see the potential of the
 > new technology.  Fundamentally, they see themselves as smarter than their
 > opposite numbers in companies -- and, quite often, they are.  Indeed, it is
 > their ability to see things first that they want to leverage into a
 > competitive advantage.  That advantage can only come about if no one else has
-> discovered it.  They do not expect, therefore, to be buying a well-tested
-> product with an extensive list of industry references.  Indeed, if such a
-> reference base exists, it may actually turn them off, indicating that for
-> this technology, at any rate, they are already too late.__
+> discovered it.  __They do not expect__, therefore, __to be buying a
+> well-tested product with an extensive list of industry references.  Indeed,
+> if such a reference base exists, it may actually turn them off, indicating
+> that for this technology, at any rate, they are already too late.__
 
 > __Pragmatists, on the other hand, deeply value the experience of their
 > colleagues__ in other companies.  When they buy, they expect extensive
@@ -245,7 +240,7 @@ Pragmatists are picky as hell, but they can become your greatest ally
 
 > …, __once a start-up has earned its spurs with the pragmatist buyers within a
 > given market, they tend to be very loyal to it, and even go out of their way
-> to help it suceed__.  When this happens, the cost of sales goes way down, and
+> to help it succeed__.  When this happens, the cost of sales goes way down, and
 > the leverage on incremental R&D to support any given customer goes way up.
 > That's one of the reasons pragmatists make such a great market.
 
@@ -288,6 +283,15 @@ As noted previously, this appears to be a chicken-and-egg problem:
   ... because you can't build a top notch experience otherwise
 
   🤔: Haskell may not be a good fit for other industries, but I'm okay with that
+
+# The perfect pitch
+
+Marketing isn't really about what you say, but here's the "perfect pitch":
+
+> "Haskell is the best tool for X industry.  Everybody's saying great things
+> about it.  Ask your colleagues if you don't believe me."
+
+Working backwards from that pitch can help you better understand what to do
 
 # The importance of focus
 
@@ -572,24 +576,6 @@ The most important factors are:
 
 Based on that which market do I believe Haskell target?
 
-# Lots of caveats
-
-Please take the upcoming suggestions with a very large grain of salt:
-
-> * I don't mean to suggest that all other work is useless
->
-> * Volunteers can do whatever they want with their time
->
->   This advice is for people looking for new ways to contribute
->
-> * I could be wrong
->
->   My viewpoint is biased by my own experiences
->
-> * Going mainstream is not the be-all and end-all
->
->   We Haskell programmers avoid (success at all costs)
-
 # Interpreters
 
 If I had to suggest a market, I would focus on interpreters:
@@ -631,21 +617,39 @@ If I had to suggest a market, I would focus on interpreters:
 Here are the remaining things we can do to build the "whole product" for the
 interpreter ecosystem:
 
-> * Document packages
+> * Document and polish interpreter packages
 >
->   You only need a small self-contained example and decent haddock coverage
+>   Focus on: parsing, type-checking, substitution, effect systems, and optics
 >
 > * Language server that is easy to install and setup
 >
 >   IDE support is always an important component of the "whole product"
 >
-> * Provide easy-to-fork GitHub repositories implementing an interpreted language
+> * Provide easy-to-fork GitHub repository implementing an interpreted language
 >
 >   Preferably one with type inference using best practices
 >
 > * Publish an authoritative book on how to use Haskell to build an interpreter
 >
 >   ... and maybe even make some money from doing so!
+
+# Lots of caveats
+
+Please take the upcoming suggestions with a very large grain of salt:
+
+> * I don't mean to suggest that all other work is useless
+>
+> * Volunteers can do whatever they want with their time
+>
+>   This advice is for people looking for new ways to contribute
+>
+> * I could be wrong
+>
+>   My viewpoint is biased by my own experiences
+>
+> * Going mainstream is not the be-all and end-all
+>
+>   We Haskell programmers avoid (success at all costs)
 
 # Conclusion
 
