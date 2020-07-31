@@ -26,7 +26,7 @@ mainstream programmers
 
 In fact, I'll wager that they will misunderstand marketing _in general_
 
-I'll go through a few marketing misconceptions, using MongoDB as the bad guy
+I'll go through a few marketing misconceptions, using MongoDB as the villain
 
 (Sorry, MongoDB)
 
@@ -390,8 +390,8 @@ Legend:
 If a language community spreads themselves thin, no chain reaction ever occurs
 
 ```
-   Distributed
-     Systems         Finance       Interpreters
+      Data
+     Science         Finance       Interpreters
 ┌───────────────┬───────────────┬───────────────┐
 │ ●        ○    │ ●       ○     │     ○         │
 │               │    ○          │○        ● ○   │
@@ -421,8 +421,8 @@ Legend:
 Focus your efforts on one market to trigger a self-sustaining chain reaction
 
 ```
-   Distributed
-     Systems         Finance       Interpreters
+      Data
+     Science         Finance       Interpreters
 ┌───────────────┬───────────────┬───────────────┐
 │ ●        ○    │ ●       ○     │     ○         │
 │               │    ●          │○        ● ○   │
@@ -457,8 +457,8 @@ This means that a chain reaction in one market can stimulate an adjacent one
                              Interpreters
                           ┌───────────────┐
                  Finance  │  ○○    ○    ○ │
- Distributed ┌────────────┼──┐    ○   ○○  │
-   Systems   │  ○         │ ○│  ○  ○  ○   │
+    Data     ┌────────────┼──┐    ○   ○○  │
+   Science   │  ○         │ ○│  ○  ○  ○   │
 ┌────────────┼──┐         │○○│   ●   ○   ○│
 │       ●    │○ │      ○  │  │ ○   ○ ○  ○ │
 │     ○      │  │  ●      │○ │ ○  ○    ○  │
@@ -485,8 +485,8 @@ This means that a chain reaction in one market can stimulate an adjacent one
                              Interpreters
                           ┌───────────────┐
                  Finance  │   ○      ○    │
- Distributed ┌────────────┼──┐   ○   ○   ○│
-   Systems   │  ○    ○ ○  │○○│ ○  ○   ○   │
+    Data     ┌────────────┼──┐   ○   ○   ○│
+   Science   │  ○    ○ ○  │○○│ ○  ○   ○   │
 ┌────────────┼──┐  ○      │  │○  ○○       │
 │            │○ │ ○○   ○  │ ○│   ○   ●  ○ │
 │     ●      │ ○│  ○    ○ │ ○│ ○    ○    ○│
@@ -513,8 +513,8 @@ This means that a chain reaction in one market can stimulate an adjacent one
                              Interpreters
                           ┌───────────────┐
                  Finance  │○  ○       ○●  │
- Distributed ┌────────────┼──┐  ○ ○     ○○│
-   Systems   │   ○  ○     │ ○│○     ○     │
+    Data     ┌────────────┼──┐  ○ ○     ○○│
+   Science   │   ○  ○     │ ○│○     ○     │
 ┌────────────┼──┐○ ○○   ○ │  │   ○      ○ │
 │ ●    ○   ○○│ ○│   ○ ○   │○ │ ○  ○   ○   │
 │     ○○     │○ │         │○○│    ○     ○ │
@@ -586,10 +586,7 @@ If I had to suggest a market, I would focus on interpreters:
 > 
 > * Compelling reason to adopt
 > 
->   Small businesses can't afford to hire a professional programming language
->   team
->
->   Nobody has solved the "casual language developer" problem
+>   JSON/YAML DSLs are collapsing under their own weight (e.g. CloudFormation)
 > 
 > * Whole product
 > 
@@ -660,3 +657,5 @@ I can't force people to work on any given market (nor do I want to)
 However, I do hope this talk will help people achieve more with less work
 
 Read [Crossing the Chasm](https://www.amazon.com/Crossing-Chasm-Marketing-High-Tech-Mainstream/dp/0060517123) if this talk interested you
+
+* Slides: [https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md](https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md)
