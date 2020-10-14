@@ -29,8 +29,10 @@ I hope this talk gives you all ideas for how to do so, including:
 
 * Ideas for language features
 * How to create a language standard
-* How to promote adoption of that language
 * How to build polished tooling
+* How to promote adoption of that language
+
+My intention is not to get you to use Dhall, but rather to learn from Dhall
 
 # What is Dhall?
 
@@ -122,7 +124,7 @@ in  [ makeUser "bill"
 
 # Dhall is typed
 
-`x : T` means that `x` has type `T`
+You can validate configuration files ahead of time:
 
 ```haskell
 let Config : Type =
@@ -179,7 +181,7 @@ in  number + number
 You can also embed other expressions by URL!
 
 ```haskell
-let generate = https://prelude.dhall-lang.org/List/generate
+let generate = https://prelude.dhall-lang.org/List/generate.dhall
 
 let makeUser = \(user : Text) ->
       let home       = "/home/${user}"
@@ -199,7 +201,7 @@ let Config =
 in  generate 10 Config buildUser
 ```
 
-A lot of design went into making URL imports secure
+The language design ensures that URL imports are secure
 
 # Emergent properties
 
@@ -208,7 +210,7 @@ You can implement derived features by mixing these simpler features
 For example, a package is just a (potentially nested) record that you import:
 
 ```haskell
-let Prelude = https://prelude.dhall-lang.org
+let Prelude = https://prelude.dhall-lang.org/package.dhall
 
 in  Prelude.Bool.not True
 ```
@@ -227,6 +229,473 @@ in  Prelude.Bool.not True
   </html>
   ''
 ```
+
+# Dhall is total
+
+Dhall is a *total* functional programming language
+
+This means Dhall configuration files never hang, crash, or throw exceptions
+
+One benefit of being total is strong normalization:
+
+```haskell
+$ dhall repl
+⊢ :let generate = https://prelude.dhall-lang.org/List/generate.dhall
+
+generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → List a
+
+⊢ generate 10
+
+λ(a : Type) →
+λ(f : Natural → a) →
+  [ f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9 ]
+```
+
+# Questions?
+
+# How to standardize a language
+
+Dhall's biggest design constraint is keeping the standard simple
+
+Dhall is implemented *from scratch* for most new language bindings!
+
+The key components of the standard are:
+
+* The [grammar](https://github.com/dhall-lang/dhall-lang/blob/master/standard/dhall.abnf)
+
+  … which is specified as an ABNF grammar
+
+* The [semantics](https://github.com/dhall-lang/dhall-lang/blob/master/standard/README.md)
+
+  … which are specified using natural deduction
+
+* The [test suite](https://github.com/dhall-lang/dhall-lang/tree/master/tests)
+
+  … which is specified in terms of golden tests
+
+# The standard grammar
+
+Some language bindings generate parsing code directly from the ABNF grammar
+
+Other language bindings hand-translate the grammar rules to parsing code
+
+The grammar is heavily commented to help people who hand-write their parsers:
+
+```abnf
+; A simple label cannot be one of the reserved keywords
+; listed in the `keyword` rule.
+; A PEG parser could use negative lookahead to
+; enforce this, e.g. as follows:
+; simple-label =
+;       keyword 1*simple-label-next-char
+;     / !keyword (simple-label-first-char *simple-label-next-char)
+
+simple-label-first-char = ALPHA / "_"
+
+simple-label-next-char = ALPHANUM / "-" / "/" / "_"
+
+simple-label = simple-label-first-char *simple-label-next-char
+```
+
+# The standard semantics
+
+Dhall uses natural deduction like a language-independent pseudocode
+
+This is how Dhall standardizes type-checking and evaluation logic:
+
+```haskell
+l ⇥ False
+──────────────
+l && r ⇥ False
+
+
+r ⇥ False
+──────────────
+l && r ⇥ False
+
+
+l ⇥ True   r₀ ⇥ r₁
+──────────────────
+l && r₀ ⇥ r₁
+
+
+r ⇥ True   l₀ ⇥ l₁
+──────────────────
+l₀ && r ⇥ l₁
+```
+
+# The standard test suite
+
+The test suite was probably the biggest driver of new language bindings.
+
+The test suite has a subdirectory for each language feature:
+
+```
+tests
+├── README.md
+├── alpha-normalization
+│   └── success
+├── binary-decode
+│   ├── failure
+│   └── success
+├── import
+│   ├── cache
+│   ├── data
+│   ├── failure
+│   └── success
+├── normalization
+│   └── success
+├── parser
+│   ├── failure
+│   └── success
+├── semantic-hash
+│   └── success
+└── type-inference
+    ├── failure
+    └── success
+```
+
+# Things we might do differently
+
+We're not entirely sure that our current approach is the best approach
+
+* One idea we're exploring is focusing on key bindings that others derive from
+
+  For example, we have Rust bindings to Dhall, from which we can derive
+  other bindings via C or Webassembly.
+
+  Similarly, we have Java bindings to Dhall, from which we can derive
+  Clojure and Scala bindings.
+
+* Another idea is replacing natural deduction pseudocode with simple Haskell
+  code
+
+  This would likely be easier for new binding authors to read and understand
+
+  ```haskell
+  evaluate (And True  r    ) = evaluate r
+  evaluate (And l     True ) = evaluate l
+  evaluate (And False _    ) = False
+  evaluate (And _     False) = False
+  ```
+
+# Standard evolution
+
+Our standard governance process is **very** explicit about voting rights:
+
+* Each independent (non-derived) language binding gets one vote
+
+* Changes are accepted within 3 days if they have majority of approving votes 
+
+* Changes are also accepted within 7 days if they don't have a majority of
+  rejections!
+
+* Ties favor accepting the proposal
+
+Despite the formality, we almost never have split votes.  In practice, we
+informally reach consensus out-of-band.
+
+Even so, the rules help because they avoid the
+[tyranny of structurelessness](https://en.wikipedia.org/wiki/The_Tyranny_of_Structurelessness)
+
+The rules also help convey that the Dhall community is a stable foundation
+
+# Permissions and privileges
+
+More generally, we try to be explicit about how to obtain privileges, including:
+
+* How to get the "commit bit"
+
+  We hand out the commit bit liberally, and publicize that fact
+
+* How to make changes to shared infrastructure
+
+  We use [continuous deployment](https://en.wikipedia.org/wiki/Continuous_deployment),
+  meaning that all changes merged to the `master` branch of our repository
+  are automatically deployed to shared infrastructure
+
+* How to obtain privileged accounts or credentials
+
+The explicitness assures newcomers that they have a clearly-defined path to
+greater autonomy and authority.
+
+# Questions?
+
+# Tooling
+
+Dhall has unusually good tooling for a language of its size, including:
+
+* A language server
+
+* A standard formatter
+
+* A REPL
+
+* A wide variety of `dhall-to-*` or `*-to-dhall` tools
+
+# Language server
+
+If you only build one tool, build a language server
+
+The [language server protocol](https://langserver.org/) works<sup>\*</sup> with
+all IDEs and editors
+
+![](./language-server.gif)
+
+<sup>\*</sup> A tiny bit of work needs to be done for each editor, but it's not hard
+
+# `dhall format`
+
+The language supports a standard code formatter:
+
+```haskell
+-- Example code that has been formatted
+
+let JSON = https://prelude.dhall-lang.org/v11.1.0/JSON/package.dhall
+
+let Zone = < us-east-1 | us-west-1 >
+
+let InstanceType = < `m5.large` | `m5.xlarge` >
+
+let Instance = { type : InstanceType, zone : Zone }
+
+let Zone/toJSON =
+      λ(zone : Zone) →
+        merge
+          { us-east-1 = JSON.string "us-east-1"
+          , us-west-1 = JSON.string "us-west-1"
+          }
+          zone
+
+let InstanceType/toJSON =
+      λ(type : InstanceType) →
+        merge
+          { `m5.large` = JSON.string "m5.large"
+          , `m5.xlarge` = JSON.string "m5.xlarge"
+          }
+          type
+
+let Instance/toJSON =
+      λ(instance : Instance) →
+        JSON.object
+          ( toMap
+              { type = InstanceType/toJSON instance.type
+              , zone = Zone/toJSON instance.zone
+              }
+          )
+
+let test =
+      let example = { type = InstanceType.`m5.xlarge`, zone = Zone.us-east-1 }
+
+      in    assert
+          :   JSON.render (Instance/toJSON example)
+            ≡ "{ \"type\": \"m5.xlarge\", \"zone\": \"us-east-1\" }"
+
+in  Instance/toJSON
+```
+
+# The formatter is fundamental
+
+Mainstream adopters are very passionate about the quality of the auto-formatter
+
+Tools that non-interactively lint/edit/rewrite code usually need to auto-format
+
+Also, error messages need to display formatted expressions:
+
+```dhall
+Error: Missing record field: zone2
+
+…
+
+You tried to access a field named:
+
+↳ zone2
+
+... but the field is missing because the record only defines the following
+fields:
+
+↳ { type : < `m5.large` | `m5.small` | `m5.xlarge` >
+  , zone : < us-east-1 | us-west-1 >
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+
+31│                                    instance.zone2
+
+```
+
+# `dhall repl`
+
+A REPL is important for creating tutorial documentation
+
+REPLs also help users interactively explore data and APIs
+
+```haskell
+⊢ :let Prelude = https://prelude.dhall-lang.org/package.dhall
+
+⊢ Prelude.<TAB>
+Prelude.Bool      Prelude.JSON      Prelude.Monoid    Prelude.XML
+Prelude.Double    Prelude.List      Prelude.Natural
+Prelude.Function  Prelude.Location  Prelude.Optional
+Prelude.Integer   Prelude.Map       Prelude.Text
+```
+
+The REPL experience has the potential to be better "documentation" than API docs
+
+# `dhall diff`
+
+One feature unique to Dhall is the `diff` subcommand
+
+This command lets you "diff" two arbitrary Dhall expressions:
+
+```haskell
+$ dhall diff \
+    'https://prelude.dhall-lang.org/v9.0.0/package.dhall' \
+    'https://prelude.dhall-lang.org/v10.0.0/package.dhall'
+{ Natural = { + equal = …
+            , + greaterThan = …
+            , + greaterThanEqual = …
+            , + lessThan = …
+            , + lessThanEqual = …
+            , …
+            }
+, Text = { + default = …
+         , + defaultMap = …
+         , …
+         }
+, …
+}
+```
+
+# Type errors
+
+Type errors also use the same diff syntax to highlight type mismatches:
+
+```haskell
+$ dhall <<< '{ x = 1 } : { y : Natural }'
+
+Use "dhall --explain" for detailed errors
+
+Error: Expression doesn't match annotation
+
+{ - y : …
+, + x : …
+}
+
+1│ { x = 1 } : { y : Natural }
+
+(input):1:1
+```
+
+# `dhall hash`
+
+You can also hash a Dhall expression, to detect if it changed or not:
+
+![](./hash.gif)
+
+This comes in handy when refactoring code, to ensure that refactors are safe
+
+# Why is the tooling (comparatively) good?
+
+The main reasons why are:
+
+* The language is small
+
+  … at least compared to a typical mainstream programming language
+
+* The language is reasonably stable
+
+  … due to the standard evolution process
+
+* All of the tooling resides within a monorepo!
+
+# Monorepo
+
+I maintain the Haskell implementation of Dhall, which was the original one
+
+Because of that origin, all of the Dhall tooling is also implemented in Haskell
+
+Early on, I consolidated the implementation and the tooling all in one repo
+
+This was the best decision I ever made!
+
+# Monorepo advantages
+
+Here is why the implementation and tooling should share the same repository:
+
+* The implementation and the tooling should share the same CI
+
+  This ensures that the tooling never lags behind the implementation
+
+  CI rejects PRs if we forget to update the tooling to match the implementation
+
+* The tooling can share the same ops infrastructure
+
+  That in turn helps us release more frequently
+
+* The tooling can share the same development infrastructure
+
+  We also get higher leverage out of any improvements to streamline development
+
+# Questions?
+
+# Marketing
+
+This section is a highly condensed version of another talk that I've given:
+
+* [How to market Haskell to a mainstream programmer](https://www.youtube.com/watch?v=fNpsgTIpODA) ([Slides](https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md))
+
+I'm guessing that you have the following questions:
+
+* What is the likelihood of the MODEVAR community embracing a language
+  originating in MODEVAR??
+
+  Answer: Highly likely
+
+* What is the likelihood of any language we create finding adoption beyond our
+  community?
+
+  Answer: It depends (see next slide)
+
+* Do we need to actively promote such a language outside our community?
+
+  Answer: You shouldn't need to do any promotion if you do things right
+
+* Is commercial backing or an open source approach better for adoption?
+
+  Answer: It likely won't make a difference.  Financial sponsorship doesn't
+  correlate strongly with good marketing
+
+# How do new languages grow?
+
+Languages grow one "market" at a time, where a "market" is a group of
+people aligned along a common industry vertical.
+
+These people usually:
+
+* attend the same trade shows or conferences (like MODEVAR!)
+* are highly self-referencing for important decisions
+* tend to hire and be hired by each other
+
+One mistake new languages make is prioritizing the needs of individual users or
+companies instead of the needs of a market.
+
+Another mistake is trying to build a "general-purpose" programming language,
+instead of one optimized for a specific market.
+
+# Domino effect
+
+A language tends to passively grow by "spilling over" from one market to
+"adjacent" markets.
+
+An "adjacent" market is another industry vertical that partially overlaps with
+yours.
+
+This will happen naturally if you adequately address the needs of the first
+market you target.
+
+However, you can artifically accelerate the process by conscientiously
+designing towards the needs of your adjacent markets.
 
 # Conclusion
 
