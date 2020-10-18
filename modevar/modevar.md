@@ -11,7 +11,7 @@ code {
 }
 </style>
 
-I'm an engineering manager at Arista Networks and an open source developer.
+I'm an engineering manager and an open source developer.
 
 My interests are primarily in DevOps, PLT, and LangSec.
 
@@ -27,7 +27,7 @@ standard language for their own purposes.
 
 I hope this talk gives you all ideas for how to do so, including:
 
-* Ideas for language features
+* A tour of sample Dhall language features
 * How to create a language standard
 * How to build polished tooling
 * How to promote adoption of that language
@@ -42,7 +42,7 @@ that you can think of as: **JSON + functions + types + imports**
 Dhall originated as an academic exercise to settle the following question:
 
 > Would people tolerate programmable configuration files if they were not
-> Turing complete?
+> Turing-complete?
 
 The project then grew beyond my expectations, so I went with the flow and
 learned a lot along the way.
@@ -124,7 +124,7 @@ in  [ makeUser "bill"
 
 # Dhall is typed
 
-You can validate configuration files ahead of time:
+You can validate configuration files ahead of time using types:
 
 ```haskell
 let Config : Type =
@@ -253,11 +253,16 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
 
 # Questions?
 
+* A tour of sample Dhall language features
+* **How to create a language standard**
+* How to build polished tooling
+* How to promote adoption of that language
+
 # How to standardize a language
 
-Dhall's biggest design constraint is keeping the standard simple
+Dhall's most pronounced design constraint supporting multiple language bindings
 
-Dhall is implemented *from scratch* for most new language bindings!
+This constraint entails keeping the language standard as simple as possible
 
 The key components of the standard are:
 
@@ -299,7 +304,7 @@ simple-label = simple-label-first-char *simple-label-next-char
 
 # The standard semantics
 
-Dhall uses natural deduction like a language-independent pseudocode
+Dhall uses natural deduction as a language-independent pseudocode
 
 This is how Dhall standardizes type-checking and evaluation logic:
 
@@ -355,11 +360,11 @@ tests
     └── success
 ```
 
-# Things we might do differently
+# Things we could have done differently
 
 We're not entirely sure that our current approach is the best approach
 
-* One idea we're exploring is focusing on key bindings that others derive from
+* One alternative is focusing our efforts on a few key language bindings
 
   For example, we have Rust bindings to Dhall, from which we can derive
   other bindings via C or Webassembly.
@@ -416,10 +421,15 @@ More generally, we try to be explicit about how to obtain privileges, including:
 
 * How to obtain privileged accounts or credentials
 
-The explicitness assures newcomers that they have a clearly-defined path to
-greater autonomy and authority.
+Explicitness assures newcomers that they have a clearly-defined path to greater
+autonomy and authority.
 
 # Questions?
+
+* A tour of sample Dhall language features
+* How to create a language standard
+* **How to build polished tooling**
+* How to promote adoption of that language
 
 # Tooling
 
@@ -431,7 +441,9 @@ Dhall has unusually good tooling for a language of its size, including:
 
 * A REPL
 
-* A wide variety of `dhall-to-*` or `*-to-dhall` tools
+* Integrations with a wide variety of file formats
+
+* A package ecosystem
 
 # Language server
 
@@ -595,9 +607,9 @@ You can also hash a Dhall expression, to detect if it changed or not:
 
 This comes in handy when refactoring code, to ensure that refactors are safe
 
-# Why is the tooling (comparatively) good?
+# Things that help tooling quality
 
-The main reasons why are:
+The main factors that contribute to quality are:
 
 * The language is small
 
@@ -613,7 +625,7 @@ The main reasons why are:
 
 I maintain the Haskell implementation of Dhall, which was the original one
 
-Because of that origin, all of the Dhall tooling is also implemented in Haskell
+That's why almost all of the Dhall tooling is implemented in Haskell
 
 Early on, I consolidated the implementation and the tooling all in one repo
 
@@ -639,64 +651,51 @@ Here is why the implementation and tooling should share the same repository:
 
 # Questions?
 
+* A tour of sample Dhall language features
+* How to create a language standard
+* How to build polished tooling
+* **How to promote adoption of that language**
+
 # Marketing
 
-This section is a highly condensed version of another talk that I've given:
+I'm guessing that some of you have the following questions:
+
+* Will the modelling variability community embrace a language originating in
+  MODEVAR?
+
+  Answer: Likely, especially if this conference is central to the community
+
+* Should we actively promote interest in such a language outside our community?
+
+  Answer: Probably not, if the language is specialized to modeling variability
+
+* Is commercial backing or an open source approach better for building a
+  language?
+
+  Answer: I recommend open source and discourage commercializing programming
+  language endeavours.  The needs of commercial interests are generally at odds
+  with the needs of a language standard.
+
+* Will quality suffer if our language does not have enough users and is not
+  proprietary?
+
+  Answer: Not if the language's scope is small and well-defined.  You don't need
+  a lot of contributors to maintain a tiny interpreted language.
+
+Also, people interested in marketing should watch this other talk I've given:
 
 * [How to market Haskell to a mainstream programmer](https://www.youtube.com/watch?v=fNpsgTIpODA) ([Slides](https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md))
 
-I'm guessing that you have the following questions:
-
-* What is the likelihood of the MODEVAR community embracing a language
-  originating in MODEVAR??
-
-  Answer: Highly likely
-
-* What is the likelihood of any language we create finding adoption beyond our
-  community?
-
-  Answer: It depends (see next slide)
-
-* Do we need to actively promote such a language outside our community?
-
-  Answer: You shouldn't need to do any promotion if you do things right
-
-* Is commercial backing or an open source approach better for adoption?
-
-  Answer: It likely won't make a difference.  Financial sponsorship doesn't
-  correlate strongly with good marketing
-
-# How do new languages grow?
-
-Languages grow one "market" at a time, where a "market" is a group of
-people aligned along a common industry vertical.
-
-These people usually:
-
-* attend the same trade shows or conferences (like MODEVAR!)
-* are highly self-referencing for important decisions
-* tend to hire and be hired by each other
-
-One mistake new languages make is prioritizing the needs of individual users or
-companies instead of the needs of a market.
-
-Another mistake is trying to build a "general-purpose" programming language,
-instead of one optimized for a specific market.
-
-# Domino effect
-
-A language tends to passively grow by "spilling over" from one market to
-"adjacent" markets.
-
-An "adjacent" market is another industry vertical that partially overlaps with
-yours.
-
-This will happen naturally if you adequately address the needs of the first
-market you target.
-
-However, you can artifically accelerate the process by conscientiously
-designing towards the needs of your adjacent markets.
-
 # Conclusion
 
-You can find these slides at: …
+You can find these slides at:
+
+* [https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md](https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md)
+
+You can learn more about Dhall at:
+
+* [https://dhall-lang.org/](https://dhall-lang.org/)
+
+You can follow my work on GitHub if it interests you:
+
+* [https://github.com/Gabriel439/](https://github.com/Gabriel439/)
