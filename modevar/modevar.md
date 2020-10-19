@@ -1,6 +1,22 @@
-% How to build a sturdy language
+% How to build a sturdy little language
 % Gabriel Gonzalez
 % October 20, 2020
+
+# Overview
+
+This talk focuses on building an industrial strength language, using the Dhall
+configuration language as a model example.
+
+My understanding is that MODEVAR attendees are interested in designing a
+standard language for their own purposes.
+
+I hope this talk gives you all ideas for how to do so, including:
+
+* A tour of sample Dhall language features
+* How to create a language standard
+* How to build polished tooling
+
+My intention is not to get you to use Dhall, but rather to learn from Dhall
 
 # About me
 
@@ -16,23 +32,6 @@ I'm an engineering manager and an open source developer.
 My interests are primarily in DevOps, PLT, and LangSec.
 
 I know very little about modeling variability.
-
-# Overview
-
-This talk focuses on building an industrial strength language, using the Dhall
-configuration language as a model example.
-
-My understanding is that MODEVAR attendees are interested in designing a
-standard language for their own purposes.
-
-I hope this talk gives you all ideas for how to do so, including:
-
-* A tour of sample Dhall language features
-* How to create a language standard
-* How to build polished tooling
-* How to promote adoption of that language
-
-My intention is not to get you to use Dhall, but rather to learn from Dhall
 
 # What is Dhall?
 
@@ -256,7 +255,6 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
 * A tour of sample Dhall language features
 * **How to create a language standard**
 * How to build polished tooling
-* How to promote adoption of that language
 
 # How to standardize a language
 
@@ -429,7 +427,6 @@ autonomy and authority.
 * A tour of sample Dhall language features
 * How to create a language standard
 * **How to build polished tooling**
-* How to promote adoption of that language
 
 # Tooling
 
@@ -649,14 +646,21 @@ Here is why the implementation and tooling should share the same repository:
 
   We also get higher leverage out of any improvements to streamline development
 
-# Questions?
+# Conclusion
 
-* A tour of sample Dhall language features
-* How to create a language standard
-* How to build polished tooling
-* **How to promote adoption of that language**
+You can find these slides at:
 
-# Marketing
+* [https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md](https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md)
+
+You can learn more about Dhall at:
+
+* [https://dhall-lang.org/](https://dhall-lang.org/)
+
+You can follow my work on GitHub if it interests you:
+
+* [https://github.com/Gabriel439/](https://github.com/Gabriel439/)
+
+# Appendix: Marketing
 
 I'm guessing that some of you have the following questions:
 
@@ -686,16 +690,4 @@ Also, people interested in marketing should watch this other talk I've given:
 
 * [How to market Haskell to a mainstream programmer](https://www.youtube.com/watch?v=fNpsgTIpODA) ([Slides](https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md))
 
-# Conclusion
 
-You can find these slides at:
-
-* [https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md](https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md)
-
-You can learn more about Dhall at:
-
-* [https://dhall-lang.org/](https://dhall-lang.org/)
-
-You can follow my work on GitHub if it interests you:
-
-* [https://github.com/Gabriel439/](https://github.com/Gabriel439/)
