@@ -616,7 +616,7 @@ The main factors that contribute to quality are:
 
   … due to the standard evolution process
 
-* All of the tooling resides within a monorepo!
+* Almost all of the tooling resides within a monorepo!
 
 # Monorepo
 
