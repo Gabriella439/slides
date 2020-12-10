@@ -11,13 +11,14 @@ code {
 }
 </style>
 
-This talk is an introduction to Dhall for functional programmers.
+This talk introduces the Dhall configuration language to functional programmers.
 
 In this talk, I will cover:
 
-* How to use Dhall as a programmable configuration file format
-* How Dhall compares to other alternatives
-* How to harness Dhall's language security guarantees
+* Using Dhall as an ordinary configuration file format
+* Using Dhall as a programming language
+* Dhall's tooling
+* Dhall's language security guarantees
 
 # What is Dhall?
 
@@ -100,8 +101,6 @@ $ json-to-dhall --file ./inventory.json
 # Dhall can also generate YAML
 
 ```haskell
--- ./students.dhall
-
 [ { name = "John Doe"
   , age = 14
   }
@@ -163,24 +162,13 @@ $ yaml-to-dhall --file ./ci.yaml
 }
 ```
 
-# Other supported file formats
-
-You can convert between Dhall and the following file formats:
-
-* JSON - `dhall-to-json` / `json-to-dhall`
-* YAML - `dhall-to-yaml` / `yaml-to-dhall`
-* XML - `dhall-to-xml` / `xml-to-dhall`
-* Bash - `dhall-to-bash`
-
-## Real-world example - Dhall to YAML
+# Real-world example - Dhall to YAML
 
 Here is a more "real world" example of a Dhall configuration for Kubernetes:
 
 ```haskell
--- ./deployment.dhall
-
 let kubernetes =
-      https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/master/package.dhall sha256:ef3845f617b91eaea1b7abb5bd62aeebffd04bcc592d82b7bd6b39dda5e5d545
+      https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/package.dhall sha256:ef3845f617b91eaea1b7abb5bd62aeebffd04bcc592d82b7bd6b39dda5e5d545
 
 in  kubernetes.Deployment::{
     , metadata = kubernetes.ObjectMeta::{ name = Some "nginx" }
@@ -205,6 +193,8 @@ in  kubernetes.Deployment::{
       }
     }
 ```
+
+# Real-world example - Dhall to YAML
 
 … which corresponds to this YAML Kubernetes configuration:
 
@@ -237,7 +227,7 @@ spec:
 The reverse direction works, too, if we provide a bit more information:
 
 ```bash
-$ yaml-to-dhall '(https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/types.dhall).Deployment' --file ./kubernetes.yaml \
+$ yaml-to-dhall '(https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/types.dhall).Deployment' --file ./deployment.yaml \
   | dhall rewrite-with-schemas --schemas 'https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/schemas.dhall'
 ```
 ```haskell
@@ -267,10 +257,22 @@ in  schemas.Deployment::{
     }
 ```
 
+# Other supported file formats
+
+You can convert between Dhall and the following file formats:
+
+* JSON - `dhall-to-json` / `json-to-dhall`
+* YAML - `dhall-to-yaml` / `yaml-to-dhall`
+* XML - `dhall-to-xml` / `xml-to-dhall`
+* Bash - `dhall-to-bash`
+* Nix - `dhall-to-nix`
+
 # Native language bindings
 
-You can read a Dhall configuration file directly without going through a JSON
-intermediate, given a language binding:
+Some languages also can read a Dhall configuration file directly without going
+through a JSON intermediate
+
+For example, the Haskell bindings to Dhall work like this:
 
 ```haskell
 {-# LANGUAGE DeriveGeneric     #-}
@@ -296,22 +298,49 @@ main = do
     print (config :: Configuration)
 ```
 
+# Why a language binding?
+
+There are some benefits of reading a Dhall configuration file directly:
+
+* Simplicity
+
+* Marshalling unions (a.k.a. sum types)
+
+  JSON/YAML don't natively support sum types
+
+* Marshalling functions
+
+  For example, this works:
+
+  ```haskell
+  f :: (Natural -> [Natural]) <- Dhall.input Dhall.auto "λ(x : Natural) → [ x, x ]"
+
+  print (f 2)  -- [ 2, 2 ]
+  ```
+
+  This is limited to monomorphic non-higher-order functions
+
 # Language bindings
 
-The currently available language bindings are:
+The currently official language bindings are:
 
 * Clojure
 * Haskell
-* Java (Unofficial)
 * Go
 * Ruby
 * Rust
 
-The most wished-for binding: Python
+… and there is one unofficial language binding that is worth mentioning:
+
+* Java - Fairly comprehensive
+
+The most wished-for language binding is Python
 
 The latest list can be found at:
 
 * [`docs.dhall-lang.org` - How to integrate Dhall](https://docs.dhall-lang.org/howtos/How-to-integrate-Dhall.html)
+
+# Questions?
 
 # Dhall is a programming language
 
@@ -327,6 +356,28 @@ in  { home       = "/home/${user}"
 ```
 
 … and use programming features like string interpolation.
+
+# Data model
+
+Dhall supports the following "inert data" constructs
+
+Simple types:
+
+* `Bool`: `True`, `False`
+* `Text`: `"Hello, world!"
+* `Natural`: `0`, `1`, `2`, …
+* `Integer`: …, `-2`, `-1`, `+0`, `+1`, `+2`, …
+* `Double`: `3.14159265`, `6.0221409e+23`
+
+Complex types:
+
+* `Optional`: `Some 1`, `None Natural`
+* `List`: `[ 2, 3, 5 ]`, `[] : List Natural`
+* Records: `{ x = 1.2, y = -2.5 }`
+* Unions: `let Example = < Left : Natural | Right : Bool > in Example.Left 0`
+    * Enums: `let DNA = < A | T | G | C > in [ DNA.A, DNA.T, DNA.C ]`
+
+Complex types can be nested arbitrarily (like JSON/YAML, unlike TOML/INI)
 
 # Dhall has functions
 
@@ -443,7 +494,7 @@ in  generate 10 Config buildUser
 
 The language design ensures that URL imports are secure
 
-# Emergent properties
+# Emergent properties - package
 
 You can implement derived features by mixing these simpler features
 
@@ -455,7 +506,9 @@ let Prelude = https://prelude.dhall-lang.org/package.dhall
 in  Prelude.Bool.not True
 ```
 
-… and a template is just a Dhall function that interpolates text:
+# Emergent properties - template
+
+A template is just a Dhall function that interpolates text:
 
 ```haskell
 \(companyName : Text) ->
@@ -468,6 +521,23 @@ in  Prelude.Bool.not True
   </body>
   </html>
   ''
+```
+
+# Emergent properties - schema
+
+A schema is just a type annotation that you import:
+
+```haskell
+-- ./schema.dhall
+{ home : Text, privateKey : Text, publicKey : Text }
+```
+
+```haskell
+-- ./config.dhall
+{ home       = "/home/bill"
+, privateKey = "/home/bill/.ssh/id_ed25519"
+, publicKey  = "/home/bill/.ssh/id_ed25519.pub"
+} : ./schema.dhall
 ```
 
 # Dhall is total
@@ -490,3 +560,20 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
 λ(f : Natural → a) →
   [ f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9 ]
 ```
+
+# Language features - TODO
+
+* Records: dotted field notation
+* Dhall does not provide language support for recursion or recursive types
+* String interpolation
+* Multi-line strings
+
+# Questions?
+
+# Dhall tooling - TODO
+
+* REPL
+* `dhall-docs`
+* `dhall diff` / type-level diffs
+* `dhall hash`
+* `dhall-lsp-server`
