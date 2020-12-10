@@ -379,6 +379,30 @@ Complex types:
 
 Complex types can be nested arbitrarily (like JSON/YAML, unlike TOML/INI)
 
+# `Text`
+
+Dhall's `Text` support is best-in-class among configuration languages
+
+For example, Dhall supports string interpolation:
+
+```haskell
+λ(name : Text) → "Hello, ${name}!"
+```
+
+… and multi-line strings with automatic dedentation:
+
+```haskell
+''
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Header</h1>
+<p>Content</p>
+</body>
+</html>
+''
+```
+
 # Dhall has functions
 
 You can avoid repeating yourself (DRY) using functions:
@@ -508,18 +532,28 @@ in  Prelude.Bool.not True
 
 # Emergent properties - template
 
-A template is just a Dhall function that interpolates text:
-
 ```haskell
-\(companyName : Text) ->
-\(companySize : Natural) ->
+\(args : { year : Natural, copyrightHolder : Text }) ->
   ''
-  <html>
-  <title>Welcome to ${companyName}!</title>
-  <body>
-  <p>Welcome to our humble company of ${Natural/show companySize} people!</p>
-  </body>
-  </html>
+  Copyright ${Natural/show args.year} ${args.copyrightHolder}
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of 
+  this software and associated documentation files (the "Software"), to deal in 
+  the Software without restriction, including without limitation the rights to 
+  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies 
+  of the Software, and to permit persons to whom the Software is furnished to do 
+  so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all 
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+  SOFTWARE.
   ''
 ```
 
@@ -561,12 +595,43 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
   [ f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9 ]
 ```
 
+# Dhall's type inference is limited
+
+Dhall does not (yet) support bidirectional type inference
+
+This means that you will need types or type annotations in a few places like:
+
+* An empty list:
+
+  ```haskell
+  [] : List Natural
+  ```
+
+* An empty `Optional` value:
+
+  ```haskell
+  None Natural
+  ```
+
+* A function's input type:
+
+  ```haskell
+  \(x : Natural) -> x + 1
+  ```
+
+* Specializing a polymorphic function:
+
+  ```haskel
+  Prelude.List.map Natural Natural (\(x : Natural) -> x + 1)
+  ```
+
 # Language features - TODO
 
 * Records: dotted field notation
 * Dhall does not provide language support for recursion or recursive types
 * String interpolation
 * Multi-line strings
+* Lack of type inference
 
 # Questions?
 
@@ -577,3 +642,10 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
 * `dhall diff` / type-level diffs
 * `dhall hash`
 * `dhall-lsp-server`
+
+# TODO
+
+Things to browse for talk material:
+
+* Language tour
+* Twitter account
