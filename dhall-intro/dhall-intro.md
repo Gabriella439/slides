@@ -64,18 +64,15 @@ $ dhall-to-json --file ./config.dhall | tee ./config.json
 
 # JSON to Dhall
 
-You can also migrate an existing JSON configuration to Dhall
-
-For example, this JSON:
+You can migrate an existing JSON file to Dhall.For example, this JSON:
 
 ```json
 [
-  { "id": 0,
+  {
     "discontinued": false,
     "description": "Google Pixel XL 128GB Unlocked"
   },
   {
-    "id": 1,
     "description": "Apple iPhone SE (64GB, Black)"
   }
 ]
@@ -89,11 +86,9 @@ $ json-to-dhall --file ./inventory.json
 ```haskell
 [ { description = "Google Pixel XL 128GB Unlocked"
   , discontinued = Some False
-  , id = 0
   }
 , { description = "Apple iPhone SE (64GB, Black)"
   , discontinued = None Bool
-  , id = 1
   }
 ]
 ```
@@ -124,41 +119,33 @@ $ dhall-to-yaml --file ./students.dhall
 
 # YAML to Dhall
 
-You can also convert YAML to Dhall
-
-For example, this YAML:
+You can also convert YAML to Dhall.  For example, this YAML:
 
 ```yaml
-execution:
-- concurrency: 10
-  hold-for: 5m
-  ramp-up: 2m
-  scenario: yaml_example
-  
-scenarios:
-  yaml_example:
-    retrieve-resources: false
-    requests:
-      - http://example.com/
+docker:
+    - image: ubuntu:14.04
+    - image: mongo:2.6.8
+      command: [mongod, --smallfiles]
+    - image: postgres:9.4.1
 ```
 
 … corresponds to this Dhall configuration:
 
 ```bash
-$ yaml-to-dhall --file ./ci.yaml
+$ yaml-to-dhall --file ./docker.yaml
 ```
 ```haskell
-{ execution =
-  [ { concurrency = 10
-    , hold-for = "5m"
-    , ramp-up = "2m"
-    , scenario = "yaml_example"
+{ docker =
+  [ { command = None (List Text)
+    , image = "ubuntu:14.04"
+    }
+  , { command = Some [ "mongod", "--smallfiles" ]
+    , image = "mongo:2.6.8"
+    }
+  , { command = None (List Text)
+    , image = "postgres:9.4.1"
     }
   ]
-, scenarios.yaml_example =
-  { requests = [ "http://example.com/" ]
-  , retrieve-resources = False
-  }
 }
 ```
 
@@ -167,8 +154,7 @@ $ yaml-to-dhall --file ./ci.yaml
 Here is a more "real world" example of a Dhall configuration for Kubernetes:
 
 ```haskell
-let kubernetes =
-      https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/package.dhall sha256:ef3845f617b91eaea1b7abb5bd62aeebffd04bcc592d82b7bd6b39dda5e5d545
+let kubernetes = https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/package.dhall sha256:ef3845f617b91eaea1b7abb5bd62aeebffd04bcc592d82b7bd6b39dda5e5d545
 
 in  kubernetes.Deployment::{
     , metadata = kubernetes.ObjectMeta::{ name = Some "nginx" }
@@ -176,7 +162,6 @@ in  kubernetes.Deployment::{
       , selector = kubernetes.LabelSelector::{
         , matchLabels = Some (toMap { name = "nginx" })
         }
-      , replicas = Some 2
       , template = kubernetes.PodTemplateSpec::{
         , metadata = kubernetes.ObjectMeta::{ name = Some "nginx" }
         , spec = Some kubernetes.PodSpec::{
@@ -207,7 +192,6 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
-  replicas: 2
   selector:
     matchLabels:
       name: nginx
@@ -231,13 +215,11 @@ $ yaml-to-dhall '(https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/
   | dhall rewrite-with-schemas --schemas 'https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/schemas.dhall'
 ```
 ```haskell
-let schemas =
-      https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/schemas.dhall
+let schemas = https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/a4126b7f8f0c0935e4d86f0f596176c41efbe6fe/schemas.dhall
 
 in  schemas.Deployment::{
     , metadata = schemas.ObjectMeta::{ name = Some "nginx" }
     , spec = Some schemas.DeploymentSpec::{
-      , replicas = Some 2
       , selector = schemas.LabelSelector::{
         , matchLabels = Some [ { mapKey = "name", mapValue = "nginx" } ]
         }
@@ -269,10 +251,9 @@ You can convert between Dhall and the following file formats:
 
 # Native language bindings
 
-Some languages also can read a Dhall configuration file directly without going
-through a JSON intermediate
+Dhall is not just a preprocessor for JSON/YAML
 
-For example, the Haskell bindings to Dhall work like this:
+Some languages (like Haskell) can read Dhall files without going through JSON:
 
 ```haskell
 {-# LANGUAGE DeriveGeneric     #-}
@@ -298,7 +279,7 @@ main = do
     print (config :: Configuration)
 ```
 
-# Why a language binding?
+# Why not go through JSON?
 
 There are some benefits of reading a Dhall configuration file directly:
 
@@ -355,21 +336,21 @@ in  { home       = "/home/${user}"
     }
 ```
 
-… and use programming features like string interpolation.
+… and use programming language features like string interpolation.
 
-# Data model
+# Data model - simple types
 
-Dhall supports the following "inert data" constructs
-
-Simple types:
+Dhall supports the following simple ("scalar") types:
 
 * `Bool`: `True`, `False`
-* `Text`: `"Hello, world!"
+* `Text`: `"Hello, world!"`
 * `Natural`: `0`, `1`, `2`, …
 * `Integer`: …, `-2`, `-1`, `+0`, `+1`, `+2`, …
 * `Double`: `3.14159265`, `6.0221409e+23`
 
-Complex types:
+# Data model - complex types
+
+Dhall also supports the following complex ("composite") types:
 
 * `Optional`: `Some 1`, `None Natural`
 * `List`: `[ 2, 3, 5 ]`, `[] : List Natural`
@@ -377,7 +358,7 @@ Complex types:
 * Unions: `let Example = < Left : Natural | Right : Bool > in Example.Left 0`
     * Enums: `let DNA = < A | T | G | C > in [ DNA.A, DNA.T, DNA.C ]`
 
-Complex types can be nested arbitrarily (like JSON/YAML, unlike TOML/INI)
+Complex types can be nested arbitrarily (like JSON/YAML, unlike INI/TOML)
 
 # `Text`
 
@@ -392,16 +373,44 @@ For example, Dhall supports string interpolation:
 … and multi-line strings with automatic dedentation:
 
 ```haskell
-''
-<!DOCTYPE html>
-<html>
-<body>
-<h1>Header</h1>
-<p>Content</p>
-</body>
-</html>
-''
+let header = "Header"
+
+let content = "Content"
+
+in  ''
+    <!DOCTYPE html>
+    <html>
+    <body>
+    <h1>${header}</h1>
+    <p>${content}</p>
+    </body>
+    </html>
+    ''
 ```
+
+# Records
+
+Dhall supports Nix-style dotted-field syntax.  For example, this:
+
+```haskell
+{ a.b.c = 1, a.b.d = True }
+```
+
+… is the same thing as:
+
+```haskell
+{ a = { b = { c = 1, d = True } } }
+```
+
+This comes in handy when working with deeply-nested records.
+
+Dhall is more flexible than Nix.  For example, this works in Dhall:
+
+```haskell
+{ a.b.c = 1, a = { b.d = 2 } }
+```
+
+… but does not work in Nix.
 
 # Dhall has functions
 
@@ -412,9 +421,7 @@ let makeUser = \(user : Text) ->
       let home       = "/home/${user}"
       let privateKey = "${home}/.ssh/id_ed25519"
       let publicKey  = "${privateKey}.pub"
-
       in  { home, privateKey, publicKey }
-
 in  [ makeUser "bill"
     , makeUser "jane"
     ]
@@ -518,6 +525,27 @@ in  generate 10 Config buildUser
 
 The language design ensures that URL imports are secure
 
+# Dhall has tests
+
+Dhall provides language support for tests!
+
+```haskell
+--| `lessThanEqual` checks if one Natural is less than or equal to another.
+let lessThanEqual
+    : Natural → Natural → Bool
+    = λ(x : Natural) → λ(y : Natural) → Natural/isZero (Natural/subtract y x)
+
+let example0 = assert : lessThanEqual 5 6 ≡ True
+
+let example1 = assert : lessThanEqual 5 5 ≡ True
+
+let example2 = assert : lessThanEqual 5 4 ≡ False
+
+…
+
+in  lessThanEqual
+```
+
 # Emergent properties - package
 
 You can implement derived features by mixing these simpler features
@@ -531,6 +559,8 @@ in  Prelude.Bool.not True
 ```
 
 # Emergent properties - template
+
+In Dhall, a template is just a function that interpolates `Text`:
 
 ```haskell
 \(args : { year : Natural, copyrightHolder : Text }) ->
@@ -557,6 +587,33 @@ in  Prelude.Bool.not True
   ''
 ```
 
+# Emergent properties - template
+
+Here is an example of how you would apply a template using `dhall text`:
+
+```bash
+$ dhall text <<< './template.dhall { year = 2020, copyrightHolder = "Gabriel Gonzalez" }'
+Copyright 2020 Gabriel Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of 
+this software and associated documentation files (the "Software"), to deal in 
+the Software without restriction, including without limitation the rights to 
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies 
+of the Software, and to permit persons to whom the Software is furnished to do 
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all 
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+SOFTWARE.
+```
+
 # Emergent properties - schema
 
 A schema is just a type annotation that you import:
@@ -573,6 +630,27 @@ A schema is just a type annotation that you import:
 , publicKey  = "/home/bill/.ssh/id_ed25519.pub"
 } : ./schema.dhall
 ```
+
+# Emergent properties - Property tests
+
+A property test is just a unit test where both sides have the same normal form:
+
+```haskell
+--| `lessThanEqual` checks if one Natural is less than or equal to another.
+let lessThanEqual
+    : Natural → Natural → Bool
+    = λ(x : Natural) → λ(y : Natural) → Natural/isZero (Natural/subtract y x)
+
+…
+
+let property0 = λ(n : Natural) → assert : lessThanEqual 0 n ≡ True
+
+let property1 = λ(n : Natural) → assert : lessThanEqual n n ≡ True
+
+in  lessThanEqual
+```
+
+This works because the interpreter can normalize abstract expressions
 
 # Dhall is total
 
@@ -595,11 +673,20 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
   [ f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9 ]
 ```
 
+# Lack of recursion
+
+Dhall does not provide language support for recursion
+
+Recursion is not impossible; it's just not ergonomic.
+
+See: [`docs.dhall-lang.org` - How to translate recursive code to Dhall](https://docs.dhall-lang.org/howtos/How-to-translate-recursive-code-to-Dhall.html)
+
 # Dhall's type inference is limited
 
 Dhall does not (yet) support bidirectional type inference
 
-This means that you will need types or type annotations in a few places like:
+This means that the language requires types or type annotations in a few places,
+like:
 
 * An empty list:
 
@@ -621,22 +708,15 @@ This means that you will need types or type annotations in a few places like:
 
 * Specializing a polymorphic function:
 
-  ```haskel
+  ```haskell
   Prelude.List.map Natural Natural (\(x : Natural) -> x + 1)
   ```
-
-# Language features - TODO
-
-* Records: dotted field notation
-* Dhall does not provide language support for recursion or recursive types
-* String interpolation
-* Multi-line strings
-* Lack of type inference
 
 # Questions?
 
 # Dhall tooling - TODO
 
+* Prelude
 * REPL
 * `dhall-docs`
 * `dhall diff` / type-level diffs
