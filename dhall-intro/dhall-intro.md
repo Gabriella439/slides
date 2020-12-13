@@ -279,9 +279,24 @@ main = do
     print (config :: Configuration)
 ```
 
-# Why not go through JSON?
+# Benefits of generating JSON/YAML
 
-There are some benefits of reading a Dhall configuration file directly:
+Many people generate JSON/YAML when they first start trying out Dhall, because:
+
+* You can "try before you buy" (doesn't require immediate buy-in from your peers)
+
+* Generating JSON/YAML is a more incremental migration path
+
+* You can download prebuilt statically-linked executables for Windows/OS X/Linux
+
+  * `dhall`
+  * `dhall-to-{json,yaml}` / `{json,yaml}-to-dhall`
+  * `dhall-lsp-server`
+
+# Benefits of native language support
+
+There are some benefits of reading a Dhall configuration file directly when
+you commit more fully to the language:
 
 * Simplicity
 
@@ -652,6 +667,24 @@ in  lessThanEqual
 
 This works because the interpreter can normalize abstract expressions
 
+# Builtin functionality
+
+Dhall has a very restricted set of primitive operations ("builtins")
+
+* [`docs.dhall-lang.org` - Built-in types, functions, and operators](https://docs.dhall-lang.org/references/Built-in-types.html)
+
+Main things that may surprise new users:
+
+* No support for `Text` introspection
+* No support for `Double` arithmetic
+* `==`/`!=` only work on `Bool`s
+
+The following page explains some of these design decisions:
+
+* [`docs.dhall-lang.org` - Design choices](https://docs.dhall-lang.org/discussions/Design-choices.html)
+
+**tl;dr**: The available built-ins discourage weakly-typed programming idioms
+
 # Dhall is total
 
 Dhall is a *total* functional programming language
@@ -678,6 +711,27 @@ generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) → Lis
 Dhall does not provide language support for recursion
 
 Recursion is not impossible; it's just not ergonomic.
+
+For example, this is how Dhall models JSON:
+
+```haskell
+let JSON/Type
+    : Type
+    = ∀(JSON : Type) →
+      ∀ ( json
+        : { array : List JSON → JSON
+          , bool : Bool → JSON
+          , double : Double → JSON
+          , integer : Integer → JSON
+          , null : JSON
+          , object : List { mapKey : Text, mapValue : JSON } → JSON
+          , string : Text → JSON
+          }
+        ) →
+        JSON
+
+in  JSON/Type
+```
 
 See: [`docs.dhall-lang.org` - How to translate recursive code to Dhall](https://docs.dhall-lang.org/howtos/How-to-translate-recursive-code-to-Dhall.html)
 
@@ -721,6 +775,12 @@ The most widely used Dhall package is the Prelude:
 ```haskell
 let Prelude = https://prelude.dhall-lang.org/v20.0.0/package.dhall
 ```
+
+This package includes:
+
+* Widely-used general-purpose utilities (analogous to Haskell's Prelude)
+* Support for commonly used formats (e.g. JSON / XML)
+* Types related to the core language (e.g. `Map` / `Location`)
 
 # REPL
 
@@ -856,17 +916,211 @@ The hash serves two purposes here:
 
   … where the hash is the lookup key
 
-# Dhall tooling - TODO
+# IDE support 
 
-* Prelude
-* REPL
-* Hashing / integrity checks
-* `dhall-docs`
-* `dhall diff` / type-level diffs
-* `dhall hash`
-* `dhall-lsp-server`
-* Emergent properties (rich diff + imports = change log)
-* No equivalent of Hackage, yet
+Dhall provides a language server (`dhall-lsp-server`):
+
+![](https://dhall-lang.org/img/completion.gif)
+
+This means that you can get IDE support for VSCode, Sublime, Emacs, and Vim
+
+… and any other editor that supports the language server protocol
+
+# Documentation generator
+
+Dhall also includes a documentation generator (`dhall-docs`)
+
+This plays a role analogous to Haskell's `haddock` tool
+
+Examples:
+
+* [Prelude documentation](https://hydra.dhall-lang.org/job/dhall-haskell/master/prelude-dhall-docs/latest/download/1/)
+* [Kubernetes documentation](https://hydra.dhall-lang.org/job/dhall-haskell/master/kubernetes-dhall-docs/latest/download/1)
+
+Note: there is not yet a repository for hosting packages and their documentation
+
+# Emergent properties - Change log
+
+If you can combine rich diffs with imports you get semantic change logs:
+
+```bash
+$ dhall diff \
+    'https://prelude.dhall-lang.org/v18.0.0/package.dhall' \
+    'https://prelude.dhall-lang.org/v19.0.0/package.dhall'
+
+{ + Operator = …
+,   `Optional` = { + concatMap = …
+                 , …
+                 }
+, …
+}
+```
+
+# Emergent properties - Validation
+
+You can validation configuration values using the language support for tests:
+
+```haskell
+let Prelude = https://prelude.dhall-lang.org/v20.0.0/package.dhall
+
+let Config = { opacity : Natural, minReplicas : Natural, maxReplicas : Natural }
+
+let validateConfig =
+      \(config : Config) ->
+        let validOpacity = Prelude.Natural.lessThanEqual config.opacity 100
+
+        let validReplicas = Prelude.Natural.lessThanEqual config.minReplicas config.maxReplicas
+
+        in       { validOpacity = True, validReplicas = True }
+            ===  { validOpacity, validReplicas }
+
+let config
+    : Config
+    = { opacity = 101, minReplicas = 4, maxReplicas = 4 }
+
+let validate = assert : validateConfig config
+
+in  config
+```
+
+# Emergent properties - Test reports
+
+Validation failures only highlight the tests that failed:
+
+```haskell
+Error: Assertion failed
+
+{ validOpacity = - True
+                 + False
+, …
+}
+
+18│                assert : validateConfig config
+19│
+```
+
+This makes use of the tooling support for rich diffs
+
+# Questions?
+
+# Language security
+
+Dhall's is best-in-class when it comes to language security (LangSec)
+
+This was the *raison d'être* for Dhall, to balance programming with safety
+
+Most of what I'll cover can be found here:
+
+* [`docs.dhall-lang.org` - Safety guarantees](https://docs.dhall-lang.org/discussions/Safety-guarantees.html)
+
+[`dhall-lang.org`](https://dhall-lang.org/) explains our guiding principle:
+
+> The language aims to support safely importing and evaluating untrusted Dhall
+> code, even code authored by malicious users. We treat the inability to do so
+> as a specification bug.
+
+# Dhall is not Turing-complete
+
+Pedantically, being Turing-complete or not does not mean much *per se*
+
+However, preventing Turing-completeness means getting other things right, like:
+
+* Having a type system (or some other form of static analysis)
+
+* Eliminating escape hatches or back doors
+
+* Forbidding general recursion
+
+Note: There are benefits to avoiding Turing-completeness for theorem provers,
+but Dhall is not a theorem prover
+
+# What people actually care about
+
+When people say they don't want Turing-complete config files, they really mean:
+
+* They want to forbid arbitrary side effects
+
+* They want configuration files to be easier to statically analyze
+
+* They don't want configuration files to throw exceptions
+
+Dhall gets these right, too, but there isn't a convenient short-hand for the
+above features.
+
+# Purity
+
+The language's purity is the single greatest safeguard against malicious code
+
+Specifically:
+
+* The only permitted side-effect is importing Dhall code
+
+  In other words, Dhall can not compromise the host machine in any way
+
+* The import system protects against data exfiltration
+
+  … so that Dhall configuration files cannot harvest/leak secrets/keys/passwords
+
+* You can also completely disable all imports or just HTTP(S) imports
+
+  … if you are extra paranoid and you don't need them
+
+* Other than that, the language is completely pure
+
+  The only other effect Dhall can have is via the program being configured
+
+# Static analysis
+
+The language's static analysis tools are the second most important safeguard
+
+Specifically:
+
+* The type system has no escape hatch
+
+  This means that you can make very strong assertions about any expression that
+  type-checks
+
+* Integrity checks (hashes) provide even stronger guarantees about an expression
+
+  I expand upon this in:
+
+  [Semantic integrity checks are the next generation of semantic versioning](http://www.haskellforall.com/2017/11/semantic-integrity-checks-are-next.html)
+
+* Strong normalization improves program comprehension
+
+  You can reduce any Dhall config to an canonical normal form free of
+  obfuscation
+
+# URL import safety
+
+Imports have additional safeguards:
+
+* Integrity checks protect against man-in-the-middle attacks
+
+* Caching protected imports mitigates usage tracking
+
+* The [referential sanity check](https://github.com/dhall-lang/dhall-lang/blob/master/standard/imports.md#referential-sanity-check) protects against the Dhall analog of cross-site scripting (XSS)
+
+* The Dhall analog of the [same origin policy](https://en.wikipedia.org/wiki/Same-origin_policy) protects against data exfiltration
+
+* Dhall also uses [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) to stop server-side request forging
+
+# A secure web server
+
+The following web server is open to the internet and securely interprets any
+Dhall code it receives:
+
+# Questions?
+
+# Conclusion
+
+Dhall is a programmable configuration language with an emphasis on language
+security
+
+Dhall's tooling and documentation is good
+
+You can use the JSON/YAML support to introduce Dhall incrementally within your
+organization
 
 # TODO
 
@@ -874,3 +1128,4 @@ Things to browse for talk material:
 
 * Language tour
 * Twitter account
+* Discourse
