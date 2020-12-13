@@ -553,7 +553,7 @@ You can implement derived features by mixing these simpler features
 For example, a package is just a (potentially nested) record that you import:
 
 ```haskell
-let Prelude = https://prelude.dhall-lang.org/package.dhall
+let Prelude = https://prelude.dhall-lang.org/v20.0.0/package.dhall
 
 in  Prelude.Bool.not True
 ```
@@ -714,14 +714,159 @@ like:
 
 # Questions?
 
+# Prelude
+
+The most widely used Dhall package is the Prelude:
+
+```haskell
+let Prelude = https://prelude.dhall-lang.org/v20.0.0/package.dhall
+```
+
+# REPL
+
+```haskell
+$ dhall repl
+⊢ :let Prelude = https://prelude.dhall-lang.org/package.dhall
+…
+
+⊢ Prelude.<TAB>
+Prelude.Bool      Prelude.JSON      Prelude.Monoid    Prelude.Text
+Prelude.Double    Prelude.List      Prelude.Natural   Prelude.XML
+Prelude.Function  Prelude.Location  Prelude.Operator
+Prelude.Integer   Prelude.Map       Prelude.Optional
+
+⊢ Prelude.Natural.<TAB>
+Prelude.Natural.build             Prelude.Natural.listMin
+Prelude.Natural.enumerate         Prelude.Natural.max
+Prelude.Natural.equal             Prelude.Natural.min
+Prelude.Natural.even              Prelude.Natural.odd
+Prelude.Natural.fold              Prelude.Natural.product
+Prelude.Natural.greaterThan       Prelude.Natural.show
+Prelude.Natural.greaterThanEqual  Prelude.Natural.sort
+Prelude.Natural.isZero            Prelude.Natural.subtract
+Prelude.Natural.lessThan          Prelude.Natural.sum
+Prelude.Natural.lessThanEqual     Prelude.Natural.toDouble
+Prelude.Natural.listMax           Prelude.Natural.toInteger
+
+⊢ Prelude.Natural.product [ 2, 3, 5 ]
+
+30
+```
+
+# Rich diff - command line
+
+The interpreter supports rich "diff"s of arbitrary expressions.  For example:
+
+```haskell
+$ dhall diff '{ x = [ 1, 2, 3 ], y = True }' '{ x = [ 2, 3, 4 ], z = "ABC" }'
+{ - y = …
+, + z = …
+,   x = [ - 1
+        , …
+        , + 4
+        ]
+
+}
+```
+
+Only the difference is displayed.  Fields/elements/values in common are omitted
+
+This feature is used in two places to improve the user experience
+
+# Rich diff - type errors
+
+The interpreter uses rich diffs to highlight what went wrong for type errors:
+
+```haskell
+⊢ :let Person = { name : Text, age : Natural }
+
+Person : Type
+
+⊢ { name = "John Doe", agee = 24 } : Person
+
+Error: Expression doesn't match annotation
+
+{ - age : …
+, + agee : …
+, …
+}
+
+1│ { name = "John Doe", agee = 24 } : Person
+
+(input):1:1
+```
+
+This makes it easy to drill down to the offending typo, even for large records.
+
+# Rich diff - tests
+
+Also, test failures will display a rich diff:
+
+```haskell
+Error: Assertion failed
+
+"[▮true, 1▮]"
+
+1│ assert : JSON.renderCompact (JSON.array [ JSON.bool True, JSON.natural 1 ]) === "[true, 1]"
+
+(input):1:1
+```
+
+# Hashing expressions - refactors
+
+The language also supports hashing arbitrary expressions
+
+Dhall hashes normal forms, so two αβ-equivalent expressions have the same hash:
+
+```bash
+$ dhall hash <<< '\(x : Bool) -> [ x && True, x || False ]'
+sha256:486b561c6e38adf2c2853b6395358c16c3ed1befc35c33067996dcfb51a74e62
+
+$ dhall hash <<< '\(y : Bool) -> [ y, y ]'
+sha256:486b561c6e38adf2c2853b6395358c16c3ed1befc35c33067996dcfb51a74e62
+```
+
+You can verify that a refactor is behavior-preserving using these hashes
+
+If the hash doesn't change, then it is a behavior-preserving refactor
+
+These hashes are insensitive to:
+
+* Comments / coding style
+* Variable names
+* Module organization
+
+# Hashing expressions - integrity checks
+
+You can protect a remote import with a hash of the import, like this:
+
+```haskell
+let Prelude =
+      https://prelude.dhall-lang.org/v20.0.0/package.dhall
+        sha256:21754b84b493b98682e73f64d9d57b18e1ca36a118b81b33d0a243de8455814b
+
+…
+```
+
+The hash serves two purposes here:
+
+* The import is always verified against the hash to protect against tampering
+
+* The import is cached locally in a content-addressable store
+
+  … where the hash is the lookup key
+
 # Dhall tooling - TODO
 
 * Prelude
 * REPL
+* Hashing / integrity checks
 * `dhall-docs`
 * `dhall diff` / type-level diffs
 * `dhall hash`
 * `dhall-lsp-server`
+* Emergent properties (rich diff + imports = change log)
+* No equivalent of Hackage, yet
 
 # TODO
 
