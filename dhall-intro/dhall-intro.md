@@ -279,6 +279,26 @@ main = do
     print (config :: Configuration)
 ```
 
+# Language bindings
+
+The currently official language bindings are:
+
+* Clojure
+* Haskell
+* Go
+* Ruby
+* Rust
+
+… and there is one unofficial language binding that is worth mentioning:
+
+* Java - Fairly comprehensive
+
+The most wished-for language binding is Python
+
+The latest list can be found at:
+
+* [`docs.dhall-lang.org` - How to integrate Dhall](https://docs.dhall-lang.org/howtos/How-to-integrate-Dhall.html)
+
 # Benefits of generating JSON/YAML
 
 Many people generate JSON/YAML when they first start trying out Dhall, because:
@@ -315,26 +335,6 @@ you commit more fully to the language:
   ```
 
   This is limited to monomorphic non-higher-order functions
-
-# Language bindings
-
-The currently official language bindings are:
-
-* Clojure
-* Haskell
-* Go
-* Ruby
-* Rust
-
-… and there is one unofficial language binding that is worth mentioning:
-
-* Java - Fairly comprehensive
-
-The most wished-for language binding is Python
-
-The latest list can be found at:
-
-* [`docs.dhall-lang.org` - How to integrate Dhall](https://docs.dhall-lang.org/howtos/How-to-integrate-Dhall.html)
 
 # Questions?
 
@@ -768,20 +768,6 @@ like:
 
 # Questions?
 
-# Prelude
-
-The most widely used Dhall package is the Prelude:
-
-```haskell
-let Prelude = https://prelude.dhall-lang.org/v20.0.0/package.dhall
-```
-
-This package includes:
-
-* Widely-used general-purpose utilities (analogous to Haskell's Prelude)
-* Support for commonly used formats (e.g. JSON / XML)
-* Types related to the core language (e.g. `Map` / `Location`)
-
 # REPL
 
 ```haskell
@@ -939,6 +925,23 @@ Examples:
 
 Note: there is not yet a repository for hosting packages and their documentation
 
+# Package ecosystem
+
+The most widely used Dhall package is the Prelude:
+
+```haskell
+let Prelude = https://prelude.dhall-lang.org/v20.0.0/package.dhall
+```
+
+This package includes:
+
+* Widely-used general-purpose utilities (analogous to Haskell's Prelude)
+* Support for commonly used formats (e.g. JSON / XML)
+* Types related to the core language (e.g. `Map` / `Location`)
+
+Right now the main way to discover other Dhall packages is
+[`awesome-dhall`](https://github.com/dhall-lang/awesome-dhall)
+
 # Emergent properties - Change log
 
 If you can combine rich diffs with imports you get semantic change logs:
@@ -952,6 +955,77 @@ $ dhall diff \
 ,   `Optional` = { + concatMap = …
                  , …
                  }
+, …
+}
+```
+
+```bash
+$ dhall diff \
+    'https://prelude.dhall-lang.org/v19.0.0/package.dhall' \
+    'https://prelude.dhall-lang.org/v20.0.0/package.dhall'
+
+{ JSON = { + renderCompact = …
+         , …
+         }
+, `Text` = { + replace = …
+           , …
+           }
+, XML = { render =   λ(… :   …
+                           → …
+                           → …)
+                   → …
+                     …
+                     { element =   λ(… : { …
+                                         })
+                                 →    "<"
+                                   ++   …
+                                      . …
+                                   ++ ""
+                                   ++ …
+                                      { …
+                                      }
+                                        …
+                                      . …
+                                      …
+                                      (   λ(… : { …
+                                                })
+                                        → λ(… : …)
+                                        →    " "
+                                          ++   …
+                                             . …
+                                          ++ "=""
+                                          ++ - ….…
+                                             + … …
+                                          ++ """
+                                          ++ …
+                                          ++ ""
+
+                                      )
+                                      ""
+                                   ++ ""
+                                   ++       if …
+                                               … then "/>"
+                                      else     ">"
+                                            ++ …
+                                               …
+                                                 …
+                                               . …
+                                               …
+                                               …
+                                               ""
+                                            ++ "</"
+                                            ++   …
+                                               . …
+                                            ++ ">"
+
+                                   ++ ""
+
+                     , text =   λ(… : …)
+                              → - _
+                                + … …
+                     }
+        , …
+        }
 , …
 }
 ```
@@ -1252,11 +1326,3 @@ You can use the JSON/YAML support to introduce Dhall incrementally within your
 organization
 
 You can visit [dhall-lang.org](https://dhall-lang.org/) to learn more
-
-# TODO
-
-Things to browse for talk material:
-
-* Language tour
-* Twitter account
-* Discourse
