@@ -1326,3 +1326,7 @@ You can use the JSON/YAML support to introduce Dhall incrementally within your
 organization
 
 You can visit [dhall-lang.org](https://dhall-lang.org/) to learn more
+
+You can find these slides at:
+
+* [https://github.com/Gabriel439/slides/blob/master/dhall-intro/dhall-intro.md](https://github.com/Gabriel439/slides/blob/master/dhall-intro/dhall-intro.md)
