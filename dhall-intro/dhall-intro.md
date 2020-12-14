@@ -1251,6 +1251,8 @@ Dhall's tooling and documentation is good
 You can use the JSON/YAML support to introduce Dhall incrementally within your
 organization
 
+You can visit [dhall-lang.org](https://dhall-lang.org/) to learn more
+
 # TODO
 
 Things to browse for talk material:
