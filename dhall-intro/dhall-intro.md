@@ -353,6 +353,8 @@ in  { home       = "/home/${user}"
 
 … and use programming language features like string interpolation.
 
+DEMO: [dhall-lang.org](https://dhall-lang.org/)
+
 # Data model - simple types
 
 Dhall supports the following simple ("scalar") types:
