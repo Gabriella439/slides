@@ -1079,7 +1079,7 @@ We can simulate 16 states faster than simulating 1 state! 😮
 
 # `PSHUFB`
 
-`__builtin_shuffle` is beats a lookup table thanks to the `PSHUFB` instruction:
+`__builtin_shuffle` beats a lookup table thanks to the `PSHUFB` instruction:
 
 [`PSHUFB`](https://www.felixcloutier.com/x86/PSHUFB.html) is short for
 "packed shuffle bytes"
