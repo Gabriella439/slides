@@ -1183,8 +1183,7 @@ I've included additional slides for the teaser
 
 # We can beat `grep`!
 
-We have the technology: [Data-Parallel Finite-State Machines](http://research.mi
-crosoft.com/pubs/208237/asplos302-mytkowicz.pdf)
+We have the technology: [Data-Parallel Finite-State Machines](http://research.microsoft.com/pubs/208237/asplos302-mytkowicz.pdf)
 
 I've only implemented a subset of the paper:
 
