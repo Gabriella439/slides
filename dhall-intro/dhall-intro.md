@@ -1,6 +1,5 @@
 % Dhall: A programmable configuration language
 % Gabriel Gonzalez
-% December 15, 2020
 
 # Overview
 
