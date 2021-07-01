@@ -1137,7 +1137,7 @@ You can join as many tables as you like this way:
 >>> let example1 = do
 |           firstName <- firstNames
 |           lastName  <- lastNames
-|           handles   <- lastNames
+|           handle    <- handles
 |           return (firstName, lastName, handle)
 | 
 >>> example1
