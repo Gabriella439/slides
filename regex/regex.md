@@ -1,5 +1,5 @@
 % Regular expressions implemented in Haskell
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % June 22, 2016
 
 # Goal
