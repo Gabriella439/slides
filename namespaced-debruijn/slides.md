@@ -28,6 +28,7 @@ predates this work and presents exactly the same idea.
 
 * Strong normalization
 * Π types
+* Name preservation
 
 # Background
 
@@ -147,7 +148,9 @@ List { mapKey : Text, mapValue : Bool }
 
 # Universal quantification
 
-Morte and Dhall also support polymorphism, but it's explicit
+Morte and Dhall also support polymorphism (a.k.a. "universal quantification")
+
+However, type abstraction and type application are explicit (unlike Haskell)
 
 For example, here how you define and use the identity function in Dhall:
 
@@ -161,45 +164,185 @@ id : ∀(a : Type) → ∀(x : a) → a
 "Hello"
 ```
 
-Polymorphism is also known as "universal quantification"
+Why does the inferred type of `id` have two "forall" symbols (`∀`), though?
 
-# Π types generalize universal quantification
+# Explicit type abstraction / application
 
-Why does the inferred type of `id` have two "forall"s (`∀`), though?
+Let's compare the Dhall type:
 
 ```haskell
---   ↓             ↓
 id : ∀(a : Type) → ∀(x : a) → a
 ```
 
-# Name preservation
-
-Both Morte and Dhall preserve variable names when normalizing code<sup>†</sup>
-
-Here are some non-trivial examples:
+… and the equivalent Haskell type (with `ExplicitForAll` enabled):
 
 ```haskell
-⊢ (λ(f : Bool → Bool) → λ(x : Bool) → f (f x)) (λ(y : Bool) → y)
+id :: forall a . a -> a
+```
+
+In Dhall, `id` is a function of two arguments (unlike Haskell):
+
+* The first argument, `a` is a `Type`
+* The second argument, `x` has a type that matches the first argument
+
+We can "specialize" `id` by supplying only the first argument:
+
+```haskell
+⊢ id Text  -- Specialization is also a special case of normalization
+
+λ(x : Text) → x
+```
+
+This is the same thing as `TypeApplications` in Haskell (e.g. `id @Text`)
+
+# Π types
+
+The `forall` / `∀` keyword  in Dhall actually denotes a "Π type"
+
+All function types in Dhall are actually Π types of the form:
+
+```haskell
+∀(a : A) → B
+```
+
+… and you can think of this as a function type where you can name the input:
+
+* `a` is the name of the function input
+* `A` is the type of the function input
+* `B` is the type of the function output
+
+Dhall provides syntactic sugar where this function type:
+
+```haskell
+A → B
+```
+
+… is actually a shorthand for a Π type that ignores the input name:
+
+```haskell
+∀(_ : A) → B
+```
+
+# Naming function arguments
+
+You can also use Π types to name function arguments that aren't types
+
+For example, the `Text/replace` built-in's type names the function arguments:
+
+```haskell
+⊢ :type Text/replace
+
+∀(needle : Text) → ∀(replacement : Text) → ∀(haystack : Text) → Text
+```
+
+Names like these are irrelevant; nothing happens if you change or omit them
+
+The name is only relevant if it appears "downstream" in the function type
+
+```haskell
+--     This name is relevant because `a` shows up downstream within the type
+--     ↓
+id : ∀(a : Type) → ∀(x : a) → a
+--                   ↑
+--                   This name is irrelevant, because `x` is not used downstream
+```
+
+# Universal quantification - revisited
+
+Universal quantification is a special case of a Π type where `A = Type`
+
+That means that the following Haskell type:
+
+```haskell
+forall a . a -> a
+```
+
+… is the same as this Dhall type:
+
+```haskell
+∀(a : Type) → a → a
+```
+
+… which is syntactic sugar for this type:
+
+```haskell
+∀(a : Type) → ∀(_ : a) → a
+```
+
+… which is the same type as this type:
+
+```haskell
+∀(a : Type) → ∀(x : a) → a
+```
+
+… because the second input name is irrelevant.
+
+# Overview
+
+# Name preservation
+
+Strong normalization and Π types benefit from "name preservation". Specifically:
+
+* Normalization preserves variable names as much as possible<sup>†</sup>
+* Inferred function types (Π types) preserve variable names as much as possible
+
+<sup>†</sup> Dhall does not yet preserve variable names for imports protected by
+  integrity checks.  See: [#1185](https://github.com/dhall-lang/dhall-lang/issues/1185)
+
+# Normalization preserves names
+
+Here are some examples of how normalization preserves names
+
+```haskell
+⊢ λ(x : Bool) → x  -- Phew!  That was easy 😌
 
 λ(x : Bool) → x
 ```
 
 ```haskell
-⊢ λ(x : Bool) → (λ(y : Bool) → λ(z : Bool) → y) x
+⊢ λ(x : Bool) → (λ(y : Bool) → λ(z : Bool) → y) x  -- Still straightforward
 
 λ(x : Bool) → λ(z : Bool) → x
 ```
 
-<sup>†</sup> Dhall does not yet preserve variable names for imports protected by
-  integrity checks.  See: [#1185](https://github.com/dhall-lang/dhall-lang/issues/1185)
+```haskell
+⊢ :let compose = λ(f : Bool → Bool) → λ(g : Bool → Bool) → λ(x : Bool) → f (g x) 
 
-Equally important, types preserve inferred
+compose : ∀(f : Bool → Bool) → ∀(g : Bool → Bool) → ∀(x : Bool) → Bool
 
-# The bug
+⊢ compose (λ(y : Bool) → y) (λ(z : Bool) → z)  -- Tiny bit trickier
 
-However, the first draft of Morte had a broken implementation of β-reduction!
+λ(x : Bool) → x
+```
 
-* [Gabriel439/Morte - Issue #1 - Substitution with De Bruijn indices](https://github.com/Gabriel439/Haskell-Morte-Library/issues/1)
+# Type inference preserves names
 
+Here are some examples of how type inference preserves names
 
-[dhall]: https://dhall-lang.org
+```haskell
+⊢ :type λ(x : Bool) → x  -- Irrelevant names are preserved by default
+
+∀(x : Bool) → Bool
+```
+
+You can also change or omit inferred names with a type annotation:
+
+```haskell
+⊢ :type (let f : Bool → Bool = λ(x : Bool) → x in f)
+
+Bool → Bool
+```
+
+```haskell
+⊢ :type Text/replace
+
+∀(needle : Text) → ∀(replacement : Text) → ∀(haystack : Text) → Text
+
+⊢ :type λ(x : Text) → Text/replace x  -- η-expansion can change inferred names
+
+∀(x : Text) → ∀(replacement : Text) → ∀(haystack : Text) → Text
+
+⊢ :type λ(_ : Text) → Text/replace _  -- _ is a valid variable name
+
+Text → ∀(replacement : Text) → ∀(haystack : Text) → Text
+```
