@@ -33,8 +33,9 @@ Also, Mike Shulman describes a subset of this trick in [You Could Have Invented 
 * Π types
 * Name preservation
 * Nameless and named representations
+* Comparison to existing approaches
 
-# Background
+# History
 
 I first stumbled upon this idea while working on
 [Morte](https://github.com/Gabriel439/Haskell-Morte-Library/issues/1), which is:
@@ -43,15 +44,14 @@ I first stumbled upon this idea while working on
 * a proof of concept of my [internet of code](https://www.haskellforall.com/2015/05/the-internet-of-code.html) idea
 * the predecessor of [Dhall][dhall]
 
-Both Morte and Dhall support
-[strong normalization](https://en.wikipedia.org/wiki/Normal_form_(abstract_rewriting))
+Also, I name all of my languages after characters from [Planescape: Torment](https://en.wikipedia.org/wiki/Planescape:_Torment)
 
-# Motivation - Strong normalization
+# Motivation
 
 Both Morte and Dhall are
 [total functional programming languages](https://en.wikipedia.org/wiki/Total_functional_programming)
 
-This means all expressions can be β-reduced to a normal form.  For example:
+This means all expressions can be "β-reduced" to a normal form.  For example:
 
 ```haskell
 ⊢ :let List/generate = https://prelude.dhall-lang.org/List/generate.dhall
@@ -69,11 +69,37 @@ List/generate : ∀(n : Natural) → ∀(a : Type) → ∀(f : Natural → a) �
   [ f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9 ]
 ```
 
-Strong normalization lets you interpret incomplete code
+# β-reduction
 
-# Strong normalization ⇒ code comprehension
+β-reduction is (sort of) the same thing as function evaluation
 
-Strong normalization eliminates indirection
+The Dhall REPL β-reduces every expression you enter in the REPL:
+
+```haskell
+⊢ Natural/even 2  -- This is a "β-reducible expression" (a.k.a. a "β-redex")
+
+True
+```
+
+The key thing to stress is that β-reduction even evaluates "under lambda"
+
+```haskell
+⊢ λ(a : Bool) → (λ(b : Bool) → [ b, b ]) a
+
+λ(a : Bool) → [ a, a ]
+```
+
+This is why β-reduction can interpret incomplete code (like `List/generate 10`)
+
+# β-equivalence
+
+β-equivalence is defined as follows:
+
+> Two expressions are β-equivalent if their β-reduced forms are identical
+
+# β-reduction can improve code comprehension
+
+β-reduction eliminates indirection
 
 For example, consider the `Natural/greaterThan` function from Dhall's Prelude:
 
@@ -89,7 +115,7 @@ https://prelude.dhall-lang.org/Natural/greaterThan.dhall
     └ ./lessThanEqual.dhall
 ```
 
-… but you can eliminate all of the indirection by normalizing the expression:
+… but you can eliminate all of the indirection by β-reducing the expression<sup>†</sup>:
 
 ```haskell
 ⊢ https://prelude.dhall-lang.org/Natural/greaterThan.dhall
@@ -98,24 +124,19 @@ https://prelude.dhall-lang.org/Natural/greaterThan.dhall
 λ(x : Natural) → λ(y : Natural) → Natural/isZero (Natural/subtract y x) == False
 ```
 
+<sup>†</sup> You also have to resolve imports before β-reducing the expression
+
 # Generalizing evaluation
 
-Morte and Dhall share the following features:
+Morte and Dhall both "evaluate" an expression by:
 
-* They are both interpreters
-* They are both strongly normalizing
-* They both support pretty-printing arbitrary syntax trees
-
-If you combine those three features, you can "evaluate" an expression by:
-
-* Normalizing the expression
+* β-reducing the expression
 * Pretty-printing the normalized expression
 
-Carefully note that you can evaluate and display arbitrary expressions
+Carefully note that this "generalized evaluation" works for arbitrary
+expressions
 
-You're not limited to evaluating expressions that return plain data
-
-I use the term "normalization" to refer to this generalized evaluation
+You're not limited to evaluating expressions that return plain/inert data
 
 # Normalization example 
 
@@ -438,7 +459,7 @@ For example, such an implementation might normalize our pathological expression:
 … to:
 
 ```haskell
-λ(x1 : Bool) → λ(x : Bool) → x1
+λ(x : Bool) → λ(x1 : Bool) → x
 ```
 
 I call this solution "name mangling"
@@ -536,6 +557,8 @@ For example, we would represent this lambda expression:
 Lambda "f" (Lambda "x" (Apply (Variable "f") (Variable "x")))
 ```
 
+I won't present the substitution algorithm for this approach (it's inelegant)
+
 # Nameless representation
 
 The corresponding nameless representation is:
@@ -587,6 +610,71 @@ This variable numbering convention has the following nice properties:
 * index assignment is context free
 * this convention biases towards low indices (especially `0`)
 * the capture-avoiding substitution algorithm is simple
+
+# Substitution algorithm for De Bruijn indices
+
+This is adapted from Pierce's "Types and Programming Languages" book:
+
+```
+k[j ≔ s]        =  | s  if j = k
+                   | k  otherwise
+(λ → t)[j ≔ s]  =  λ → t[j+1 ≔ ↑(1,0)s]
+(t u)[j ≔ s]    =  (t[j ≔ s] u[j ≔ s])
+
+↑(d,j)k        =  | k+d  if j ≤ k
+                  | k    otherwise
+↑(d,j)(λ → t)  =  λ → ↑(d,j+1)t
+↑(d,j)(t u)    =  (↑(d,j)t ↑(d,j)u)
+```
+
+I won't walk through this but I want people to appreciate the following:
+
+* The algorithm is concise
+* The algorithm doesn't require any sort of name supply or name mangling
+
+I will include a Haskell algorithm at the end of this talk that's not so terse
+
+# α-reduction
+
+I will define the term "α-reduction" as follows:
+
+> α-reduction converts an expression to the equivalent representation using De
+> Bruijn indices
+
+I've never seen this in the wild, but I believe nobody would object to this
+> definition
+
+# α-equivalence
+
+The reason I call this α-reduction is because you can define α-equivalence as
+follows:
+
+> Two terms are α-equivalent if their α-reduced forms are identical
+
+For example, this expression:
+
+```haskell
+λx → x
+```
+
+… and this expression:
+
+```haskell
+λy → y
+```
+
+… are α-equivalent because they both share the same representation using De
+Bruijn indices:
+
+```haskell
+λ → @0
+```
+
+This parallels the way β-equivalence is defined:
+
+> Two terms are β-equivalent if their β-reduced forms are identical
+
+… and that's why the definition I gave for α-reduction is the "natural" one
 
 # Comparing named and nameless
 
@@ -808,7 +896,7 @@ But we cannot simplify this:
 
 This trick is neat because the syntactic sugar makes indices unintrusive
 
-In practice, users don't even know indices exist (Case in point: Dhall)
+In practice, most users don't even know indices exist (Case in point: Dhall)
 
 The reason why is because non-zero indices only arise in two cases:
 
@@ -834,10 +922,162 @@ The reason why is because non-zero indices only arise in two cases:
   λx → λx → x@1
   ```
 
-# TODO:
+# Substitution algorithm for Namespaced De Bruijn indices
 
-* Show how you can give a nameless type to a polymorphic function like
-  `List/length`
+Here's the original substution algorithm for De Bruijn indices:
+
+```
+k[j ≔ s]        =  | s  if j = k
+                   | k  otherwise
+(λ → t)[j ≔ s]  =  λ → t[j+1 ≔ ↑(1,0)s]
+(t u)[j ≔ s]    =  (t[j ≔ s] u[j ≔ s])
+
+↑(d,j)k        =  | k+d  if j ≤ k
+                  | k    otherwise
+↑(d,j)(λ → t)  =  λ → ↑(d,j+1)t
+↑(d,j)(t u)    =  (↑(d,j)t ↑(d,j)u)
+```
+
+… and here's how you update the algorithm for namespaced De Bruijn indices:
+
+```
+y@k[x@j ≔ s]       =  | s  if x = y && j = k
+                      | k  otherwise
+(λy → t)[x@j ≔ s]  =  | λy → t[x@(j+1) ≔ ↑(1,x@0)s]  if x = y
+                      | λy → t[x@j     ≔         s]  otherwise
+(t u)[x@j ≔ s]     =  (t[x@j ≔ s] u[x@j ≔ s])
+
+↑(d,x@j)y@k       =  | y@(k+d)  if x = y && j ≤ k
+                     | y@k      otherwise
+↑(d,x@j)(λy → t)  =  | λy → ↑(d,x@(j+1))t  if x = y
+                     | λy → ↑(d,x@j    )t  otherwise
+↑(d,x@j)(t u)     =  (↑(d,x@j)t ↑(d,x@j)u)
+```
+
+# Don't get hung up on the implementation
+
+I want to stress that the implementation is not the important part here
+
+There are more efficient solutions than the algorithm on the previous slide
+
+e.g. normalization by evaluation (not shown in this presentation)
+
+The key thing to take away from this talk is the **desired user experience**:
+
+* We should let input code reference shadowed variables
+* We should let output results reference shadowed variables
+
+If we satisfy those requirements we benefit from the nice emergent properties
+
+Check out this project for a more efficient implementation you can fork:
+
+* [GitHub - Fall-from-Grace](https://github.com/Gabriel439/grace)
+
+# Variable shadowing - Bug or feature?
+
+"Should we provide userland support for referencing shadowed variables?"  **YES!**
+
+Consider this example code, which references a shadowed variable using an index:
+
+```haskell
+⊢ :let f = λ(x : Bool) → λ(x : Text) → x@1
+
+f : ∀(x : Bool) → ∀(x : Text) → Bool
+```
+
+If we η-expand that expression, the index disappears!
+
+```haskell
+⊢ λ(a : Bool) → f a
+
+λ(a : Bool) → λ(x : Text) → a
+```
+
+The interpreter intelligently eliminates indices when you fix shadowing
+
+What if you forgo language support in favor of mangling the name in userland?
+
+```haskell
+⊢ :let f = λ(x : Bool) → λ(x1 : Text) → x
+
+f : ∀(x : Bool) → ∀(x1 : Text) → Bool
+```
+
+Now the name is irreversibly scarred even after η-expansion:
+
+```haskell
+⊢ λ(a : Bool) → f a
+
+λ(a : Bool) → λ(x1 : Text) → a
+```
+
+# Overview
+
+# Comparison to name mangling - Part 1
+
+"Aren't namespaced De Bruijn indices just another form of name mangling?" **NO!**
+
+Consider this expression, which η-expands our pathological example:
+
+```haskell
+⊢ λ(a : Bool) → (λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x) a
+
+λ(a : Bool) → λ(x : Text) → a
+```
+
+Internally there is a name collision, but the final result requires no indices
+
+A name mangling approach would get this wrong and produce something like:
+
+```haskell
+λ(a : Bool) → λ(x1 : Text) → a
+```
+
+Name mangling irreversibly scars variable names when avoiding name capture
+
+Namespaced De Bruijn indices revert back to 0 when shadowing disappears
+
+```haskell
+⊢ λ(a : Bool) → (λ(x : Bool) → λ(x : Text) → x@1) a
+
+λ(a : Bool) → λ(x : Text) → a
+```
+
+# Comparison to name mangling - Part 2
+
+This approach improves upon the type-level UX, too!
+
+The inferred type of our pathological expression has no mangled names at all:
+
+```haskell
+⊢ :type λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
+
+∀(x : Bool) → ∀(x : Text) → Bool
+```
+
+Had we used name mangling then we would have gotten an inferred type like:
+
+```haskell
+∀(x : Bool) → ∀(x1 : Text) → Bool
+```
+
+# Comparison to De Bruijn indices
+
+Namespaced De Bruijn indices generalize traditional De Bruijn indices
+
+You "α-reduce" namespaced DeBruijn indices by renaming all variables to the same name
+
+For example this, expression:
+
+```haskell
+λ(x : Bool) → λ(y : Text) → x
+```
+
+… is the same as this expression where we rename all variables to `_`:
+
+```haskell
+λ(_: Bool) → λ(_ : Text) → _@1
+```
 
 # α-equivalence
 
