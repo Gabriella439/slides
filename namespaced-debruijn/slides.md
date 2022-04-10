@@ -18,6 +18,7 @@ This talk is a longer presentation based on a blog post I published:
 In this talk I'll spend more time focusing on:
 
 * the motivation, history and logical progression leading up to this idea
+* the user experience (as opposed to the implementation)
 * how [Dhall][dhall] uses this trick to great effect
 
 As the blog post notes,
@@ -355,12 +356,6 @@ Text → ∀(replacement : Text) → ∀(haystack : Text) → Text
 What should the interpreter return as the normal form for this expression?
 
 ```haskell
-λ(x : Bool) → let y = x in λ(x : Text) → y
-```
-
-… or the following equivalent expression using only lambdas:
-
-```haskell
 λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
 ```
 
@@ -377,7 +372,7 @@ I'll give you a head start:
 I'll start off with the wrong answer.  If you normalize this:
 
 ```haskell
-λ(x : Bool) → let y = x in λ(x : Text) → y
+λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
 ```
 
 … you should **NOT** get this:
@@ -417,7 +412,7 @@ Capture-avoiding substitution algorithms typically fall into two categories:
 For example, using De Bruijn indices our pathological expression:
 
 ```haskell
-λ(x : Bool) → let y = x in λ(x : Text) → y
+λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
 ```
 
 … would normalize to:
@@ -437,7 +432,7 @@ Another solution is add a unique suffix variables when their names collide
 For example, such an implementation might normalize our pathological expression:
 
 ```haskell
-λ(x : Bool) → let y = x in λ(x : Text) → y
+λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
 ```
 
 … to:
@@ -456,7 +451,7 @@ We can see what GHC does by saving our function to a Haskell file:
 module Example where
 
 f :: Bool -> String -> Bool
-f x = let y = x in \x -> y
+f = \x -> (\y x -> y) x
 ```
 
 … and asking GHC to dump an intermediate representation:
@@ -464,7 +459,7 @@ f x = let y = x in \x -> y
 ```haskell
 $ ghc -O2 -ddump-simpl -dsuppress-all Example.hs
 …
-f = \ x_atA _ -> x_atA
+f = \ x_atz _ -> x_atz
 ```
 
 `ghc` did two things to avoid the name collision:
@@ -505,7 +500,7 @@ We get used to this, but polluting types with irrelevant numbers is jarring!
 Okay, but what does Dhall *actually* return for our pathological example?
 
 ```haskell
-⊢ λ(x : Bool) → let y = x in λ(x : Text) → y
+⊢ λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
 
 λ(x : Bool) → λ(x : Text) → x@1
 ```
@@ -593,6 +588,257 @@ This variable numbering convention has the following nice properties:
 * this convention biases towards low indices (especially `0`)
 * the capture-avoiding substitution algorithm is simple
 
+# Comparing named and nameless
+
+Let's compare and contrast the two representations:
+
+```haskell
+data Syntax                 │  data Syntax
+    = Variable String       │      = Variable Int
+    | Lambda String Syntax  │      | Lambda Syntax
+    | Apply Syntax Syntax   │      | Apply Syntax Syntax
+```
+
+The nameless representation:
+
+* Uses `Int` instead of `String` in the `Variable` constructor
+
+* Omits the variable name for `Lambda`
+
+  In fact, there is no unique "name" (index) that corresponds to that lambda
+
+To illustrate the latter point:
+
+```haskell
+┌────┐  ┌────┐
+↓    │  ↓    │
+λ → @0 (λ → @0 @1)
+↑               │
+└───────────────┘
+```
+
+# The trick
+
+I could summarize the entire presentation with this meme:
+
+![](./porque.jpg)
+
+Translation: "Why not both?"
+
+We can get the best of both worlds by mixing a named and nameless representation
+
+However, there are multiple ways to do this and I have a specific way in mind
+
+# Namespaced De Bruijn indices - Part 1
+
+The first part of the trick is to use this syntax tree:
+
+```haskell
+data Syntax
+    = Variable String Int
+    | Lambda String Syntax
+    | Apply Syntax Syntax
+```
+
+… which is a hybrid between the two representations we presented so far:
+
+```haskell
+data Syntax                 │  data Syntax
+    = Variable String       │      = Variable Int
+    | Lambda String Syntax  │      | Lambda Syntax
+    | Apply Syntax Syntax   │      | Apply Syntax Syntax
+```
+
+This is like the named representation, except every variable has a De Bruijn
+index
+
+I call this representation "Namespaced De Bruijn indices"
+
+# Example 0
+
+The easiest way to explain this representation is with an example
+
+The following expression:
+
+```haskell
+λx → λy → λx → x@0
+```
+
+… corresponds to this syntax tree:
+
+```haskell
+Lambda "x" (Lambda "y" (Lambda "x" (Variable "x" 0)))
+```
+
+… and it represents a curried function that returns the third argument:
+
+```haskell
+           ┌───┐
+           ↓   │
+λx → λy → λx → x@0
+```
+
+This is pretty straightforward
+
+# Example 1
+
+Now let's try a slightly more interesting example
+
+The following expression:
+
+```haskell
+λx → λy → λx → y@0
+```
+
+… corresponds to this syntax tree:
+
+```haskell
+Lambda "x" (Lambda "y" (Lambda "x" (Variable "y" 0)))
+```
+
+… which returns the second function argument:
+
+```haskell
+      ┌────────┐
+      ↓        │
+λx → λy → λx → y@0
+```
+
+… because that is the innermost bound variable named `y`
+
+Note: the De Bruijn index is `0`, but we ignore bound variables other than `y`
+
+You can think of the index as being "namespaced" only to variables named `y`
+
+# Example 2
+
+Now let's try an even more interesting example
+
+The following expression:
+
+```haskell
+λx → λy → λx → x@1
+```
+
+… corresponds to this syntax tree:
+
+```haskell
+Lambda "x" (Lambda "y" (Lambda "x" (Variable "x" 1)))
+```
+
+… which returns the first function argument:
+
+```haskell
+ ┌─────────────┐
+ ↓             │
+λx → λy → λx → x@1
+```
+
+… because that is the second-innermost bound variable named `x`
+
+Like to the last example, the index is namespaced to variables named `x`
+
+This means that users can refer to shadowed variables using a non-zero index!
+
+# Namespaced De Bruijn indices - Part 2
+
+The second part of the trick is to add syntactic sugar for eliding 0 indices
+
+In other words, this code:
+
+```haskell
+λx → (λy → λx → y) x
+```
+
+… is syntactic sugar for this more explicit form:
+
+```haskell
+λx → (λy → λx → y@0) x@0
+```
+
+… and both of them parse to the same syntax tree, which is:
+
+```haskell
+Lambda "x" (Apply (Lambda "y" (Lambda "x" (Variable "y" 0))) (Variable "x" 0))
+```
+
+This syntactic sugar also works in reverse when pretty-printing expressions
+
+If you were to pretty-print the above syntax tree you would get:
+
+```haskell
+λx → (λy → λx → y) x
+```
+
+… because the pretty-printer elides 0 indices
+
+# Examples - Revisited
+
+We can simplify this:
+
+```haskell
+λx → λy → λx → x@0
+```
+
+… to this:
+
+```haskell
+λx → λy → λx → x
+```
+
+Similarly, we can simplify this:
+
+```haskell
+λx → λy → λx → y@0
+```
+
+… to this:
+
+```haskell
+λx → λy → λx → y
+```
+
+But we cannot simplify this:
+
+```haskell
+λx → λy → λx → x@1
+```
+
+# Emergent properties
+
+This trick is neat because the syntactic sugar makes indices unintrusive
+
+In practice, users don't even know indices exist (Case in point: Dhall)
+
+The reason why is because non-zero indices only arise in two cases:
+
+* The user wishes to explicitly reference a shadowed variable (which is rare)
+
+  … such as our last example:
+
+  ```haskell
+  λx → λy → λx → x@1
+  ```
+
+* The indices appear in a β-reduced result (also rare)
+
+  For example, our pathological input has no visible indices:
+
+  ```haskell
+  λx → (λy → λx → y) x
+  ```
+
+  … but the β-reduced result requires a visible index:
+
+  ```haskell
+  λx → λx → x@1
+  ```
+
+# TODO:
+
+* Show how you can give a nameless type to a polymorphic function like
+  `List/length`
+
 # α-equivalence
 
 De Bruijn indices also permit a straightforward "α-equivalence" check
@@ -619,46 +865,4 @@ For example, this expression:
 λ → @0
 ```
 
-# Comparing named and nameless
-
-Let's compare and contrast the two representations:
-
-```haskell
-data Syntax                 │  data Syntax
-    = Variable String       │      = Variable Int
-    | Lambda String Syntax  │      | Lambda Syntax
-    | Apply Syntax Syntax   │      | Apply Syntax Syntax
-```
-
-The nameless representation:
-
-* Uses `Int` instead of `String` in the `Variable` constructor
-
-* Omits the variable name for `Lambda`
-
-  In fact, there is no unique "name" (index) that corresponds to that lambda
-
-To illustrate the latter point, these two indices refer to the same lambda:
-
-```haskell
-┌────┐
-↓    │
-λ → @0 (λ → @1)
-↑            │
-└────────────┘
-```
-
-# The trick
-
-I can summarize the trick using the following video:
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/vqgSO8_cRio" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-I can summarize the entire presentation
-
 [dhall]: https://dhall-lang.org
-
-# TODO:
-
-* Show how you can give a nameless type to a polymorphic function like
-  `List/length`
