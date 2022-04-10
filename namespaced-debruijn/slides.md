@@ -20,15 +20,18 @@ In this talk I'll spend more time focusing on:
 * the motivation, history and logical progression leading up to this idea
 * how [Dhall][dhall] uses this trick to great effect
 
-Also, as the blog post notes,
+As the blog post notes,
 [CINNI](https://www.sciencedirect.com/science/article/pii/S1571066105801252)
-predates this work and presents exactly the same idea.
+predates this work and presents exactly the same idea
+
+Also, Mike Shulman describes a subset of this trick in [You Could Have Invented De Bruijn indices](https://golem.ph.utexas.edu/category/2021/08/you_could_have_invented_de_bru.html)
 
 # Overview
 
 * Strong normalization
 * Π types
 * Name preservation
+* Nameless and named representations
 
 # Background
 
@@ -275,7 +278,7 @@ forall a . a -> a
 ∀(a : Type) → ∀(x : a) → a
 ```
 
-… because the second input name is irrelevant.
+… because the second input name is irrelevant
 
 # Overview
 
@@ -355,6 +358,12 @@ What should the interpreter return as the normal form for this expression?
 λ(x : Bool) → let y = x in λ(x : Text) → y
 ```
 
+… or the following equivalent expression using only lambdas:
+
+```haskell
+λ(x : Bool) → (λ(y : Bool) → λ(x : Text) → y) x
+```
+
 . . .
 
 I'll give you a head start:
@@ -386,26 +395,22 @@ For example, the first draft of Morte made exactly this mistake:
  
 * [Gabriel439/Morte - Issue #1](https://github.com/Gabriel439/Haskell-Morte-Library/issues/1)
 
-… and the discussion on that issue is where I devised this trick.
+… and the discussion on that issue is where I devised this trick
 
 # Capture-avoiding substitution
 
 A "capture-avoiding" substitution algorithm does not have "name capture" bugs
 
-One such algorithm is a "nameless" representation (a.k.a. De Bruijn indices)
-
 Capture-avoiding substitution algorithms typically fall into two categories:
-
-* Nameless representations
-
-  a.k.a. De Bruijn indices
-
-  This approach replace variable names with integers
 
 * Named representations
 
   This approach preserves variable names, but adds some unique suffix when
   name capture is detected
+
+* Nameless representations (i.e. De Bruijn indices)
+
+  This approach replace variable names with integers
 
 # De Bruijn indices
 
@@ -421,13 +426,29 @@ For example, using De Bruijn indices our pathological expression:
 λ → λ → @1
 ```
 
-… where `@n` denotes a De Bruijn index of `n`.
+… where `@n` denotes a De Bruijn index of `n`
 
 The bug is gone, but now our original names are gone, too! 😔
 
 # Renaming variables
 
-Another solution is rename variables to make them sufficiently unique.
+Another solution is add a unique suffix variables when their names collide
+
+For example, such an implementation might normalize our pathological expression:
+
+```haskell
+λ(x : Bool) → let y = x in λ(x : Text) → y
+```
+
+… to:
+
+```haskell
+λ(x1 : Bool) → λ(x : Bool) → x1
+```
+
+I call this solution "name mangling"
+
+# Name mangling in GHC
 
 We can see what GHC does by saving our function to a Haskell file:
 
@@ -477,7 +498,163 @@ Name mangling shows up in error messages:
 (const .) :: (a1 -> a2) -> a1 -> b -> a2
 ```
 
-We eventually get used to this, but polluting types with numbers is jarring!
+We get used to this, but polluting types with irrelevant numbers is jarring!
+
+# Spoiler
+
+Okay, but what does Dhall *actually* return for our pathological example?
+
+```haskell
+⊢ λ(x : Bool) → let y = x in λ(x : Text) → y
+
+λ(x : Bool) → λ(x : Text) → x@1
+```
+
+Dhall uses a representation that mixes a named and nameless representation
+
+The upcoming sections will explain that in more detail
+
+# Overview
+
+# Named representation
+
+I will start with an untyped lambda calculus for this part to simplify things:
+
+```haskell
+data Syntax
+    = Variable String
+    | Lambda String Syntax
+    | Apply Syntax Syntax
+```
+
+The above syntax tree is a "named" representation
+
+For example, we would represent this lambda expression:
+
+```haskell
+λf → λx → f x
+```
+
+… as this `Syntax` tree:
+
+```haskell
+Lambda "f" (Lambda "x" (Apply (Variable "f") (Variable "x")))
+```
+
+# Nameless representation
+
+The corresponding nameless representation is:
+
+```haskell
+data Syntax
+    = Variable Int
+    | Lambda Syntax
+    | Apply Syntax Syntax
+```
+
+For example, we would represent this lambda expression:
+
+```haskell
+λf → λx → f x
+```
+
+… as this `Syntax` tree:
+
+```haskell
+Lambda (Lambda (Apply (Variable 1) (Variable 0)))
+```
+
+… as if the user had written:
+
+```haskell
+λ → λ → @1 @0
+```
+
+I prefix the indices with `@` to avoid confusing them with ordinary numbers
+
+# De Bruijn indices
+
+A [De Bruijn index](https://en.wikipedia.org/wiki/De_Bruijn_index) replaces a
+variable name with a number
+
+The number counts how far away the matching lambda is:
+
+```haskell
+    ┌───────┐
+    ↓       │
+λ → λ → @1 @0
+↑        │
+└────────┘
+```
+
+This variable numbering convention has the following nice properties:
+
+* index assignment is context free
+* this convention biases towards low indices (especially `0`)
+* the capture-avoiding substitution algorithm is simple
+
+# α-equivalence
+
+De Bruijn indices also permit a straightforward "α-equivalence" check
+
+Two expressions are "α-equivalent" if they are the same up to renaming variables
+
+You can determine α-equivalence by comparing nameless representations
+
+For example, this expression:
+
+```haskell
+λx → x
+```
+
+… and this expression:
+
+```haskell
+λy → y
+```
+
+… are α-equivalent because they both share the same nameless representation:
+
+```haskell
+λ → @0
+```
+
+# Comparing named and nameless
+
+Let's compare and contrast the two representations:
+
+```haskell
+data Syntax                 │  data Syntax
+    = Variable String       │      = Variable Int
+    | Lambda String Syntax  │      | Lambda Syntax
+    | Apply Syntax Syntax   │      | Apply Syntax Syntax
+```
+
+The nameless representation:
+
+* Uses `Int` instead of `String` in the `Variable` constructor
+
+* Omits the variable name for `Lambda`
+
+  In fact, there is no unique "name" (index) that corresponds to that lambda
+
+To illustrate the latter point, these two indices refer to the same lambda:
+
+```haskell
+┌────┐
+↓    │
+λ → @0 (λ → @1)
+↑            │
+└────────────┘
+```
+
+# The trick
+
+I can summarize the trick using the following video:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/vqgSO8_cRio" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+I can summarize the entire presentation
 
 [dhall]: https://dhall-lang.org
 
