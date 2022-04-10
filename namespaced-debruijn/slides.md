@@ -346,3 +346,142 @@ Bool → Bool
 
 Text → ∀(replacement : Text) → ∀(haystack : Text) → Text
 ```
+
+# The hard part
+
+What should the interpreter return as the normal form for this expression?
+
+```haskell
+λ(x : Bool) → let y = x in λ(x : Text) → y
+```
+
+. . .
+
+I'll give you a head start:
+
+```haskell
+λ(? : Bool) → λ(? : Text) → ?
+```
+
+# Name capture
+
+I'll start off with the wrong answer.  If you normalize this:
+
+```haskell
+λ(x : Bool) → let y = x in λ(x : Text) → y
+```
+
+… you should **NOT** get this:
+
+```haskell
+λ(x : Bool) → λ(x : Text) → x
+```
+
+That last `x` refers to the second (`Text`) argument, but the correct answer
+should return the first (`Bool`) argument
+
+This is a common type of implementation error known as "name capture"
+ 
+For example, the first draft of Morte made exactly this mistake:
+ 
+* [Gabriel439/Morte - Issue #1](https://github.com/Gabriel439/Haskell-Morte-Library/issues/1)
+
+… and the discussion on that issue is where I devised this trick.
+
+# Capture-avoiding substitution
+
+A "capture-avoiding" substitution algorithm does not have "name capture" bugs
+
+One such algorithm is a "nameless" representation (a.k.a. De Bruijn indices)
+
+Capture-avoiding substitution algorithms typically fall into two categories:
+
+* Nameless representations
+
+  a.k.a. De Bruijn indices
+
+  This approach replace variable names with integers
+
+* Named representations
+
+  This approach preserves variable names, but adds some unique suffix when
+  name capture is detected
+
+# De Bruijn indices
+
+For example, using De Bruijn indices our pathological expression:
+
+```haskell
+λ(x : Bool) → let y = x in λ(x : Text) → y
+```
+
+… would normalize to:
+
+```haskell
+λ → λ → @1
+```
+
+… where `@n` denotes a De Bruijn index of `n`.
+
+The bug is gone, but now our original names are gone, too! 😔
+
+# Renaming variables
+
+Another solution is rename variables to make them sufficiently unique.
+
+We can see what GHC does by saving our function to a Haskell file:
+
+```haskell
+module Example where
+
+f :: Bool -> String -> Bool
+f x = let y = x in \x -> y
+```
+
+… and asking GHC to dump an intermediate representation:
+
+```haskell
+$ ghc -O2 -ddump-simpl -dsuppress-all Example.hs
+…
+f = \ x_atA _ -> x_atA
+```
+
+`ghc` did two things to avoid the name collision:
+
+* rename the second variable to `_` since it's unused
+* add a unique suffix to `x` to avoid collision
+
+Even if GHC could pretty-print arbitrary expressions, the names would be mangled
+
+# Mangling types
+
+GHC doesn't support generalized evaluation, so name mangling is not as visible
+
+**BUT**, name mangling still affects the user experience in another way: types!
+
+Name mangling shows up in error messages:
+
+```haskell
+>>> :type ([] .)
+
+<interactive>:1:2: error:
+    • Couldn't match expected type ‘b -> c’ with actual type ‘[a0]’
+    • In the first argument of ‘(.)’, namely ‘[]’
+      In the expression: ([] .)
+```
+
+… and inferred types:
+
+```
+>>> :type (const .)
+(const .) :: (a1 -> a2) -> a1 -> b -> a2
+```
+
+We eventually get used to this, but polluting types with numbers is jarring!
+
+[dhall]: https://dhall-lang.org
+
+# TODO:
+
+* Show how you can give a nameless type to a polymorphic function like
+  `List/length`
