@@ -24,8 +24,6 @@ As the blog post notes,
 [CINNI](https://www.sciencedirect.com/science/article/pii/S1571066105801252)
 predates this work and presents exactly the same idea
 
-Also, Mike Shulman describes a subset of this trick in [You Could Have Invented De Bruijn indices](https://golem.ph.utexas.edu/category/2021/08/you_could_have_invented_de_bru.html)
-
 # Overview
 
 * **β-reduction**
