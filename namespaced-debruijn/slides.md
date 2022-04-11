@@ -19,7 +19,6 @@ In this talk I'll spend more time focusing on:
 
 * the motivation, history and logical progression leading up to this idea
 * the user experience (as opposed to the implementation)
-* how [Dhall][dhall] uses this trick to great effect
 
 As the blog post notes,
 [CINNI](https://www.sciencedirect.com/science/article/pii/S1571066105801252)
@@ -29,10 +28,9 @@ Also, Mike Shulman describes a subset of this trick in [You Could Have Invented 
 
 # Overview
 
-* β-reduction
-* Π types
+* **β-reduction**
 * Name preservation
-* Nameless and named representations
+* Named and nameless representations
 * Comparison to existing approaches
 
 # History
@@ -165,152 +163,14 @@ List { mapKey : Text, mapValue : Bool }
 
 # Overview
 
-# Universal quantification
+* β-reduction
+* **Name preservation**
+* Named and nameless representations
+* Comparison to existing approaches
 
-Morte and Dhall also support polymorphism (a.k.a. "universal quantification")
+# β-reduction can preserve names
 
-However, type abstraction and type application are explicit (unlike Haskell)
-
-For example, here how you define and use the identity function in Dhall:
-
-```haskell
-⊢ :let id = λ(a : Type) → λ(x : a) → x
-
-id : ∀(a : Type) → ∀(x : a) → a
-
-⊢ id Text "Hello"
-
-"Hello"
-```
-
-Why does the inferred type of `id` have two "forall" symbols (`∀`), though?
-
-# Explicit type abstraction / application
-
-Let's compare the Dhall type:
-
-```haskell
-id : ∀(a : Type) → ∀(x : a) → a
-```
-
-… and the equivalent Haskell type (with `ExplicitForAll` enabled):
-
-```haskell
-id :: forall a . a -> a
-```
-
-In Dhall, `id` is a function of two arguments (unlike Haskell):
-
-* The first argument, `a` is a `Type`
-* The second argument, `x` has a type that matches the first argument
-
-We can "specialize" `id` by supplying only the first argument:
-
-```haskell
-⊢ id Text  -- Specialization is also a special case of β-reduction
-
-λ(x : Text) → x
-```
-
-This is the same thing as `TypeApplications` in Haskell (e.g. `id @Text`)
-
-# Π types
-
-The `forall` / `∀` keyword  in Dhall actually denotes a "Π type"
-
-All function types in Dhall are actually Π types of the form:
-
-```haskell
-∀(a : A) → B
-```
-
-… and you can think of this as a function type where you can name the input:
-
-* `a` is the name of the function input
-* `A` is the type of the function input
-* `B` is the type of the function output
-
-Dhall provides syntactic sugar where this function type:
-
-```haskell
-A → B
-```
-
-… is actually a shorthand for a Π type that ignores the input name:
-
-```haskell
-∀(_ : A) → B
-```
-
-# Naming function arguments
-
-You can also use Π types to name function arguments that aren't types
-
-For example, the `Text/replace` built-in's type names the function arguments:
-
-```haskell
-⊢ :type Text/replace
-
-∀(needle : Text) → ∀(replacement : Text) → ∀(haystack : Text) → Text
-```
-
-Names like these are irrelevant; nothing happens if you change or omit them
-
-The name is only relevant if it appears "downstream" in the function type
-
-```haskell
---     This name is relevant because `a` shows up downstream within the type
---     ↓
-id : ∀(a : Type) → ∀(x : a) → a
---                   ↑
---                   This name is irrelevant, because `x` is not used downstream
-```
-
-# Universal quantification - revisited
-
-Universal quantification is a special case of a Π type where `A = Type`
-
-That means that the following Haskell type:
-
-```haskell
-forall a . a -> a
-```
-
-… is the same as this Dhall type:
-
-```haskell
-∀(a : Type) → a → a
-```
-
-… which is syntactic sugar for this type:
-
-```haskell
-∀(a : Type) → ∀(_ : a) → a
-```
-
-… which is the same type as this type:
-
-```haskell
-∀(a : Type) → ∀(x : a) → a
-```
-
-… because the second input name is irrelevant
-
-# Overview
-
-# Name preservation
-
-β-reduction and Π types benefit from "name preservation". Specifically:
-
-* β-reduction preserves variable names as much as possible<sup>†</sup>
-* Inferred function types (Π types) preserve variable names as much as possible
-
-<sup>†</sup> Dhall does not yet preserve variable names for imports protected by
-  integrity checks.  See: [#1185](https://github.com/dhall-lang/dhall-lang/issues/1185)
-
-# β-reduction preserves names
-
-Here are some examples of how β-reduction preserves names
+Here are some examples of how β-reduction can preserves names
 
 ```haskell
 ⊢ λ(x : Bool) → x  -- Phew!  That was easy 😌
@@ -525,6 +385,11 @@ Dhall uses a representation that mixes a named and nameless representation
 The upcoming sections will explain that in more detail
 
 # Overview
+
+* β-reduction
+* Name preservation
+* **Named and nameless representations**
+* Comparison to existing approaches
 
 # Named representation
 
@@ -1005,6 +870,11 @@ Now the name is irreversibly scarred even after η-expansion:
 
 # Overview
 
+* β-reduction
+* Name preservation
+* Named and nameless representations
+* **Comparison to existing approaches**
+
 # Comparison to name mangling - Part 1
 
 "Aren't namespaced De Bruijn indices just another form of name mangling?" **NO!**
@@ -1098,5 +968,146 @@ This trick is useful for other interpreted languages, if only to simplify their
 implementation
 
 This approach has been vetted extensively in the wild via Dhall
+
+# Appendix - Implementation
+
+```haskell
+-- | Syntax tree
+data Syntax
+    = Variable String Int
+    | Lambda String Syntax
+    | Apply Syntax Syntax
+    deriving (Eq, Show)
+
+{-| Increase the index of all bound variables matching the given variable name
+
+    This is modified from the Shifting definition in Pierce's \"Types and
+    Programming Languages\" by adding an additional argument for the namespace
+    to shift
+-}
+shift
+    :: Int
+    -- ^ The amount to shift by
+    -> String
+    -- ^ The variable name to match (a.k.a. the namespace)
+    -> Int
+    -- ^ The minimum bound for which indices to shift
+    -> Syntax
+    -- ^ The expression to shift
+    -> Syntax
+shift offset namespace minIndex syntax =
+    case syntax of
+        Variable name index -> Variable name index'
+          where
+            index'
+                | name == namespace && minIndex <= index = index + offset
+                | otherwise                              = index
+
+        Lambda name body -> Lambda name body'
+          where
+            minIndex'
+                | name == namespace = minIndex + 1
+                | otherwise         = minIndex
+
+            body' = shift offset namespace minIndex' body
+
+        Apply function argument -> Apply function' argument'
+          where
+            function' = shift offset namespace minIndex function
+
+            argument' = shift offset namespace minIndex argument
+
+{-| Substitute the given variable name and index with an expression
+
+    This is modified from the Substitution definition in Pierce's \"Types and
+    Programming Languages\" by adding an additional argument for the variable
+    index
+-}
+substitute
+    :: Syntax
+    -- ^ The expression to substitute into
+    -> String
+    -- ^ The name of the variable to replace
+    -> Int
+    -- ^ The index of the variable to replace
+    -> Syntax
+    -- ^ The expression to substitute in place of the given variable
+    -> Syntax
+substitute expression name index replacement =
+    case expression of
+        Variable name' index'
+            | name == name' && index == index' -> replacement
+            | otherwise                        -> Variable name' index'
+
+        Lambda name' body -> Lambda name' body'
+          where
+            index'
+                | name == name' = index + 1
+                | otherwise     = index
+
+            shiftedBody = shift 1 name' 0 replacement
+
+            body' = substitute body name index' shiftedBody
+
+        Apply function argument -> Apply function' argument'
+          where
+            function' = substitute function name index replacement
+
+            argument' = substitute argument name index replacement
+
+-- | β-reduce an expression
+betaReduce :: Syntax -> Syntax
+betaReduce syntax =
+    case syntax of
+        Variable name index -> Variable name index
+
+        Lambda name body -> Lambda name body'
+          where
+            body' = betaReduce body
+
+        Apply function argument ->
+            case function' of
+                Lambda name body -> body'
+                  where
+                    shiftedArgument = shift 1 name 0 argument
+
+                    substitutedBody = substitute body name 0 shiftedArgument
+
+                    unshiftedBody = shift (-1) name 0 substitutedBody
+
+                    body' = betaReduce unshiftedBody
+
+                _ -> Apply function' argument'
+          where
+            function' = betaReduce function
+
+            argument' = betaReduce argument
+
+-- | α-reduce an expression
+alphaReduce :: Syntax -> Syntax
+alphaReduce syntax =
+    case syntax of
+        Variable name index -> Variable name index
+
+        Lambda name body -> Lambda "_" body'
+          where
+            shiftedBody = shift 1 "_" 0 body
+
+            substitutedBody = substitute shiftedBody name 0 (Variable "_" 0)
+
+            unshiftedBody = shift (-1) name 0 substitutedBody
+
+            body' = alphaReduce unshiftedBody
+
+        Apply function argument -> Apply function' argument'
+          where
+            function' = alphaReduce function
+
+            argument' = alphaReduce argument
+
+-- | Returns `True` if the two input expressions are α-equivalent
+alphaEquivalent :: Syntax -> Syntax -> Bool
+alphaEquivalent left right = alphaReduce left == alphaReduce right
+```
 
 [dhall]: https://dhall-lang.org
