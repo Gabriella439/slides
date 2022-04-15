@@ -28,7 +28,7 @@ predates this work and presents exactly the same idea
 
 * **β-reduction**
 * Name preservation
-* Named and nameless representations
+* Namespaced De Bruijn indices
 * Comparison to existing approaches
 
 # History
@@ -95,6 +95,8 @@ For example, consider the `Natural/greaterThan` function from Dhall's Prelude:
 
 * [`store.dhall-lang.org` - `Prelude-v21.1.0/Natural/greaterThan.dhall`](https://store.dhall-lang.org/Prelude-v21.1.0/Natural/greaterThan.dhall.html#var2-5)
 
+. . .
+
 That has the following dependency tree:
 
 ```
@@ -140,6 +142,8 @@ Here are some more examples of how powerful β-reduction is:
 λ(x : Natural) → λ(y : Natural) → x + y
 ```
 
+. . .
+
 ```haskell
 ⊢ λ(x : Bool) → if x then True else False  -- You can do symbolic simplification
 
@@ -163,7 +167,7 @@ List { mapKey : Text, mapValue : Bool }
 
 * β-reduction
 * **Name preservation**
-* Named and nameless representations
+* Namespaced De Bruijn indices
 * Comparison to existing approaches
 
 # β-reduction can preserve names
@@ -175,6 +179,8 @@ Here are some examples of how β-reduction can preserves names
 
 λ(x : Bool) → x
 ```
+
+. . .
 
 ```haskell
 ⊢ λ(x : Bool) → (λ(y : Bool) → λ(z : Bool) → y) x  -- Still straightforward
@@ -190,38 +196,6 @@ compose : ∀(f : Bool → Bool) → ∀(g : Bool → Bool) → ∀(x : Bool) �
 ⊢ compose (λ(y : Bool) → y) (λ(z : Bool) → z)  -- Tiny bit trickier
 
 λ(x : Bool) → x
-```
-
-# Type inference preserves names
-
-Here are some examples of how type inference preserves names
-
-```haskell
-⊢ :type λ(x : Bool) → x  -- Irrelevant names are still preserved
-
-∀(x : Bool) → Bool
-```
-
-You can also change or omit inferred names with a type annotation:
-
-```haskell
-⊢ :type (let f : Bool → Bool = λ(x : Bool) → x in f)
-
-Bool → Bool
-```
-
-```haskell
-⊢ :type Text/replace
-
-∀(needle : Text) → ∀(replacement : Text) → ∀(haystack : Text) → Text
-
-⊢ :type λ(x : Text) → Text/replace x  -- η-expansion can change inferred names
-
-∀(x : Text) → ∀(replacement : Text) → ∀(haystack : Text) → Text
-
-⊢ :type λ(_ : Text) → Text/replace _  -- _ is a valid variable name
-
-Text → ∀(replacement : Text) → ∀(haystack : Text) → Text
 ```
 
 # The hard part
@@ -386,7 +360,7 @@ The upcoming sections will explain that in more detail
 
 * β-reduction
 * Name preservation
-* **Named and nameless representations**
+* **Namespaced De Bruijn indices**
 * Comparison to existing approaches
 
 # Named representation
@@ -549,18 +523,6 @@ The nameless representation:
 * Uses `Int` instead of `String` in the `Variable` constructor
 
 * Omits the variable name for `Lambda`
-
-  In fact, there is no unique "name" (index) that corresponds to that lambda
-
-To illustrate the latter point:
-
-```haskell
-┌────┐  ┌────┐
-↓    │  ↓    │
-λ → @0 (λ → @0 @1)
-↑               │
-└───────────────┘
-```
 
 # The trick
 
@@ -870,7 +832,7 @@ Now the name is irreversibly scarred even after η-expansion:
 
 * β-reduction
 * Name preservation
-* Named and nameless representations
+* Namespaced De Bruijn indices
 * **Comparison to existing approaches**
 
 # Comparison to name mangling - Part 1
