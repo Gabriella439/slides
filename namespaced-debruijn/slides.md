@@ -927,6 +927,10 @@ expressions
 This trick is useful for other interpreted languages, if only to simplify their
 implementation
 
+You can find the slides for this talk here:
+
+* [https://github.com/Gabriel439/slides/blob/main/namespaced-debruijn/slides.md](https://github.com/Gabriel439/slides/blob/main/namespaced-debruijn/slides.md)
+
 This approach has been vetted extensively in the wild via Dhall
 
 You can fork a real implementation of this technique here:
