@@ -929,6 +929,10 @@ implementation
 
 This approach has been vetted extensively in the wild via Dhall
 
+You can fork a real implementation of this technique here:
+
+* [GitHub - Fall-from-Grace](https://github.com/Gabriel439/grace)
+
 # Appendix - Implementation
 
 ```haskell
