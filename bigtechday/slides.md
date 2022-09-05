@@ -1,5 +1,5 @@
 % How to prove large software projects correct
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % Big Tech Day - June 12, 2015
 
 # Goal
@@ -1027,4 +1027,4 @@ We can use the Unix philosophy to scale proofs to complex software:
 
 My blog: [haskellforall.com](http://haskellforall.com)
 
-Twitter: [\@GabrielG439](http://twitter.com/GabrielG439)
+Twitter: [\@GabriellaG439](http://twitter.com/GabriellaG439)

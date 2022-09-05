@@ -1,5 +1,5 @@
 % Applied category theory and abstract algebra
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % January 8, 2017
 
 # Function composition
@@ -342,10 +342,10 @@ main = do
 ```
 >>> main
 Enter your name:
-Gabriel Gonzalez
+Gabriella Gonzalez
 Enter your age:
 31
-Your name is: Gabriel Gonzalez
+Your name is: Gabriella Gonzalez
 Your age is: 31
 ```
 
@@ -964,9 +964,9 @@ into simple composable building blocks
 
 You can find these slides at:
 
-[https://github.com/Gabriel439/slides/tree/master/lambdaconf/category/category.md](https://github.com/Gabriel439/slides/tree/master/lambdaconf/category/category.md)
+[https://github.com/Gabriella439/slides/tree/master/lambdaconf/category/category.md](https://github.com/Gabriella439/slides/tree/master/lambdaconf/category/category.md)
 
 You can also reach me at:
 
-* Email - [Gabriel439@gmail.com](mailto:Gabriel439@gmail.com)
-* Twitter - [GabrielG439](https://twitter.com/GabrielG439)
+* Email - [GenuineGabriella@gmail.com](mailto:GenuineGabriella@gmail.com)
+* Twitter - [GabriellaG439](https://twitter.com/GabriellaG439)

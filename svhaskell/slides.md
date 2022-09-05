@@ -1,5 +1,5 @@
 % Typed and Composable Spreadsheets
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % September 03, 2016
 
 # Introduction

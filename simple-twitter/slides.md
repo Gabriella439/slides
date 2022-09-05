@@ -1,5 +1,5 @@
 % A bare-bones Twitter clone implemented with Haskell + Nix
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % June 13, 2020
 
 # Simplified explanation of Twitter
@@ -29,7 +29,7 @@ The final implementation fits in a single file! (~470 lines of code)
 
 You can find the final result of this presentation at:
 
-* [https://github.com/Gabriel439/simple-twitter](https://github.com/Gabriel439/simple-twitter)
+* [https://github.com/Gabriella439/simple-twitter](https://github.com/Gabriella439/simple-twitter)
 
 # Overview
 
@@ -910,4 +910,4 @@ Haskell + Nix + Postgres can be used to build real web applications
 
 You can find the complete code here:
 
-* [https://github.com/Gabriel439/simple-twitter](https://github.com/Gabriel439/simple-twitter)
+* [https://github.com/Gabriella439/simple-twitter](https://github.com/Gabriella439/simple-twitter)

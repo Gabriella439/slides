@@ -1,5 +1,5 @@
 % Secure execution of untrusted scripts
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % July 29, 2015
 
 # Poll
@@ -1032,7 +1032,7 @@ sys     0m0.044s
 64-bit multiplication
 
 ```haskell
-gabriel@wind:~/proj/annah/Prelude$ time echo '#Bin/(*) 4294967295 4294967295' |
+gabriella@wind:~/proj/annah/Prelude$ time echo '#Bin/(*) 4294967295 4294967295' |
 annah | morte
 ∀(Bin : *) → ∀(Zero : Bin) → ∀(One : (∀(Bin_ : *) → ∀(Nil_ : Bin_) → ∀(Zero_ :
 Bin_ → Bin_) → ∀(One_ : Bin_ → Bin_) → Bin_) → Bin) → Bin
@@ -1169,13 +1169,13 @@ These projects still have a long way to go before you should use them
 
 This code is up on Github at:
 
-* https://github.com/Gabriel439/Haskell-Morte-Library
-* https://github.com/Gabriel439/Haskell-Annah-Library
+* https://github.com/Gabriella439/Haskell-Morte-Library
+* https://github.com/Gabriella439/Haskell-Annah-Library
 * Hacky nordom code is up on the `nordom` branch of the `annah` repository
 
 You can reach me at:
 
-[\@GabrielG439](https://twitter.com/GabrielG439)
+[\@GabriellaG439](https://twitter.com/GabriellaG439)
 
 [/u/Tekmo](http://www.reddit.com/user/Tekmo/) on [/r/haskell](http://www.reddit.com/r/haskell)
 

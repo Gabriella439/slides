@@ -69,10 +69,10 @@ main = do
 
     let server :: Server WebHook
         server (Just "pull_request") event = do
-            let userAgent = Just "Gabriel439"
+            let userAgent = Just "Gabriella439"
             let authorization = Just ("token " <> token)
             let comment = Comment { body = "Hello!" }
-            let command = addComment userAgent authorization "Gabriel439" "test" (number (pull_request event)) comment
+            let command = addComment userAgent authorization "Gabriella439" "test" (number (pull_request event)) comment
             x <- liftIO (runClientM command clientEnv)
             case x of
                 Left exception -> liftIO (Control.Exception.throwIO exception)

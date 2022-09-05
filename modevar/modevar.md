@@ -1,5 +1,5 @@
 % How to build a sturdy little language
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % October 20, 2020
 
 # Overview
@@ -650,7 +650,7 @@ Here is why the implementation and tooling should share the same repository:
 
 You can find these slides at:
 
-* [https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md](https://github.com/Gabriel439/slides/blob/master/modevar/modevar.md)
+* [https://github.com/Gabriella439/slides/blob/master/modevar/modevar.md](https://github.com/Gabriella439/slides/blob/master/modevar/modevar.md)
 
 You can learn more about Dhall at:
 
@@ -658,7 +658,7 @@ You can learn more about Dhall at:
 
 You can follow my work on GitHub if it interests you:
 
-* [https://github.com/Gabriel439/](https://github.com/Gabriel439/)
+* [https://github.com/Gabriella439/](https://github.com/Gabriella439/)
 
 # Appendix: Marketing
 
@@ -688,6 +688,6 @@ I'm guessing that some of you have the following questions:
 
 Also, people interested in marketing should watch this other talk I've given:
 
-* [How to market Haskell to a mainstream programmer](https://www.youtube.com/watch?v=fNpsgTIpODA) ([Slides](https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md))
+* [How to market Haskell to a mainstream programmer](https://www.youtube.com/watch?v=fNpsgTIpODA) ([Slides](https://github.com/Gabriella439/slides/blob/master/marketing/marketing.md))
 
 

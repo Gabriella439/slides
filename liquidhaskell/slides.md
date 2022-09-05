@@ -1,5 +1,5 @@
 % Scrap your Bounds Checks with Liquid Haskell 
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % October 12, 2017
 
 # The golden rule of programming
@@ -119,7 +119,7 @@ $ liquid precondition.hs
 **** RESULT: UNSAFE ************************************************************
 
 
- /Users/gabriel/proj/slides/liquidhaskell/examples/head.hs:8:1-7: Error: Liquid Type Mismatch
+ /Users/gabriella/proj/slides/liquidhaskell/examples/head.hs:8:1-7: Error: Liquid Type Mismatch
  
  8 | example = head []
      ^^^^^^^
@@ -1151,12 +1151,12 @@ Why not **push the fix upstream** and fix GHC directly?
 
 These slides are hosted online at:
 
-* [https://github.com/Gabriel439/slides/blob/master/liquidhaskell/slides.md](https://github.com/Gabriel439/slides/blob/master/liquidhaskell/slides.md)
+* [https://github.com/Gabriella439/slides/blob/master/liquidhaskell/slides.md](https://github.com/Gabriella439/slides/blob/master/liquidhaskell/slides.md)
 
 You can follow my work on:
 
-* Twitter - [\@GabrielG439](twitter.com/GabrielG439)
-* GitHub - [Gabriel439](https://github.com/Gabriel439)
+* Twitter - [\@GabriellaG439](twitter.com/GabriellaG439)
+* GitHub - [Gabriella439](https://github.com/Gabriella439)
 
 # Getting started - Stack
 

@@ -1,5 +1,5 @@
 % How to create a new Haskell project
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % April 8, 2017
 
 # Goal
@@ -74,7 +74,7 @@ This talk will focus on `stack`-based workflows, mainly because:
 
 I use Nix + `cabal-install` for Haskell development, but not beginner-friendly:
 
-* [https://github.com/Gabriel439/haskell-nix](https://github.com/Gabriel439/haskell-nix)
+* [https://github.com/Gabriella439/haskell-nix](https://github.com/Gabriella439/haskell-nix)
 
 # Build and run the executable
 
@@ -90,9 +90,9 @@ Install the executable in a global path:
 
 ```bash
 $ stack install
-Copying from /private/.../bin/hello to /Users/gabriel/.local/bin/hello
+Copying from /private/.../bin/hello to /Users/gabriella/.local/bin/hello
 
-Copied executables to /Users/gabriel/.local/bin:
+Copied executables to /Users/gabriella/.local/bin:
 - hello
 ```
 
@@ -337,6 +337,6 @@ I hope this inspires some people at BayHac to start their own projects!
 
 You can find these slides at
 
-* [https://github.com/Gabriel439/slides/tree/master/bayhac2017](https://github.com/Gabriel439/slides/tree/master/bayhac2017)
+* [https://github.com/Gabriella439/slides/tree/master/bayhac2017](https://github.com/Gabriella439/slides/tree/master/bayhac2017)
 
-If you ever have questions, hit me up at @GabrielG439 on Twitter
+If you ever have questions, hit me up at @GabriellaG439 on Twitter

@@ -1,5 +1,5 @@
 % Data science APIs in Haskell
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % January 10, 2017
 
 # Following along
@@ -15,7 +15,7 @@ curl https://nixos.org/nix/install | sh
 ... and once `nix` is installed, you can build these slides and examples using:
 
 ```haskell
-$ git clone https://github.com/Gabriel439/slides.git
+$ git clone https://github.com/Gabriella439/slides.git
 $ cd slides/lambdaconf/data
 $ nix-build release.nix
 ```
@@ -28,7 +28,7 @@ $ nix-shell
 
 These slides are also available from the same repository:
 
-[https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md](https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md)
+[https://github.com/Gabriella439/slides/blob/master/lambdaconf/data/data.md](https://github.com/Gabriella439/slides/blob/master/lambdaconf/data/data.md)
 
 # My background
 
@@ -59,7 +59,7 @@ This talk will **NOT** cover:
 
 If you want to learn more about these other topics, check out this post:
 
-* [State of the Haskell ecosystem](https://github.com/Gabriel439/post-rfc/blob/master/sotu.md)
+* [State of the Haskell ecosystem](https://github.com/Gabriella439/post-rfc/blob/master/sotu.md)
 
 That is a broad survey of the Haskell ecosystem's suitability for various areas
 
@@ -882,7 +882,7 @@ The codename of this project is `bears`
 
 You can find this implementation at:
 
-[https://github.com/Gabriel439/Haskell-Bears-Library](https://github.com/Gabriel439/Haskell-Bears-Library)
+[https://github.com/Gabriella439/Haskell-Bears-Library](https://github.com/Gabriella439/Haskell-Bears-Library)
 
 # `Table`
 
@@ -913,9 +913,9 @@ lookup k t = Data.Map.Strict.lookup k (rows t) <|> fallback t
 We'll be using the following tables for our upcoming examples
 
 ```haskell
->>> let firstNames = fromList [(0, "Gabriel"    ), (1, "Oscar"), (2, "Edgar"    )                  ]
->>> let lastNames  = fromList [(0, "Gonzalez"   ),               (2, "Codd"     ), (3, "Bryant"   )]
->>> let handles    = fromList [(0, "GabrielG439"), (1, "posco"),                   (3, "avibryant")]
+>>> let firstNames = fromList [(0, "Gabriella"    ), (1, "Oscar"), (2, "Edgar"    )                  ]
+>>> let lastNames  = fromList [(0, "Gonzalez"     ),               (2, "Codd"     ), (3, "Bryant"   )]
+>>> let handles    = fromList [(0, "GabriellaG439"), (1, "posco"),                   (3, "avibryant")]
 ```
 
 All three tables have the same type:
@@ -928,11 +928,11 @@ Here is their internal representation:
 
 ```haskell
 >>> firstNames
-Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
+Table {rows = fromList [(0,"Gabriella"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
 >>> lastNames
 Table {rows = fromList [(0,"Gonzalez"),(2,"Codd"),(3,"Bryant")], fallback = Nothing}
 >>> handles
-Table {rows = fromList [(0,"GabrielG439"),(1,"posco"),(3,"avibryant")], fallback = Nothing}
+Table {rows = fromList [(0,"GabriellaG439"),(1,"posco"),(3,"avibryant")], fallback = Nothing}
 ```
 
 # Lookups
@@ -1029,8 +1029,8 @@ instance Ord key => Applicative (Table key) where
 A `pure` `Table` is defined for every key:
 
 ```haskell
->>> pure "Gabriel" :: Table Integer String
-Table {rows = fromList [], fallback = Just "Gabriel"}
+>>> pure "Gabriella" :: Table Integer String
+Table {rows = fromList [], fallback = Just "Gabriella"}
 ```
 
 # `pure` - `Maybe`
@@ -1050,10 +1050,10 @@ lookup k (pure row) = pure row
 ```
 
 ```haskell
->>> lookup 0 (pure "Gabriel")
-Just "Gabriel"
->>> lookup 999 (pure "Gabriel")
-Just "Gabriel"
+>>> lookup 0 (pure "Gabriella")
+Just "Gabriella"
+>>> lookup 999 (pure "Gabriella")
+Just "Gabriella"
 ```
 
 # `(<|>)` - `Table`
@@ -1081,11 +1081,11 @@ instance Ord key => Alternative (Table key) where
 
 ```haskell
 >>> firstNames
-Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
+Table {rows = fromList [(0,"Gabriella"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
 >>> lastNames
 Table {rows = fromList [(0,"Gonzalez"),(2,"Codd"),(3,"Bryant")], fallback = Nothing}
 >>> firstNames <|> lastNames
-Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar"),(3,"Bryant")], fallback = Nothing}
+Table {rows = fromList [(0,"Gabriella"),(1,"Oscar"),(2,"Edgar"),(3,"Bryant")], fallback = Nothing}
 ```
 
 # `(<|>)` - `pure`
@@ -1128,7 +1128,7 @@ For `Table`s, `do` notation behaves like an inner join on a shared key:
 |           return (firstName, lastName)
 | 
 >>> example0
-Table {rows = fromList [(0,("Gabriel","Gonzalez")),(2,("Edgar","Codd"))], fallback = Nothing}
+Table {rows = fromList [(0,("Gabriella","Gonzalez")),(2,("Edgar","Codd"))], fallback = Nothing}
 ```
 
 You can join as many tables as you like this way:
@@ -1141,7 +1141,7 @@ You can join as many tables as you like this way:
 |           return (firstName, lastName, handle)
 | 
 >>> example1
-Table {rows = fromList [(0,("Gabriel","Gonzalez","GabrielG439"))], fallback = Nothing}
+Table {rows = fromList [(0,("Gabriella","Gonzalez","GabriellaG439"))], fallback = Nothing}
 ```
 
 # `do` - `Maybe`
@@ -1207,7 +1207,7 @@ instance Functor (Table key) where
 
 ```haskell
 >>> example0
-Table {rows = fromList [(0,("Gabriel","Gonzalez")),(2,("Edgar","Codd"))], fallback = Nothing}
+Table {rows = fromList [(0,("Gabriella","Gonzalez")),(2,("Edgar","Codd"))], fallback = Nothing}
 >>> fmap snd example0
 Table {rows = fromList [(0,"Gonzalez"),(2,"Codd")], fallback = Nothing}
 ```
@@ -1316,9 +1316,9 @@ optional :: Table key a -> Table key (Maybe a)
 
 ```haskell
 > firstNames
-Table {rows = fromList [(0,"Gabriel"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
+Table {rows = fromList [(0,"Gabriella"),(1,"Oscar"),(2,"Edgar")], fallback = Nothing}
 > optional firstNames
-Table {rows = fromList [(0,Just "Gabriel"),(1,Just "Oscar"),(2,Just "Edgar")], fallback = Just Nothing}
+Table {rows = fromList [(0,Just "Gabriella"),(1,Just "Oscar"),(2,Just "Edgar")], fallback = Just Nothing}
 ```
 
 # `optional` - `Maybe`
@@ -1363,7 +1363,7 @@ Left join:
 |      lastName  <- optional lastNames
 |      return (firstName, lastName)
 |
-Table {rows = fromList [(0,("Gabriel",Just "Gonzalez")),(1,("Oscar",Nothing)),(2,("Edgar",Just "Codd"))], fallback = Nothing}
+Table {rows = fromList [(0,("Gabriella",Just "Gonzalez")),(1,("Oscar",Nothing)),(2,("Edgar",Just "Codd"))], fallback = Nothing}
 ```
 
 Right join:
@@ -1373,7 +1373,7 @@ Right join:
 |      lastName  <-          lastNames
 |      return (firstName, lastName)
 |
-Table {rows = fromList [(0,(Just "Gabriel","Gonzalez")),(2,(Just "Edgar","Codd")),(3,(Nothing,"Bryant"))], fallback = Nothing}
+Table {rows = fromList [(0,(Just "Gabriella","Gonzalez")),(2,(Just "Edgar","Codd")),(3,(Nothing,"Bryant"))], fallback = Nothing}
 ```
 
 Outer join:
@@ -1383,7 +1383,7 @@ Outer join:
 |      lastName  <- optional lastNames
 |      return (firstName, lastName)
 |
-Table {rows = fromList [(0,(Just "Gabriel",Just "Gonzalez")),(1,(Just "Oscar",Nothing)),(2,(Just "Edgar",Just "Codd")),(3,(Nothing,Just "Bryant"))], fallback = Just (Nothing,Nothing)}
+Table {rows = fromList [(0,(Just "Gabriella",Just "Gonzalez")),(1,(Just "Oscar",Nothing)),(2,(Just "Edgar",Just "Codd")),(3,(Nothing,Just "Bryant"))], fallback = Just (Nothing,Nothing)}
 ```
 
 # Multiple `optional` joins
@@ -1394,7 +1394,7 @@ Table {rows = fromList [(0,(Just "Gabriel",Just "Gonzalez")),(1,(Just "Oscar",No
 |      handle    <- optional handles
 |      return (firstName, lastName)
 |
-Table {rows = fromList [(0,("Gabriel",Just "Gonzalez",Just "GabrielG439")),(1,("Oscar",Nothing,Just "posco")),(2,("Edgar",Just "Codd",Nothing))], fallback = Nothing}
+Table {rows = fromList [(0,("Gabriella",Just "Gonzalez",Just "GabriellaG439")),(1,("Oscar",Nothing,Just "posco")),(2,("Edgar",Just "Codd",Nothing))], fallback = Nothing}
 >>> :type it
 Table Integer (String, Maybe String, Maybe String)
 ```
@@ -1405,7 +1405,7 @@ Table Integer (String, Maybe String, Maybe String)
 |      handle    <- optional handles
 |      return (firstName, lastName)
 |
-Table {rows = fromList [(0,(Just "Gabriel","Gonzalez",Just "GabrielG439")),(2,(Just "Edgar","Codd",Nothing)),(3,(Nothing,"Bryant",Just "avibryant"))], fallback = Nothing}
+Table {rows = fromList [(0,(Just "Gabriella","Gonzalez",Just "GabriellaG439")),(2,(Just "Edgar","Codd",Nothing)),(3,(Nothing,"Bryant",Just "avibryant"))], fallback = Nothing}
 >>> :type it
 Table Integer (Maybe String, String, Maybe String)
 ```
@@ -1453,9 +1453,9 @@ There is an elegant connection between relational algebra and category theory
 
 You can find these slides at:
 
-[https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md](https://github.com/Gabriel439/slides/blob/master/lambdaconf/data/data.md)
+[https://github.com/Gabriella439/slides/blob/master/lambdaconf/data/data.md](https://github.com/Gabriella439/slides/blob/master/lambdaconf/data/data.md)
 
 You can also reach me at:
 
-* Email - [Gabriel439@gmail.com](mailto:Gabriel439@gmail.com)
-* Twitter - [GabrielG439](https://twitter.com/GabrielG439)
+* Email - [GenuineGabriella@gmail.com](mailto:GenuineGabriella@gmail.com)
+* Twitter - [GabriellaG439](https://twitter.com/GabriellaG439)

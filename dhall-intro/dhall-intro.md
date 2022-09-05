@@ -1,5 +1,5 @@
 % Dhall: A programmable configuration language
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 
 # Overview
 
@@ -608,8 +608,8 @@ In Dhall, a template is just a function that interpolates `Text`:
 Here is an example of how you would apply a template using `dhall text`:
 
 ```bash
-$ dhall text <<< './template.dhall { year = 2020, copyrightHolder = "Gabriel Gonzalez" }'
-Copyright 2020 Gabriel Gonzalez
+$ dhall text <<< './template.dhall { year = 2020, copyrightHolder = "Gabriella Gonzalez" }'
+Copyright 2020 Gabriella Gonzalez
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal in 
@@ -1330,4 +1330,4 @@ You can visit [dhall-lang.org](https://dhall-lang.org/) to learn more
 
 You can find these slides at:
 
-* [https://github.com/Gabriel439/slides/blob/master/dhall-intro/dhall-intro.md](https://github.com/Gabriel439/slides/blob/master/dhall-intro/dhall-intro.md)
+* [https://github.com/Gabriella439/slides/blob/master/dhall-intro/dhall-intro.md](https://github.com/Gabriella439/slides/blob/master/dhall-intro/dhall-intro.md)

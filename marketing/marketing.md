@@ -1,5 +1,5 @@
 % How to market Haskell to mainstream programmers
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % August 1, 2020
 
 # Source material
@@ -658,6 +658,6 @@ However, I do hope this talk will help people achieve more with less work
 
 Read [Crossing the Chasm](https://www.amazon.com/Crossing-Chasm-Marketing-High-Tech-Mainstream/dp/0060517123) if this talk interested you
 
-* Slides: [https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md](https://github.com/Gabriel439/slides/blob/master/marketing/marketing.md)
+* Slides: [https://github.com/Gabriella439/slides/blob/master/marketing/marketing.md](https://github.com/Gabriella439/slides/blob/master/marketing/marketing.md)
 
 ![](./marketing_interview.png)

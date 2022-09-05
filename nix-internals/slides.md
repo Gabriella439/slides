@@ -1,5 +1,5 @@
 % Nix: under the hood
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % December 7, 2017
 
 # Motivation
@@ -781,7 +781,7 @@ The main transformation is to copy the derivation between machines using
 `nix-copy-closure`:
 
 ```bash
-$ nix-copy-closure --to gabriel@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+$ nix-copy-closure --to gabriella@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
 ```
 
 `nix-copy-closure` also copies derivations that are *build-time* dependencies of
@@ -876,11 +876,11 @@ You can list any garbage collection roots using:
 
 ```bash
 $ nix-store --gc --print-roots
-/Users/gabriel/proj/docs/result -> /nix/store/ih5wgz02rhhr327bvdbzmdv3g5rads47-node-awake-customer-docs-0.1.0
+/Users/gabriella/proj/docs/result -> /nix/store/ih5wgz02rhhr327bvdbzmdv3g5rads47-node-awake-customer-docs-0.1.0
 …
 /nix/var/nix/profiles/default-845-link -> /nix/store/mw9jj3f0gy05gyck3s3yyhx97damxf80-user-environment
 …
-/nix/var/nix/profiles/per-user/gabriel/channels-14-link -> /nix/store/064hh5d6s5qrvnhrqdjgcvxv9s4j9gg8-user-environment
+/nix/var/nix/profiles/per-user/gabriella/channels-14-link -> /nix/store/064hh5d6s5qrvnhrqdjgcvxv9s4j9gg8-user-environment
 …
 ```
 
@@ -1041,7 +1041,7 @@ The main transformation is to copy the build product between machines using
 `nix-copy-closure`
 
 ```bash
-$ nix-copy-closure --from gabriel@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
+$ nix-copy-closure --from gabriella@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
 
 This is just like copying a derivation to another system
@@ -1171,13 +1171,13 @@ $ nix-instantiate empty.nix
 * Copy the derivation to another machine
 
 ```bash
-$ nix-copy-closure --to gabriel@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+$ nix-copy-closure --to gabriella@example.com /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
 ```
 
 * Realise the derivation on that machine to create a build product
 
 ```bash
-$ ssh gabriel@example.com nix-store --realise /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
+$ ssh gabriella@example.com nix-store --realise /nix/store/21wp6p5cd55kwf6f5p91w2ac031ngyv5-empty.drv
 …
 /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
@@ -1185,7 +1185,7 @@ $ ssh gabriel@example.com nix-store --realise /nix/store/21wp6p5cd55kwf6f5p91w2a
 * Copy the build product back to your machine
 
 ```bash
-$ nix-copy-closure --from gabriel@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
+$ nix-copy-closure --from gabriella@example.com /nix/store/wm2xkgrf072h2rkgdbaym700rvrgvrp0-empty
 ```
 
 [Awake Security][awake] open sourced an executable that simplifies distributed

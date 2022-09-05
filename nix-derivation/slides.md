@@ -1,5 +1,5 @@
 % How to write a Nix derivation
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % December 12, 2019
 
 # Goals

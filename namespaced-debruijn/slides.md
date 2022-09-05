@@ -34,7 +34,7 @@ predates this work and presents exactly the same idea
 # History
 
 I first stumbled upon this idea while working on
-[Morte](https://github.com/Gabriel439/Haskell-Morte-Library/issues/1), which is:
+[Morte](https://github.com/Gabriella439/Haskell-Morte-Library/issues/1), which is:
 
 * essentially the calculus of constructions + an import system
 * a proof of concept of my [internet of code](https://www.haskellforall.com/2015/05/the-internet-of-code.html) idea
@@ -235,7 +235,7 @@ This is a common type of implementation error known as "name capture"
  
 For example, the first draft of Morte made exactly this mistake:
  
-* [Gabriel439/Morte - Issue #1](https://github.com/Gabriel439/Haskell-Morte-Library/issues/1)
+* [Gabriella439/Morte - Issue #1](https://github.com/Gabriella439/Haskell-Morte-Library/issues/1)
 
 … and the discussion on that issue is where I devised this trick
 
@@ -788,7 +788,7 @@ If we satisfy those requirements we benefit from the nice emergent properties
 
 <sup>†</sup> Check out this project for a more efficient implementation you can fork:
 
-* [GitHub - Fall-from-Grace](https://github.com/Gabriel439/grace)
+* [GitHub - Fall-from-Grace](https://github.com/Gabriella439/grace)
 
 # Variable shadowing - Bug or feature?
 
@@ -928,6 +928,10 @@ This trick is useful for other interpreted languages, if only to simplify their
 implementation
 
 This approach has been vetted extensively in the wild via Dhall
+
+You can fork a real implementation of this technique here:
+
+* [GitHub - Fall-from-Grace](https://github.com/Gabriella439/grace)
 
 # Appendix - Implementation
 

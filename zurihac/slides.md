@@ -1,5 +1,5 @@
 % Fast and parallel state machines
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % April 18, 2017
 
 # Overview
@@ -1455,7 +1455,7 @@ I couldn't figure out how to use the intrinsic that unlocks additional states
 
 Everything I described is in a Haskell package on GitHub called `sig`:
 
-* [https://github.com/Gabriel439/sig](https://github.com/Gabriel439/sig)
+* [https://github.com/Gabriella439/sig](https://github.com/Gabriella439/sig)
 
 Associative operations can be cheaply parallelized
 
@@ -1463,6 +1463,6 @@ Haskell is a great language for providing provides a high-level interface to C
 
 You can find these slides here:
 
-* [https://github.com/Gabriel439/slides/tree/master/zurihac](https://github.com/Gabriel439/slides/tree/master/zurihac)
+* [https://github.com/Gabriella439/slides/tree/master/zurihac](https://github.com/Gabriella439/slides/tree/master/zurihac)
 
 # Questions?

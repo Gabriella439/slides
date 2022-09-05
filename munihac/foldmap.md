@@ -1,5 +1,5 @@
 % Beautiful folds
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % September 03, 2016
 
 # Beautiful folds

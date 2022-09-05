@@ -1,5 +1,5 @@
 % NixOS administration
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % July 11, 2018
 
 # Motivation
@@ -268,7 +268,7 @@ let
       users = {
         mutableUsers = false;
 
-        users.gabriel = {
+        users.gabriella = {
           isNormalUser = true;
 
           extraGroups = [ "wheel" ];
@@ -335,7 +335,7 @@ let
       users = {
         mutableUsers = false;
 
-        users.gabriel = {
+        users.gabriella = {
           isNormalUser = true;
 
           extraGroups = [ "wheel" ];
@@ -636,36 +636,36 @@ fetching path ‘/nix/store/rbfzppnrk9k1gmr6jxi44am8f4wc1vc2-tmux-2.6’...
 100  208k  100  208k    0     0   208k      0  0:00:01  0:00:01 --:--:--  149k
 
 waiting for locks or build slots...
-copying 6 missing paths (0.64 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/ksbqnj74gl0szcgip41sjjw87b9sqy8l-system-path.drv’ on ‘gabriel@hydra-slave03’
+copying 6 missing paths (0.64 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/ksbqnj74gl0szcgip41sjjw87b9sqy8l-system-path.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/41h3pr6qwczrmkf5par48za0sgi6kr4k-system-path’
 collision between `/nix/store/pbd9sppw6v0hw4bbmpybdg3f3l9p65fk-mount.vboxsf/bin/mount.vboxsf' and `/nix/store/d3zfpazlgzaid8n3jiy76xcy33ym6p7s-VirtualBox-GuestAdditions-5.1.32-4.9.86/bin/mount.vboxsf'
 created 4710 symlinks in user environment
 install-info: warning: no info dir entry in `/nix/store/41h3pr6qwczrmkf5par48za0sgi6kr4k-system-path/share/info/time.info'
 waiting for locks or build slots...
-copying 1 missing paths (0.00 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/jgarzkgz97akgc3in7alcjk1g4zx9adc-dbus-1.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.00 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/jgarzkgz97akgc3in7alcjk1g4zx9adc-dbus-1.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/kyayg0sx0frgpq6b7z9ghdpsp5vgabkn-dbus-1’
-copying 1 missing paths (0.00 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/sxhd3s8mwjr98w2yzgv8b94gspkamk3x-unit-polkit.service.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.00 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/sxhd3s8mwjr98w2yzgv8b94gspkamk3x-unit-polkit.service.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/2dyax4cf42hxs62n4nnidd4pvr10zl4y-unit-polkit.service’
-copying 1 missing paths (0.00 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/mz7csrwln06a75qz61kn0gl0mq469wrf-unit-dbus.service.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.00 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/mz7csrwln06a75qz61kn0gl0mq469wrf-unit-dbus.service.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/p98k8045h4rasq5prrdfhbb18sv257zq-unit-dbus.service’
-copying 1 missing paths (0.00 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/b2sn7a3g12drilj6xl6lfb4mwbnyfbm5-user-units.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.00 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/b2sn7a3g12drilj6xl6lfb4mwbnyfbm5-user-units.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/j8byx3a4vk4bjfd263caz403c67fhajq-user-units’
-copying 1 missing paths (0.00 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/g0icz19ja8gan3w2djmkfhsqbkps1177-unit-systemd-fsck-.service.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.00 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/g0icz19ja8gan3w2djmkfhsqbkps1177-unit-systemd-fsck-.service.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/jim6fbhib75mszxgig3w0lwfwasvjvcs-unit-systemd-fsck-.service’
-copying 1 missing paths (0.02 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/fbgy9awp50dmpi47mhng5x9ghwsb8yi6-system-units.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.02 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/fbgy9awp50dmpi47mhng5x9ghwsb8yi6-system-units.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/bihql6brly8njvij36snhnkvfvfiyvqy-system-units’
-copying 1 missing paths (0.01 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/d77ynl7qrl57b41v4cz8qv3yzsp9mf0z-etc.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.01 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/d77ynl7qrl57b41v4cz8qv3yzsp9mf0z-etc.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/lzdyyd9j2clh70jrcnvn676kykkd5xcm-etc’
-copying 1 missing paths (0.02 MiB) to ‘gabriel@hydra-slave03’...
-building ‘/nix/store/a54sjdr31clryrapjq660z8w6dbwyr56-nixos-system-machine-17.09pre117493.ae5c5c06805.drv’ on ‘gabriel@hydra-slave03’
+copying 1 missing paths (0.02 MiB) to ‘gabriella@hydra-slave03’...
+building ‘/nix/store/a54sjdr31clryrapjq660z8w6dbwyr56-nixos-system-machine-17.09pre117493.ae5c5c06805.drv’ on ‘gabriella@hydra-slave03’
 building path(s) ‘/nix/store/abl49b43m7qhk3a7qbh3zqh1frvqb6zx-nixos-system-machine-17.09pre117493.ae5c5c06805’
 building path(s) ‘/nix/store/qf7f9ccrwwfxh11dwnx72h8caiv4wqnc-nixops-machines’
 machine> copying closure...
@@ -795,7 +795,7 @@ let
       users = {
         mutableUsers = false;
 
-        users.gabriel = {
+        users.gabriella = {
           isNormalUser = true;
 
           extraGroups = [ "wheel" ];
@@ -1240,7 +1240,7 @@ $ nix-diff /nix/store/d7pi1ghk78y3s3h69kq1i81y0dp6c3hi-nixos-system-nixos-17.09-
       + daniel-authorized_keys
       + dash-authorized_keys
       + david-authorized_keys
-      + gabriel-authorized_keys
+      + gabriella-authorized_keys
       + gershom-authorized_keys
       + ivan-authorized_keys
       + james-authorized_keys

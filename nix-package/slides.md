@@ -1,5 +1,5 @@
 % Nix package management
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % April 18, 2017
 
 # Goals
@@ -854,7 +854,7 @@ environment
 For example, if I want to use the `go` compiler without installing it:
 
 ```bash
-Gabriels-MacBook-Pro:end-to-end gabriel$ nix-shell --packages go
+Gabriellas-MacBook-Pro:end-to-end gabriella$ nix-shell --packages go
 [nix-shell:~/proj/end-to-end]$ go --help
 Go is a tool for managing Go source code.
 
@@ -864,7 +864,7 @@ Usage:
 
 ...
 [nix-shell:~/proj/end-to-end]$ exit
-Gabriels-MacBook-Pro:end-to-end gabriel$ go --help
+Gabriellas-MacBook-Pro:end-to-end gabriella$ go --help
 -bash: go: command not found
 ```
 
@@ -951,7 +951,7 @@ Anything in angle brackets is a reference to the `NIX_PATH` environment variable
 
 ```bash
 $ echo "${NIX_PATH}"
-nixpkgs=/nix/store/qk1q2rwq9qzhi49hx7whji90bqk8kf9y-nixpkgs-7ae9da426924537755ce9164fd5b5f81ce16a1c3-src:nixpkgs=/Users/gabriel/.nix-defexpr/channels/nixpkgs
+nixpkgs=/nix/store/qk1q2rwq9qzhi49hx7whji90bqk8kf9y-nixpkgs-7ae9da426924537755ce9164fd5b5f81ce16a1c3-src:nixpkgs=/Users/gabriella/.nix-defexpr/channels/nixpkgs
 ```
 
 # Pinning the `NIX_PATH`
