@@ -128,10 +128,88 @@ We'll do so using the following types:
 -- | A single possibility, consisting of an outcome paired
 --   with the associated weight of that outcome
 data Possibility a =
-    Possibility { outcome :: a, weight :: !Int }
+    Possibility { outcome :: a, weight :: Int }
 
 -- | A probability distribution, which is a non-empty list of
 --   weighted outcomes
 newtype Distribution a =
     Distribution { possibilities :: NonEmpty (Possibility a) }
+```
+
+## Expected value
+
+<span class="math">$$ \sum_{i} n_{i} p_{i} = {\sum_{i} n_{i} w_{i} \over \sum_{i} w_{i}}$$</span>
+
+## Expected value
+
+```haskell
+data Possibility a =
+    Possibility { outcome :: a, weight :: Int }
+
+newtype Distribution a =
+    Distribution { possibilities :: NonEmpty (Possibility a) }
+
+-- | Compute the expected value for a probability distribution
+expectedValue :: Fractional number => Distribution number -> number
+expectedValue Distribution{ possibilities } =
+    totalTally / fromIntegral totalWeight
+  where
+    totalTally = sum (fmap tally possibilities)
+
+    totalWeight = sum (fmap weight possibilities)
+
+    tally Possibility{ outcome, weight } = fromIntegral weight * outcome
+```
+
+## Monad instance
+
+```haskell
+data Possibility a =
+    Possibility { outcome :: a, weight :: Int }
+
+newtype Distribution a =
+    Distribution { possibilities :: NonEmpty (Possibility a) }
+
+instance Monad Distribution where
+    m >>= f = Distribution do
+        Possibility{ outcome = x, weight = w₀ } <- possibilities m
+
+        Possibility{ outcome = y, weight = w₁ } <- possibilities (f x)
+
+        return Possibility{ outcome = y, weight = w₀ * w₁ }
+```
+
+## Example
+
+```haskell
+>>> :set -XOverloadedLists
+
+>>> data Coin = Heads | Tails deriving (Show)
+
+>>> toss = Distribution [ Possibility Heads 1, Possibility Tails 1 ]
+
+>>> pPrint toss
+Distribution
+  { possibilities =
+      Possibility { outcome = Heads , weight = 1 } :|
+        [ Possibility { outcome = Tails , weight = 1 } ]
+  }
+```
+
+## Example
+
+```haskell
+>>> toss = [ Possibility Heads 1, Possibility Tails 1 ] :: Distribution Coin
+
+>>> twice = do x <- toss; y <- toss; return (x, y)
+
+>>> pPrint twice
+Distribution
+  { possibilities =
+      Possibility { outcome = ( Heads , Heads ) , weight = 1 } :|
+        [ Possibility { outcome = ( Heads , Tails ) , weight = 1 }
+        , Possibility { outcome = ( Tails , Heads ) , weight = 1 }
+        , Possibility { outcome = ( Tails , Tails ) , weight = 1 }
+        ]
+  }
 ```
