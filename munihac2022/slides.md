@@ -4,6 +4,12 @@
 
 # Background
 
+<style>
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5 {
+                  text-transform: none;
+          }
+</style>
+
 [My last MuniHac presentation](https://youtu.be/6a5Ti0r8Q2s) was more
 theoretical
 
@@ -125,15 +131,16 @@ We need a way to model uncertain outcomes
 We'll do so using the following types:
 
 ```haskell
+import Data.List.NonEmpty (NonEmpty)
+
 -- | A single possibility, consisting of an outcome paired
 --   with the associated weight of that outcome
-data Possibility a =
-    Possibility { outcome :: a, weight :: Int }
+data Possibility a = Possibility{ outcome :: a, weight :: Int }
 
 -- | A probability distribution, which is a non-empty list of
 --   weighted outcomes
 newtype Distribution a =
-    Distribution { possibilities :: NonEmpty (Possibility a) }
+    Distribution{ possibilities :: NonEmpty (Possibility a) }
 ```
 
 ## Expected value
@@ -143,11 +150,10 @@ newtype Distribution a =
 ## Expected value
 
 ```haskell
-data Possibility a =
-    Possibility { outcome :: a, weight :: Int }
+data Possibility a = Possibility{ outcome :: a, weight :: Int }
 
 newtype Distribution a =
-    Distribution { possibilities :: NonEmpty (Possibility a) }
+    Distribution{ possibilities :: NonEmpty (Possibility a) }
 
 -- | Compute the expected value for a probability distribution
 expectedValue :: Fractional number => Distribution number -> number
@@ -161,14 +167,48 @@ expectedValue Distribution{ possibilities } =
     tally Possibility{ outcome, weight } = fromIntegral weight * outcome
 ```
 
+## Syntactic sugar
+
+```haskell
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+import GHC.Exts (IsList)
+
+import qualified Data.List.NonEmpty as NonEmpty
+
+newtype Distribution a =
+    Distribution{ possibilities :: NonEmpty (Possibility a) }
+    deriving newtype (IsList)
+
+instance Show a => Show (Distribution a) where
+    show distribution =
+        show (NonEmpty.toList (possibilities distribution))
+```
+
+## Syntactic sugar - Example
+
+```haskell
+>>> :set -XOverloadedLists
+
+>>> data Coin = Heads | Tails deriving (Show)
+
+>>> toss = [ Possibility Heads 1, Possibility Tails 1 ]
+        :: Distribution Coin
+
+>>> pPrint toss
+[ Possibility { outcome = Heads , weight = 1 }
+, Possibility { outcome = Tails , weight = 1 }
+]
+```
+
 ## Monad instance
 
 ```haskell
-data Possibility a =
-    Possibility { outcome :: a, weight :: Int }
+data Possibility a = Possibility{ outcome :: a, weight :: Int }
 
 newtype Distribution a =
-    Distribution { possibilities :: NonEmpty (Possibility a) }
+    Distribution{ possibilities :: NonEmpty (Possibility a) }
 
 instance Monad Distribution where
     m >>= f = Distribution do
@@ -179,37 +219,57 @@ instance Monad Distribution where
         return Possibility{ outcome = y, weight = w₀ * w₁ }
 ```
 
-## Example
+## Monad instance - Example
 
 ```haskell
->>> :set -XOverloadedLists
-
->>> data Coin = Heads | Tails deriving (Show)
-
->>> toss = Distribution [ Possibility Heads 1, Possibility Tails 1 ]
-
->>> pPrint toss
-Distribution
-  { possibilities =
-      Possibility { outcome = Heads , weight = 1 } :|
-        [ Possibility { outcome = Tails , weight = 1 } ]
-  }
-```
-
-## Example
-
-```haskell
->>> toss = [ Possibility Heads 1, Possibility Tails 1 ] :: Distribution Coin
+>>> toss = [ Possibility Heads 1, Possibility Tails 1 ]
+        :: Distribution Coin
 
 >>> twice = do x <- toss; y <- toss; return (x, y)
 
 >>> pPrint twice
-Distribution
-  { possibilities =
-      Possibility { outcome = ( Heads , Heads ) , weight = 1 } :|
-        [ Possibility { outcome = ( Heads , Tails ) , weight = 1 }
-        , Possibility { outcome = ( Tails , Heads ) , weight = 1 }
-        , Possibility { outcome = ( Tails , Tails ) , weight = 1 }
-        ]
-  }
+[ Possibility { outcome = ( Heads , Heads ) , weight = 1 }
+, Possibility { outcome = ( Heads , Tails ) , weight = 1 }
+, Possibility { outcome = ( Tails , Heads ) , weight = 1 }
+, Possibility { outcome = ( Tails , Tails ) , weight = 1 }
+]
 ```
+
+## Monad instance - Example
+
+```haskell
+>>> toss = [ Possibility Heads 3, Possibility Tails 7 ]
+        :: Distribution Coin
+
+>>> twice = do x <- toss; y <- toss; return (x, y)
+
+>>> pPrint twice
+[ Possibility { outcome = ( Heads , Heads ) , weight = 9 }
+, Possibility { outcome = ( Heads , Tails ) , weight = 21 }
+, Possibility { outcome = ( Tails , Heads ) , weight = 21 }
+, Possibility { outcome = ( Tails , Tails ) , weight = 49 }
+]
+```
+
+## WriterT
+
+Instead of this:
+
+```haskell
+data Possibility a = Possibility{ outcome :: a, weight :: Int }
+
+newtype Distribution a =
+    Distribution{ possibilities :: NonEmpty (Possibility a) }
+```
+
+… we could have done this:
+
+```haskell
+import Data.Monoid (Product)
+
+newtype Distribution a =
+    Distribution (WriterT (Product Int) NonEmpty a)
+    deriving newtype (Monad)
+```
+
+… but I prefer the former implementation for clarity
