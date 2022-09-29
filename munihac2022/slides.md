@@ -31,12 +31,12 @@ No heuristics; we're computing the optimal outcome
 
 # Outline
 
-* <span class="fragment highlight-red">Slay the Spire 101</span>
-* Probability monad
-* Memoization
+* <span style="color:#ff2c2d">Slay the Spire 101</span>
+* Distribution monad
 * Implementing game mechanics
+* Memoization
 
-# Mechanics
+# Slay the Spire 101
 
 We're solving a tiny subset of the game:
 
@@ -111,20 +111,22 @@ We're solving a tiny subset of the game:
 
 We only took 2 damage 🎉
 
-* Was that the optimal play? (yes)
+* Was that the optimal play? (<span style="color:#17ff2e">yes</span>)
 
-* Was that outcome above or below average? (above)
+* Was that good or bad luck? (<span style="color:#17ff2e">good</span>, saved <span style="color:#17ff2e">1.8</span> HP)
 
-* How much health would I save if I were to upgrade Bash?
+* What if cultist had +1 HP? (We lose <span style="color:#ff2c2d">1.4 more</span> HP)
+
+* What if we upgrade Bash? (We lose <span style="color:#17ff2e">1.3 less</span> HP)
 
 # Outline
 
 * Slay the Spire 101
-* <span class="fragment highlight-red">Probability monad</span>
-* Memoization
+* <span style="color:#ff2c2d">Distribution monad</span>
 * Implementing game mechanics
+* Memoization
 
-# Probability monad
+# Distribution monad
 
 We need a way to model uncertain outcomes
 
@@ -136,11 +138,13 @@ import Data.List.NonEmpty (NonEmpty)
 -- | A single possibility, consisting of an outcome paired
 --   with the associated weight of that outcome
 data Possibility a = Possibility{ outcome :: a, weight :: Int }
+    deriving (Show)
 
 -- | A probability distribution, which is a non-empty list of
 --   weighted outcomes
 newtype Distribution a =
     Distribution{ possibilities :: NonEmpty (Possibility a) }
+    deriving (Show)
 ```
 
 ## Expected value
@@ -150,6 +154,8 @@ newtype Distribution a =
 ## Expected value
 
 ```haskell
+{-# LANGUAGE NamedFieldPuns #-}
+
 data Possibility a = Possibility{ outcome :: a, weight :: Int }
 
 newtype Distribution a =
@@ -196,6 +202,8 @@ instance Show a => Show (Distribution a) where
 >>> toss = [ Possibility Heads 1, Possibility Tails 1 ]
         :: Distribution Coin
 
+>>> import Text.Show.Pretty
+
 >>> pPrint toss
 [ Possibility { outcome = Heads , weight = 1 }
 , Possibility { outcome = Tails , weight = 1 }
@@ -205,18 +213,28 @@ instance Show a => Show (Distribution a) where
 ## Monad instance
 
 ```haskell
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveFunctor  #-}
+
+import qualified Control.Monad as Monad
+
 data Possibility a = Possibility{ outcome :: a, weight :: Int }
+    deriving stock (Functor)
 
 newtype Distribution a =
     Distribution{ possibilities :: NonEmpty (Possibility a) }
+    deriving stock (Functor)
 
 instance Monad Distribution where
     m >>= f = Distribution do
         Possibility{ outcome = x, weight = w₀ } <- possibilities m
-
         Possibility{ outcome = y, weight = w₁ } <- possibilities (f x)
-
         return Possibility{ outcome = y, weight = w₀ * w₁ }
+
+instance Applicative Distribution where
+    pure x = Distribution (pure Possibility{ outcome = x, weight = 1 })
+
+    (<*>) = Monad.ap
 ```
 
 ## Monad instance - Example
@@ -251,7 +269,7 @@ instance Monad Distribution where
 ]
 ```
 
-## WriterT
+## WriterT 💡
 
 Instead of this:
 
@@ -265,11 +283,58 @@ newtype Distribution a =
 … we could have done this:
 
 ```haskell
+import Control.Monad.Trans.Writer (WriterT)
 import Data.Monoid (Product)
 
 newtype Distribution a =
     Distribution (WriterT (Product Int) NonEmpty a)
-    deriving newtype (Monad)
+    deriving newtype (Functor, Applicative, Monad)
 ```
 
-… but I prefer the former implementation for clarity
+# Outline
+
+* Slay the Spire 101
+* Distribution monad
+* <span style="color:#ff2c2d">Implementing game mechanics</span>
+* Memoization
+
+# Implementing game mechanics
+
+Now that we have the `Distribution` monad we can implement the game
+
+## The engine
+
+```haskell
+-- | Play the game optimally to its conclusion
+play
+    :: (Fractional n, Ord n)
+    => (state -> n)
+    -- ^ Objective function
+    -> (state -> Bool)
+    -- ^ Termination function
+    -> (state -> NonEmpty (Distribution state))
+    -- ^ A function which generates the available moves
+    -> state
+    -- ^ The starting state
+    -> Distribution state
+    -- ^ The final probability distribution
+```
+
+## The engine
+
+```haskell
+play objective done choices status
+    | done status = do
+        pure status
+    | otherwise = do
+        next <- List.maximumBy (Ord.comparing predict) (choices status)
+
+        loop next
+  where
+    predict choice = expectedValue do
+        nextStatus <- choice
+
+        finalStatus <- loop nextStatus
+
+        return (objective finalStatus)
+```
