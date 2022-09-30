@@ -346,3 +346,71 @@ play objectiveFunction toChoices = loop
         finalStatus <- loop nextStatus
         return (objectiveFunction finalStatus)
 ```
+
+
+## State - Card
+
+```haskell
+-- | Ironclad cards
+data Card
+    = Bash
+    | Strike
+    | Defend
+    | Ascender'sBane
+    deriving (Eq, Generic, Ord, Show)
+```
+
+## State - Global
+
+```haskell
+import GHC.Generics (Generic)
+import Data.Map (Map)
+
+-- | Game state
+data Status = Status
+    { turn                 :: Int
+    , energy               :: Int
+    , deck                 :: Map Card Int
+    , hand                 :: Map Card Int
+    , graveyard            :: Map Card Int
+    , ironcladHealth       :: Int
+    , ironcladBlock        :: Int
+    , cultistHealth        :: Int
+    , cultistVulnerability :: Int
+    } deriving (Eq, Generic, Ord, Show)
+```
+
+`Int` is faster and simpler than `Natural`
+
+## Objective function
+
+```haskell
+objective :: Status -> Double
+objective = fromIntegral . ironcladHealth
+```
+
+Well, that was simple
+
+This only works because we're not using heuristics
+
+## Starting states
+
+We will produce a `Distribution` of starting states
+
+```haskell
+possibleInitialStatuses :: Distribution Status
+possibleInitialStatuses = do
+    status <- Distribution do
+        cultistHealth <- 50 :| [ 51 .. 56 ]
+        return Possibility
+            { weight = 1
+            , outcome =
+                Status
+                  { deck = Map.fromList [ (Strike, 5), (Defend, 4), … ]
+                  , cultistHealth
+                  , …
+                  }
+            }
+
+    State.execStateT (drawMany 5) status
+```
