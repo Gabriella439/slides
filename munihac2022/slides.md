@@ -1,4 +1,4 @@
-% Minmaxing Slay the Spire with Haskell
+% Min-maxing Slay the Spire with Haskell
 % Gabriella Gonzalez
 % October 7, 2016
 
@@ -33,7 +33,7 @@ This is a toy attempt to solve the game "Slay the Spire"
 
 I'm only attempting to solve simple early-game fights
 
-No heuristics; we're computing the optimal outcome
+No heuristics; we're computing exact solutions
 
 ## I like to overthink this game
 
@@ -46,7 +46,7 @@ No heuristics; we're computing the optimal outcome
 * Implementing game mechanics
 * Memoization
 
-# Slay the Spire 101
+## Slay the Spire 101
 
 We're solving a tiny subset of the game:
 
@@ -117,7 +117,7 @@ We're solving a tiny subset of the game:
 
 ![](./images/Turn 4 - Begin.png)
 
-# Outcome
+## Outcome
 
 We only took 2 damage 🎉
 
@@ -136,7 +136,7 @@ We only took 2 damage 🎉
 * Implementing game mechanics
 * Memoization
 
-# Distribution monad
+## Distribution monad
 
 We need a way to model uncertain outcomes
 
@@ -180,7 +180,8 @@ expectedValue Distribution{ possibilities } =
 
     totalWeight = sum (fmap weight possibilities)
 
-    tally Possibility{ outcome, weight } = fromIntegral weight * outcome
+    tally Possibility{ outcome, weight } =
+        fromIntegral weight * outcome
 ```
 
 ## Syntactic sugar
@@ -309,7 +310,7 @@ newtype Distribution a =
 * <span style="color:#ff2c2d">Implementing game mechanics</span>
 * Memoization
 
-# Implementing game mechanics
+## Implementing game mechanics
 
 Now that we have the `Distribution` monad we can implement the game
 
@@ -416,9 +417,19 @@ done Status{ ironcladHealth, cultistHealth } =
     ironcladHealth <= 0 || cultistHealth <= 0
 ```
 
-Hopefully the cultist dies
+Hopefully the cultist dies first 😬
 
-## Ending a turn
+## Combinatorics
+
+```haskell
+-- | Draw N cards from the deck
+drawMany :: Int -> StateT Status Distribution ()
+
+-- | All possible plays that consume up to N energy
+subsetsByEnergy :: Int -> Map Card Int -> [(Map Card Int, Int)]
+```
+
+## Playing a card
 
 ```haskell
 act :: Card -> StateT Status Distribution ()
@@ -454,6 +465,45 @@ act card = do
         }
 ```
 
+## Ending a turn
+
+```haskell
+endTurn :: StateT Status Distribution ()
+endTurn = do
+    status <- State.get
+
+    let newCultistVulnerability =
+            max 0 (cultistVulnerability status - 1)
+
+    let cultistDamage =
+            if turn status == 0 then 0 else 1 + 5 * turn status
+
+    let cultistUnblockedDamage =
+            if 0 < cultistHealth status
+            then max 0 (cultistDamage - ironcladBlock status)
+            else 0
+
+    let newIroncladHealth =
+            max 0 (ironcladHealth status - cultistUnblockedDamage)
+
+    let exhausted = Map.delete Ascender'sBane (hand status)
+
+    State.put status
+        { hand = Map.empty
+        , graveyard = Map.unionWith (+) exhausted (graveyard status)
+        , ironcladHealth = newIroncladHealth
+        , cultistVulnerability = newCultistVulnerability
+        }
+
+    drawMany 5
+
+    State.modify (\s -> s
+        { ironcladBlock = 0
+        , energy = 3
+        , turn = turn status + 1
+        })
+```
+
 ## Choices
 
 ```haskell
@@ -463,12 +513,46 @@ exampleChoices status = do
 
     ~(subset, remainingEnergy) <- subsetsByEnergy 3 (hand status)
 
-    let process card count = Monad.replicateM_ count (act card)
+    let process :: Card -> Int -> StateT Status Distribution ()
+        process card count = Monad.replicateM_ count (act card)
 
     let turn :: StateT Status Distribution ()
         turn = do
             State.modify (\s -> s{ energy = remainingEnergy })
+
             _ <- Map.traverseWithKey process subset
+
+            endTurn
+
+    return (State.execStateT turn status)
+```
+
+## Heuristic
+
+```haskell
+exampleChoices :: Status -> [Distribution Status]
+exampleChoices status = do
+    Monad.guard (not (done status))
+
+    let heuristic subsets
+            | null filtered = subsets
+            | otherwise     = filtered
+          where
+            filtered = filter predicate subsets
+              where
+                predicate (_, remainingEnergy) = remainingEnergy <= 0
+
+    ~(subset, remainingEnergy) <- heuristic (subsetsByEnergy 3 (hand status))
+
+    let process :: Card -> Int -> StateT Status Distribution ()
+        process card count = Monad.replicateM_ count (act card)
+
+    let turn :: StateT Status Distribution ()
+        turn = do
+            State.modify (\s -> s{ energy = remainingEnergy })
+
+            _ <- Map.traverseWithKey process subset
+
             endTurn
 
     return (State.execStateT turn status)
@@ -483,25 +567,367 @@ I made some simplifying assumptions:
 
 These assumptions don't hold in general
 
-## 
-
 ## Starting states
 
 We will produce a `Distribution` of starting states
 
 ```haskell
+-- | All possible starting states
 possibleInitialStatuses :: Distribution Status
 possibleInitialStatuses = do
     status <- Distribution do
         cultistHealth <- 50 :| [ 51 .. 56 ]
-        return Possibility
+
+        return
+          Possibility
             { weight = 1
-            , outcome = Status
-                { deck = Map.fromList [ (Strike, 5), (Defend, 4), … ]
-                , cultistHealth
-                , …
-                }
+            , outcome =
+                Status
+                  { cultistHealth
+                  , ironcladHealth = 68
+                  , deck =
+                      Map.fromList
+                        [ (Strike, 5)
+                        , (Defend, 4)
+                        , (Bash, 1)
+                        , (Ascender'sBane, 1)
+                        ]
+                  , hand = Map.empty
+                  , graveyard = Map.empty
+                  , cultistVulnerability = 0
+                  , ironcladBlock = 0
+                  , energy = 3
+                  , turn = 0
+                  }
             }
 
     State.execStateT (drawMany 5) status
 ```
+
+## Putting it all together
+
+We can simulate all possible fights like this:
+
+```haskell
+game :: Distribution Status
+game = do
+    initialStatus <- possibleInitialStatuses
+
+    play objective exampleChoices initialStatus
+
+main :: IO ()
+main = print (expectedValue (fmap objective game))
+```
+
+… but that is too slow!  It takes ages to run
+
+# Outline
+
+* Slay the Spire 101
+* Distribution monad
+* Implementing game mechanics
+* <span style="color:#ff2c2d">Memoization</span>
+
+## Time complexity
+
+Our program is slow because it recomputes too much
+
+Specifically, if:
+
+- $d$ is the depth (average # of turns)
+- $b$ is average number of branches per turn
+
+… then the time complexity is $O(b^{d})$
+
+## Time complexity
+
+What are the typical values for $b$ and $d$?
+
+$b$ is around $10$ (# of hands we can draw)
+
+Under *optimal play* $d = 4.1$ turns
+
+However, we do not search only $10^{4}$ states …
+
+## Sub-optimal play
+
+The algorithm has to simulate suboptimal play!
+
+Under sub-optimal play $d$ can go as high as $9$!
+
+This means we simulate approximately $10^{9}$ states
+
+## Number of states
+
+There aren't $10^{9}$ states, though!
+
+If:
+
+* $i$ is the max health of the ironclad (68)
+* $c$ is the max health of the cultist (56)
+* $h$ is the number of possible hands (19)
+
+… then the maximum number of states is:
+
+$$i * c * h = 72352$$
+
+… which is a *much* lower number.
+
+## Memoization
+
+Memoization exploits the small state space
+
+We only compute the `play` function once per state
+
+We'll use the `MemoTrie` package for this purpose
+
+## Before - Type
+
+```haskell
+play
+    :: (Fractional n, Ord n)
+    => (state -> n)
+    -> (state -> Bool)
+    -> (state -> NonEmpty (Distribution state))
+    -> state
+    -> Distribution state
+```
+
+## After - Type
+
+```haskell
+play
+    :: (Fractional n, Ord n, HasTrie state)
+    => (state -> n)
+    -> (state -> Bool)
+    -> (state -> NonEmpty (Distribution state))
+    -> state
+    -> Distribution state
+```
+
+## Before - Term
+
+```haskell
+play objectiveFunction toChoices = loop
+  where
+    loop status
+        | null choices = do
+            pure status
+        | otherwise = do
+            nextStatus <- maximumBy (comparing predict) choices
+            loop nextStatus
+      where
+        choices = toChoices status
+
+    predict choice = expectedValue do
+        nextStatus <- choice
+        finalStatus <- loop nextStatus
+        return (objectiveFunction finalStatus)
+```
+
+## After
+
+```haskell
+play objectiveFunction toChoices = MemoTrie.memoFix memoize
+  where
+    memoize loop status
+        | null choices = do
+            pure status
+        | otherwise = do
+            nextStatus <- maximumBy (comparing predict) choices
+            loop nextStatus
+      where
+        choices = toChoices status
+
+    predict choice = expectedValue do
+        nextStatus <- choice
+        finalStatus <- loop nextStatus
+        return (objectiveFunction finalStatus)
+```
+
+## Supporting instances
+
+```haskell
+instance HasTrie Card where
+    newtype (Card :->: b) = CardTrie { unCardTrie :: Reg Card :->: b }
+
+    trie = MemoTrie.trieGeneric CardTrie
+
+    untrie = MemoTrie.untrieGeneric unCardTrie
+
+    enumerate = MemoTrie.enumerateGeneric unCardTrie
+
+instance HasTrie Status where
+    newtype (Status :->: b) = StatusTrie { unStatusTrie :: Reg Status :->: b }
+
+    trie = MemoTrie.trieGeneric StatusTrie
+
+    untrie = MemoTrie.untrieGeneric unStatusTrie
+
+    enumerate = MemoTrie.enumerateGeneric unStatusTrie
+
+instance (HasTrie k, HasTrie v, Ord k) => HasTrie (Map k v) where
+    newtype (Map k v :->: b) = MapTrie { unMapTrie :: Reg [(k, v)] :->: b }
+
+    trie f = MapTrie (trie (f . Map.fromAscList . Generics.to))
+
+    untrie t a = untrie (unMapTrie t) (Generics.from (Map.toList a))
+
+    enumerate t = map adapt (enumerate (unMapTrie t))
+      where
+        adapt (a, b) = (Map.fromAscList (Generics.to a), b)
+```
+
+## Min-maxing slay the spire
+
+Now we can finally compute the result:
+
+```haskell
+game :: Distribution Status
+game = do
+    initialStatus <- possibleInitialStatuses
+
+    play objective exampleChoices initialStatus
+
+main :: IO ()
+main = print (expectedValue (fmap objective game))
+```
+
+```
+62.181486201639935
+```
+
+In other words, we lose 5.8 health on average
+
+# Conclusion
+
+* The correct name for this is a "Markov decision process"
+* Haskell makes this really slick (especially memoization)
+* Ironclad vs. Cultist slightly favors the Ironclad
+* Slay the Spire is an amazing game
+
+# Appendix: Tool-assisted play
+
+We can (sort of) use this to choose plays
+
+```haskell
+-- | Play the game optimally for one step
+step
+    :: (Fractional number, Ord number, HasTrie state)
+    => (state -> number)
+    -- ^ Objective function
+    -> (state -> [Distribution state])
+    -- ^ A function which generates the available moves
+    -> state
+    -- ^ The starting state
+    -> Maybe (Distribution state)
+    -- ^ The final probability distribution
+step objectiveFunction toChoices status =
+    case choices of
+        []         -> Nothing
+        [ choice ] -> Just choice
+        _          -> Just (List.maximumBy (Ord.comparing predict) choices)
+  where
+    choices = toChoices status
+
+    predict choice = expectedValue do
+        nextStatus <- choice
+
+        finalStatus <- play objectiveFunction toChoices nextStatus
+
+        return (objectiveFunction finalStatus)
+```
+
+## Sample play - Turn 1
+
+```haskell
+Status
+  { cultistHealth = 53
+  , ironcladHealth = 68
+  , deck =
+      fromList
+        [ ( Bash , 1 )
+        , ( Strike , 2 )
+        , ( Defend , 2 )
+        , ( Ascender'sBane , 1 )
+        ]
+  , hand = fromList [ ( Strike , 3 ) , ( Defend , 2 ) ]
+  , graveyard = fromList []
+  , cultistVulnerability = 0
+  , ironcladBlock = 0
+  , energy = 3
+  , turn = 0
+  }
+```
+
+## Sample play - Turn 1
+
+![](./images/Turn 1 - Begin.png)
+
+## Sample play - Turn 2
+
+```haskell
+Status
+  { cultistHealth = 35
+  , ironcladHealth = 68
+  , deck = fromList [ ( Defend , 1 ) ]
+  , hand =
+      fromList
+        [ ( Bash , 1 )
+        , ( Strike , 2 )
+        , ( Defend , 1 )
+        , ( Ascender'sBane , 1 )
+        ]
+  , graveyard = fromList [ ( Strike , 3 ) , ( Defend , 2 ) ]
+  , cultistVulnerability = 0
+  , ironcladBlock = 0
+  , energy = 3
+  , turn = 1
+  }
+```
+
+## Sample play - Turn 2
+
+![](./images/Turn 2 - Begin.png)
+
+## Sample play - Turn 3
+
+```haskell
+Status
+  { cultistHealth = 27
+  , ironcladHealth = 67
+  , deck = fromList [ ( Strike , 3 ) , ( Defend , 2 ) ]
+  , hand =
+      fromList [ ( Bash , 1 ) , ( Strike , 2 ) , ( Defend , 2 ) ]
+  , graveyard = fromList []
+  , cultistVulnerability = 1
+  , ironcladBlock = 0
+  , energy = 3
+  , turn = 2
+  }
+```
+
+## Sample play - Turn 3
+
+![](./images/Turn 3 - Begin.png)
+
+## Sample play - Turn 4
+
+```haskell
+Status
+  { cultistHealth = 18
+  , ironcladHealth = 66
+  , deck = fromList []
+  , hand = fromList [ ( Strike , 3 ) , ( Defend , 2 ) ]
+  , graveyard =
+      fromList [ ( Bash , 1 ) , ( Strike , 2 ) , ( Defend , 2 ) ]
+  , cultistVulnerability = 0
+  , ironcladBlock = 0
+  , energy = 3
+  , turn = 3
+  }
+```
+
+## Sample play - Turn 4
+
+![](./images/Turn 4 - Begin.png)
