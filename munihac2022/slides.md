@@ -5,9 +5,19 @@
 # Background
 
 <style>
-    .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5 {
-                  text-transform: none;
-          }
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5 {
+  text-transform: none;
+}
+
+section {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100%;
+}
+
+code {
+  max-height: none !important;
+}
 </style>
 
 [My last MuniHac presentation](https://youtu.be/6a5Ti0r8Q2s) was more
@@ -232,7 +242,8 @@ instance Monad Distribution where
         return Possibility{ outcome = y, weight = w₀ * w₁ }
 
 instance Applicative Distribution where
-    pure x = Distribution (pure Possibility{ outcome = x, weight = 1 })
+    pure x =
+        Distribution (pure Possibility{ outcome = x, weight = 1 })
 
     (<*>) = Monad.ap
 ```
@@ -327,9 +338,7 @@ play
 ```haskell
 import Data.List (maximumBy)
 import Data.Ord (comparing)
-```
 
-```haskell
 play objectiveFunction toChoices = loop
   where
     loop status
@@ -350,6 +359,8 @@ play objectiveFunction toChoices = loop
 
 ## State - Card
 
+We only support the starting cards:
+
 ```haskell
 -- | Ironclad cards
 data Card
@@ -359,6 +370,8 @@ data Card
     | Ascender'sBane
     deriving (Eq, Generic, Ord, Show)
 ```
+
+This also does not support upgraded cards
 
 ## State - Global
 
@@ -386,12 +399,91 @@ data Status = Status
 
 ```haskell
 objective :: Status -> Double
-objective = fromIntegral . ironcladHealth
+objective Status{ ironcladHealth } = fromIntegral ironcladHealth
 ```
 
 Well, that was simple
 
 This only works because we're not using heuristics
+
+## Game over
+
+The game ends when the cultist or Ironclad dies
+
+```haskell
+done :: Status -> Bool
+done Status{ ironcladHealth, cultistHealth } =
+    ironcladHealth <= 0 || cultistHealth <= 0
+```
+
+Hopefully the cultist dies
+
+## Ending a turn
+
+```haskell
+act :: Card -> StateT Status Distribution ()
+act card = do
+    status <- State.get
+
+    let vulnerability = case card of
+            Bash -> 2
+            _    -> 0
+
+    let damageMultiplier =
+            if 1 <= cultistVulnerability status then 1.5 else 1
+
+    let baseDamage = case card of
+            Strike -> 6
+            Bash   -> 8
+            _      -> 0
+
+    let damage = truncate (baseDamage * damageMultiplier :: Double)
+
+    let block = case card of
+            Defend -> 5
+            _      -> 0
+
+    let newCultistHealth = max 0 (cultistHealth status - damage)
+
+    State.put status
+        { hand                 = decrease 1 card (hand status)
+        , graveyard            = increase 1 card (graveyard status)
+        , cultistHealth        = newCultistHealth
+        , cultistVulnerability = cultistVulnerability status + vulnerability
+        , ironcladBlock        = ironcladBlock status + block
+        }
+```
+
+## Choices
+
+```haskell
+exampleChoices :: Status -> [Distribution Status]
+exampleChoices status = do
+    Monad.guard (not (done status))
+
+    ~(subset, remainingEnergy) <- subsetsByEnergy 3 (hand status)
+
+    let process card count = Monad.replicateM_ count (act card)
+
+    let turn :: StateT Status Distribution ()
+        turn = do
+            State.modify (\s -> s{ energy = remainingEnergy })
+            _ <- Map.traverseWithKey process subset
+            endTurn
+
+    return (State.execStateT turn status)
+```
+
+## Optimizations
+
+I made some simplifying assumptions:
+
+- Card order doesn't matter
+- Energy is updated after playing all cards
+
+These assumptions don't hold in general
+
+## 
 
 ## Starting states
 
@@ -404,12 +496,11 @@ possibleInitialStatuses = do
         cultistHealth <- 50 :| [ 51 .. 56 ]
         return Possibility
             { weight = 1
-            , outcome =
-                Status
-                  { deck = Map.fromList [ (Strike, 5), (Defend, 4), … ]
-                  , cultistHealth
-                  , …
-                  }
+            , outcome = Status
+                { deck = Map.fromList [ (Strike, 5), (Defend, 4), … ]
+                , cultistHealth
+                , …
+                }
             }
 
     State.execStateT (drawMany 5) status
