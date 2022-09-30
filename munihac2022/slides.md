@@ -302,39 +302,47 @@ newtype Distribution a =
 
 Now that we have the `Distribution` monad we can implement the game
 
-## The engine
+## API - Type
 
 ```haskell
 -- | Play the game optimally to its conclusion
 play
-    :: (Fractional n, Ord n)
-    => (state -> n)
+    :: (Fractional number, Ord number)
+
+    => (state -> number)
     -- ^ Objective function
-    -> (state -> Bool)
-    -- ^ Termination function
-    -> (state -> NonEmpty (Distribution state))
+
+    -> (state -> [Distribution state])
     -- ^ A function which generates the available moves
+
     -> state
     -- ^ The starting state
+
     -> Distribution state
-    -- ^ The final probability distribution
+    -- ^ The final probability distribution after optimal play
 ```
 
-## The engine
+## API - Term
 
 ```haskell
-play objective done choices status
-    | done status = do
-        pure status
-    | otherwise = do
-        next <- List.maximumBy (Ord.comparing predict) (choices status)
+import Data.List (maximumBy)
+import Data.Ord (comparing)
+```
 
-        loop next
+```haskell
+play objectiveFunction toChoices = loop
   where
+    loop status
+        | null choices = do
+            pure status
+        | otherwise = do
+            nextStatus <- maximumBy (comparing predict) choices
+            loop nextStatus
+      where
+        choices = toChoices status
+
     predict choice = expectedValue do
         nextStatus <- choice
-
         finalStatus <- loop nextStatus
-
-        return (objective finalStatus)
+        return (objectiveFunction finalStatus)
 ```
