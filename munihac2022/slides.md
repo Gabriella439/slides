@@ -123,11 +123,11 @@ We only took 2 damage 🎉
 
 * Was that the optimal play? (<span style="color:#17ff2e">yes</span>)
 
-* Was that good or bad luck? (<span style="color:#17ff2e">good</span>, saved <span style="color:#17ff2e">1.8</span> HP)
+* Was that good or bad luck? (<span style="color:#17ff2e">good</span>, saved <span style="color:#17ff2e">2.5</span> HP)
 
-* What if cultist had +1 HP? (We lose <span style="color:#ff2c2d">1.4 more</span> HP)
+* What if cultist had +1 HP? (We lose <span style="color:#ff2c2d">1.2 more</span> HP)
 
-* What if we upgrade Bash? (We lose <span style="color:#17ff2e">1.3 less</span> HP)
+* What if we upgrade Bash? (We lose <span style="color:#17ff2e">2.0 less</span> HP)
 
 # Outline
 
@@ -147,7 +147,7 @@ import Data.List.NonEmpty (NonEmpty)
 
 -- | A single possibility, consisting of an outcome paired
 --   with the associated weight of that outcome
-data Possibility a = Possibility{ outcome :: a, weight :: Int }
+data Possibility a = Possibility{ outcome :: a, weight :: Rational }
     deriving (Show)
 
 -- | A probability distribution, which is a non-empty list of
@@ -155,33 +155,6 @@ data Possibility a = Possibility{ outcome :: a, weight :: Int }
 newtype Distribution a =
     Distribution{ possibilities :: NonEmpty (Possibility a) }
     deriving (Show)
-```
-
-## Expected value
-
-<span class="math">$$ \sum_{i} n_{i} p_{i} = {\sum_{i} n_{i} w_{i} \over \sum_{i} w_{i}}$$</span>
-
-## Expected value
-
-```haskell
-{-# LANGUAGE NamedFieldPuns #-}
-
-data Possibility a = Possibility{ outcome :: a, weight :: Int }
-
-newtype Distribution a =
-    Distribution{ possibilities :: NonEmpty (Possibility a) }
-
--- | Compute the expected value for a probability distribution
-expectedValue :: Fractional number => Distribution number -> number
-expectedValue Distribution{ possibilities } =
-    totalTally / fromIntegral totalWeight
-  where
-    totalTally = sum (fmap tally possibilities)
-
-    totalWeight = sum (fmap weight possibilities)
-
-    tally Possibility{ outcome, weight } =
-        fromIntegral weight * outcome
 ```
 
 ## Syntactic sugar
@@ -210,14 +183,46 @@ instance Show a => Show (Distribution a) where
 
 >>> data Coin = Heads | Tails deriving (Show)
 
->>> toss = [ Possibility Heads 1, Possibility Tails 1 ]
+>>> toss = [ Possibility Heads (1 / 2), Possibility Tails (1 / 2) ]
         :: Distribution Coin
 
 >>> import Text.Show.Pretty
 
 >>> pPrint toss
-[ Possibility { outcome = Heads , weight = 1 }
-, Possibility { outcome = Tails , weight = 1 }
+[ Possibility { outcome = Heads , weight = 1 % 2 }
+, Possibility { outcome = Tails , weight = 1 % 2 }
+]
+```
+
+## Monad instance - Example
+
+```haskell
+>>> toss = [ Possibility Heads (1 / 2), Possibility Tails (1 / 2) ]
+        :: Distribution Coin
+
+>>> twice = do x <- toss; y <- toss; return (x, y)
+
+>>> pPrint twice
+[ Possibility { outcome = ( Heads , Heads ) , weight = 1 % 4 }
+, Possibility { outcome = ( Heads , Tails ) , weight = 1 % 4 }
+, Possibility { outcome = ( Tails , Heads ) , weight = 1 % 4 }
+, Possibility { outcome = ( Tails , Tails ) , weight = 1 % 4 }
+]
+```
+
+## Monad instance - Example
+
+```haskell
+>>> toss = [ Possibility Heads (3 / 10), Possibility Tails (7 / 10) ]
+        :: Distribution Coin
+
+>>> twice = do x <- toss; y <- toss; return (x, y)
+
+>>> pPrint twice
+[ Possibility { outcome = ( Heads , Heads ) , weight = 9 % 100 }
+, Possibility { outcome = ( Heads , Tails ) , weight = 21 % 100 }
+, Possibility { outcome = ( Tails , Heads ) , weight = 21 % 100 }
+, Possibility { outcome = ( Tails , Tails ) , weight = 49 % 100 }
 ]
 ```
 
@@ -229,7 +234,7 @@ instance Show a => Show (Distribution a) where
 
 import qualified Control.Monad as Monad
 
-data Possibility a = Possibility{ outcome :: a, weight :: Int }
+data Possibility a = Possibility{ outcome :: a, weight :: Rational }
     deriving stock (Functor)
 
 newtype Distribution a =
@@ -249,44 +254,12 @@ instance Applicative Distribution where
     (<*>) = Monad.ap
 ```
 
-## Monad instance - Example
-
-```haskell
->>> toss = [ Possibility Heads 1, Possibility Tails 1 ]
-        :: Distribution Coin
-
->>> twice = do x <- toss; y <- toss; return (x, y)
-
->>> pPrint twice
-[ Possibility { outcome = ( Heads , Heads ) , weight = 1 }
-, Possibility { outcome = ( Heads , Tails ) , weight = 1 }
-, Possibility { outcome = ( Tails , Heads ) , weight = 1 }
-, Possibility { outcome = ( Tails , Tails ) , weight = 1 }
-]
-```
-
-## Monad instance - Example
-
-```haskell
->>> toss = [ Possibility Heads 3, Possibility Tails 7 ]
-        :: Distribution Coin
-
->>> twice = do x <- toss; y <- toss; return (x, y)
-
->>> pPrint twice
-[ Possibility { outcome = ( Heads , Heads ) , weight = 9 }
-, Possibility { outcome = ( Heads , Tails ) , weight = 21 }
-, Possibility { outcome = ( Tails , Heads ) , weight = 21 }
-, Possibility { outcome = ( Tails , Tails ) , weight = 49 }
-]
-```
-
 ## WriterT 💡
 
 Instead of this:
 
 ```haskell
-data Possibility a = Possibility{ outcome :: a, weight :: Int }
+data Possibility a = Possibility{ outcome :: a, weight :: Rational }
 
 newtype Distribution a =
     Distribution{ possibilities :: NonEmpty (Possibility a) }
@@ -299,8 +272,22 @@ import Control.Monad.Trans.Writer (WriterT)
 import Data.Monoid (Product)
 
 newtype Distribution a =
-    Distribution (WriterT (Product Int) NonEmpty a)
+    Distribution (WriterT (Product Rational) NonEmpty a)
     deriving newtype (Functor, Applicative, Monad)
+```
+
+## Expected value
+
+<span class="math">$$ \sum_{i} n_{i} p_{i}
+
+```haskell
+{-# LANGUAGE NamedFieldPuns #-}
+
+-- | Compute the expected value for a probability distribution
+expectedValue :: Fractional number => Distribution number -> number
+expectedValue Distribution{ possibilities } = sum (fmap weigh possibilities)
+  where
+    weigh Possibility{ outcome, weight } = fromRational weight * outcome
 ```
 
 # Outline
@@ -580,7 +567,7 @@ possibleInitialStatuses = do
 
         return
           Possibility
-            { weight = 1
+            { weight = 1 / 7
             , outcome =
                 Status
                   { cultistHealth
@@ -645,9 +632,9 @@ What are the typical values for $b$ and $d$?
 
 $b$ is around $10$ (# of hands we can draw)
 
-Under *optimal play* $d = 4.1$ turns
+Under *optimal play* $d ≈ 3.6$ turns
 
-However, we do not search only $10^{4}$ states …
+However, we do not search only $10^{3.6}$ states …
 
 ## Sub-optimal play
 
@@ -685,8 +672,8 @@ We'll use the `MemoTrie` package for this purpose
 
 ```haskell
 play
-    :: (Fractional n, Ord n)
-    => (state -> n)
+    :: (Fractional number, Ord number)
+    => (state -> number)
     -> (state -> Bool)
     -> (state -> NonEmpty (Distribution state))
     -> state
@@ -697,8 +684,8 @@ play
 
 ```haskell
 play
-    :: (Fractional n, Ord n, HasTrie state)
-    => (state -> n)
+    :: (Fractional number, Ord number, HasTrie state)
+    => (state -> number)
     -> (state -> Bool)
     -> (state -> NonEmpty (Distribution state))
     -> state
@@ -794,17 +781,55 @@ main = print (expectedValue (fmap objective game))
 ```
 
 ```
-62.181486201639935
+63.547677967061674 (32627274131 % 513429840)
 ```
 
 In other words, we lose 5.8 health on average
 
 # Conclusion
 
-* The correct name for this is a "Markov decision process"
-* Haskell makes this really slick (especially memoization)
-* Ironclad vs. Cultist slightly favors the Ironclad
-* Slay the Spire is an amazing game
+- The correct name for this is a "Markov decision process"
+- Haskell makes this sort of solver really slick (especially memoization)
+- Slay the Spire is an amazing game
+
+You can find these slides here:
+
+- [GitHub - Gabriella439/slides - munihac2022](https://github.com/Gabriella439/slides)
+
+You can find the code here:
+
+- [GitHub - Gabriella439/spire](https://github.com/Gabriella439/spire)
+
+If you use Nix, you can run the latest code using:
+
+```bash
+$ nix run github:Gabriella439/spire
+```
+
+# Appendix: Fun numbers
+
+| Information | Expected Ironclad HP | Change |
+-----------------------------------------------
+| Baseline | 63.548 | N/A |
+| Cultist has 53 HP | 64.292 | <span style="color:#17ff2e">+0.744</span> |
+| Turn 1 draw | 65.696 | <span style="color:#17ff2e">+1.404</span> |
+| Turn 2 draw | 66.317 | <span style="color:#ff2c2d">+0.622</span> |
+| Turn 3 draw | 66.000 | <span style="color:#17ff2e">-0.317</span> |
+| Turn 4 draw | 66.000 | <span style="color:#17ff2e">0.000</span> |
+
+## Appendix: Fun numbers
+
+| Cultist Starting HP | Expected Ironclad HP |
+----------------------------------------------
+| 50 | 64.90251709951256 |
+| 51 | 64.47234240417347 |
+| 52 | 64.47234240417347 |
+| 53 | 64.29158962206014 |
+| 54 | 62.511362804701804 |
+| 55 | 62.15813612040936 |
+| 56 | 62.025455314400894|
+
+The result doesn't change for 51 vs. 52 Cultist HP!
 
 # Appendix: Tool-assisted play
 
