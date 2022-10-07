@@ -1,6 +1,6 @@
 % Min-maxing Slay the Spire with Haskell
 % Gabriella Gonzalez
-% October 7, 2016
+% October 7, 2022
 
 # Background
 
@@ -38,6 +38,22 @@ No heuristics; we're computing exact solutions
 ## I like to overthink this game
 
 ![](./images/Probability post.png)
+
+## Links
+
+You can find these slides here:
+
+[https://github.com/Gabriella439/slides/tree/main/munihac](https://github.com/Gabriella439/slides/tree/main/munihac)
+
+You can find the code here:
+
+[https://github.com/Gabriella439/spire](https://github.com/Gabriella439/spire)
+
+If you use Nix with flakes enabled, you can run:
+
+```bash
+$ nix run github:Gabriella439/spire
+```
 
 # Outline
 
@@ -152,6 +168,8 @@ data Possibility a = Possibility{ outcome :: a, weight :: Rational }
 
 -- | A probability distribution, which is a non-empty list of
 --   weighted outcomes
+--
+--   Invariant: All weights have to add up to 1
 newtype Distribution a =
     Distribution{ possibilities :: NonEmpty (Possibility a) }
     deriving (Show)
@@ -278,16 +296,18 @@ newtype Distribution a =
 
 ## Expected value
 
-<span class="math">$$ \sum_{i} n_{i} p_{i}
+<span class="math">$$ \sum_{i} n_{i} p_{i}$$</span>
 
 ```haskell
 {-# LANGUAGE NamedFieldPuns #-}
 
 -- | Compute the expected value for a probability distribution
 expectedValue :: Fractional number => Distribution number -> number
-expectedValue Distribution{ possibilities } = sum (fmap weigh possibilities)
+expectedValue Distribution{ possibilities } =
+    sum (fmap weigh possibilities)
   where
-    weigh Possibility{ outcome, weight } = fromRational weight * outcome
+    weigh Possibility{ outcome, weight } =
+        fromRational weight * outcome
 ```
 
 # Outline
@@ -296,10 +316,6 @@ expectedValue Distribution{ possibilities } = sum (fmap weigh possibilities)
 * Distribution monad
 * <span style="color:#ff2c2d">Implementing game mechanics</span>
 * Memoization
-
-## Implementing game mechanics
-
-Now that we have the `Distribution` monad we can implement the game
 
 ## API - Type
 
@@ -411,6 +427,8 @@ Hopefully the cultist dies first 😬
 ```haskell
 -- | Draw N cards from the deck
 drawMany :: Int -> StateT Status Distribution ()
+drawMany n = Monad.replicateM_ (draw n)
+-- The real implementation is more efficient
 
 -- | All possible plays that consume up to N energy
 subsetsByEnergy :: Int -> Map Card Int -> [(Map Card Int, Int)]
@@ -632,7 +650,7 @@ What are the typical values for $b$ and $d$?
 
 $b$ is around $10$ (# of hands we can draw)
 
-Under *optimal play* $d ≈ 3.6$ turns
+Under *optimal play* $d \approx 3.6$ turns
 
 However, we do not search only $10^{3.6}$ states …
 
@@ -642,7 +660,7 @@ The algorithm has to simulate suboptimal play!
 
 Under sub-optimal play $d$ can go as high as $9$!
 
-This means we simulate approximately $10^{9}$ states
+This means we simulate $\approx 10^{9}$ states
 
 ## Number of states
 
@@ -668,7 +686,7 @@ We only compute the `play` function once per state
 
 We'll use the `MemoTrie` package for this purpose
 
-## Before - Type
+## Type - Before
 
 ```haskell
 play
@@ -680,7 +698,7 @@ play
     -> Distribution state
 ```
 
-## After - Type
+## Type - After
 
 ```haskell
 play
@@ -692,7 +710,7 @@ play
     -> Distribution state
 ```
 
-## Before - Term
+## Term - Before
 
 ```haskell
 play objectiveFunction toChoices = loop
@@ -712,7 +730,7 @@ play objectiveFunction toChoices = loop
         return (objectiveFunction finalStatus)
 ```
 
-## After
+## Term - After
 
 ```haskell
 play objectiveFunction toChoices = MemoTrie.memoFix memoize
@@ -784,54 +802,44 @@ main = print (expectedValue (fmap objective game))
 63.547677967061674 (32627274131 % 513429840)
 ```
 
-In other words, we lose 5.8 health on average
+In other words, we lose ≈4.5 health on average
 
 # Conclusion
 
-- The correct name for this is a "Markov decision process"
+- Apparently the correct name for this is a "Markov decision process"
 - Haskell makes this sort of solver really slick (especially memoization)
 - Slay the Spire is an amazing game
 
-You can find these slides here:
-
-- [GitHub - Gabriella439/slides - munihac2022](https://github.com/Gabriella439/slides)
-
-You can find the code here:
-
-- [GitHub - Gabriella439/spire](https://github.com/Gabriella439/spire)
-
-If you use Nix, you can run the latest code using:
-
-```bash
-$ nix run github:Gabriella439/spire
-```
-
 # Appendix: Fun numbers
 
+## HP estimate at each step
+
 | Information | Expected Ironclad HP | Change |
------------------------------------------------
+|-|-|-|
 | Baseline | 63.548 | N/A |
 | Cultist has 53 HP | 64.292 | <span style="color:#17ff2e">+0.744</span> |
 | Turn 1 draw | 65.696 | <span style="color:#17ff2e">+1.404</span> |
-| Turn 2 draw | 66.317 | <span style="color:#ff2c2d">+0.622</span> |
-| Turn 3 draw | 66.000 | <span style="color:#17ff2e">-0.317</span> |
+| Turn 2 draw | 66.317 | <span style="color:#17ff2e">+0.622</span> |
+| Turn 3 draw | 66.000 | <span style="color:#ff2c2d">-0.317</span> |
 | Turn 4 draw | 66.000 | <span style="color:#17ff2e">0.000</span> |
 
-## Appendix: Fun numbers
+## Cultist health vs. Ironclad health
 
-| Cultist Starting HP | Expected Ironclad HP |
-----------------------------------------------
-| 50 | 64.90251709951256 |
-| 51 | 64.47234240417347 |
-| 52 | 64.47234240417347 |
-| 53 | 64.29158962206014 |
-| 54 | 62.511362804701804 |
-| 55 | 62.15813612040936 |
-| 56 | 62.025455314400894|
+| Cultist Starting HP | Expected Ironclad HP | Change |
+|-|-|-|
+| 50 | 64.90251709951256 | N/A |
+| 51 | 64.47234240417347 | <span style="color:#ff2c2d">-0.430</span> |
+| 52 | 64.47234240417347 | 0.000 |
+| 53 | 64.29158962206014 | <span style="color:#ff2c2d">-0.181</span> |
+| 54 | 62.511362804701804 | <span style="color:#ff2c2d">-1.780</span> |
+| 55 | 62.15813612040936 | <span style="color:#ff2c2d">-0.353</span> |
+| 56 | 62.025455314400894| <span style="color:#ff2c2d">-0.133</span> |
 
 The result doesn't change for 51 vs. 52 Cultist HP!
 
 # Appendix: Tool-assisted play
+
+## `step` function
 
 We can (sort of) use this to choose plays
 
