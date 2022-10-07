@@ -43,7 +43,7 @@ No heuristics; we're computing exact solutions
 
 You can find these slides here:
 
-[https://github.com/Gabriella439/slides/tree/main/munihac](https://github.com/Gabriella439/slides/tree/main/munihac)
+[https://github.com/Gabriella439/slides/tree/main/munihac2022](https://github.com/Gabriella439/slides/tree/main/munihac2022)
 
 You can find the code here:
 
@@ -354,10 +354,10 @@ play objectiveFunction toChoices = loop
       where
         choices = toChoices status
 
-    predict choice = expectedValue do
-        nextStatus <- choice
-        finalStatus <- loop nextStatus
-        return (objectiveFunction finalStatus)
+        predict choice = expectedValue do
+            nextStatus <- choice
+            finalStatus <- loop nextStatus
+            return (objectiveFunction finalStatus)
 ```
 
 
@@ -427,7 +427,7 @@ Hopefully the cultist dies first 😬
 ```haskell
 -- | Draw N cards from the deck
 drawMany :: Int -> StateT Status Distribution ()
-drawMany n = Monad.replicateM_ (draw n)
+drawMany n = Monad.replicateM_ n draw
 -- The real implementation is more efficient
 
 -- | All possible plays that consume up to N energy
@@ -724,10 +724,10 @@ play objectiveFunction toChoices = loop
       where
         choices = toChoices status
 
-    predict choice = expectedValue do
-        nextStatus <- choice
-        finalStatus <- loop nextStatus
-        return (objectiveFunction finalStatus)
+        predict choice = expectedValue do
+            nextStatus <- choice
+            finalStatus <- loop nextStatus
+            return (objectiveFunction finalStatus)
 ```
 
 ## Term - After
@@ -744,10 +744,10 @@ play objectiveFunction toChoices = MemoTrie.memoFix memoize
       where
         choices = toChoices status
 
-    predict choice = expectedValue do
-        nextStatus <- choice
-        finalStatus <- loop nextStatus
-        return (objectiveFunction finalStatus)
+        predict choice = expectedValue do
+            nextStatus <- choice
+            finalStatus <- loop nextStatus
+            return (objectiveFunction finalStatus)
 ```
 
 ## Supporting instances
@@ -809,6 +809,12 @@ In other words, we lose ≈4.5 health on average
 - Apparently the correct name for this is a "Markov decision process"
 - Haskell makes this sort of solver really slick (especially memoization)
 - Slay the Spire is an amazing game
+
+## Future directions
+
+- Support more characters
+- Support more monsters
+- Improve performance
 
 # Appendix: Fun numbers
 
