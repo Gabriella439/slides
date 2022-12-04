@@ -109,8 +109,6 @@ Easy-to-fork means:
 - Clear code (as best as I can manage)
 - Clear instructions for extending the language
 
-Some people have also expressed interest in using Grace directly
-
 ## Headline features
 
 Grace has a unique combination of features:
@@ -467,6 +465,29 @@ Analogous to this `LambdaCase` pattern match:
 ]
 ```
 
+## Polymorphic variants
+
+You only need to handle constructors that are present:
+
+```haskell
+>>> List/map (merge { Just: \x -> x }) [ Just 1, Nothing { } ]
+Union type mismatch
+
+…
+```
+
+```haskell
+>>> List/map (merge { Just: \x -> x }) [ Just 1 ]
+[ 1 ]
+```
+
+```haskell
+>>> :type [ Just 1, Nothing { } ]
+forall (a : Alternatives) . List < Just: Natural | Nothing: { } | a >
+>>> :type [ Just 1 ]
+forall (a : Alternatives) . List < Just: Natural | a >
+```
+
 ## Strong normalization
 
 Grace is strongly normalizing (inspired by Dhall):
@@ -623,19 +644,72 @@ JSON/fold
 List JSON
 ```
 
+## `null` / `Optional`
+
+`null` is the grossest part of JSON-compatibility
+
+```haskell
+─────────────────────────────────────
+null : forall (a : Type) . Optional a
+
+
+e : a
+──────────────
+e : Optional a
+```
+
+```haskell
+>>> [ 1, null ] : List (Optional Natural)
+[ 1, null ]
+```
+
+If you don't like it, use `Just` / `Nothing` instead
+
+## `Nothing`, `Just`
+
+You can also use anonymous sums instead:
+
+```haskell
+>>> :type [ Just 1, Nothing { } ]
+forall (a : Alternatives) . List < Just: Natural | Nothing: { } | a >
+```
+
 ## No type classes
 
-No way to do Haskell-style type classes in expression-oriented language
+Grace doesn't support Haskell-style type classes
 
-- Worse error messages (no type abstraction)
+Coherence incompatible Dhall/Nix/Grace-style imports
 
-## Grace does not support recursion
+The best you can do is [type classes as dictionaries](https://www.haskellforall.com/2012/05/scrap-your-type-classes.html)
+
+## No language support for recursion
 
 Grace does not support any form of recursion
 
-There's no technical reason why not
+JSON in the wild often uses silent, anonymous recursion:
 
-There is such a thing as "anonymous recursion"
+```json
+{ "children": [ { "children": [ 1, 2 ] }, 3 ] }
+```
+
+No easy way to type-check that in general
+
+💡 Solution: support only one recursive type: `JSON`
+
+## No user-defined type
+
+Specifically:
+
+- No datatype definitions
+- No `newtypes`
+- No `type` synonyms
+
+This means:
+
+- No type abstraction
+- Worse error messages
+
+This is downside of all types being "anonymous"
 
 # Outline
 
@@ -700,10 +774,29 @@ Why do we want to [separate content and presentation](https://en.wikipedia.org/w
 
   We can sandbox content devoid of presentation logic
 
-# TODO
+## No `IO`
 
-- Talk about why Grace is designed to be forked instead of customized via an API
-- Maybe show a live demo of adding subtraction to the language
-- Talk about how design of Grace was influenced by lessons learned from Dhall
-- Talk about how type-checking is hardest part to implement/customize
-- What is Grace "for"?
+Grace doesn't support `IO`¹
+
+This is because Grace is content-oriented
+
+Most content-oriented languages work this way:
+
+- Content - `IO`-free logic
+- Presentation - `IO`-heavy logic
+
+¹ … except for language support for imports
+
+# Conclusion
+
+Fork Grace: [https://github.com/Gabriella439/grace](https://github.com/Gabriella439/grace)
+
+Grace Browser: [https://trygrace.dev](https://trygrace.dev)
+
+```haskell
+nix run github:Gabriella439/grace -- --help
+```
+
+Blog: [https://www.haskellforall.com](https://www.haskellforall.com)
+
+Cohost <img style='vertical-align: bottom' src='https://cohost.org/static/41454e429d62b5cb7963.png' height='55px'/>: [https://cohost.org/Gabriella439](https://cohost.org/Gabriella439)
