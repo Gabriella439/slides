@@ -132,7 +132,6 @@ These features are particularly useful for configuration languages
 ## JSON-compatible syntax
 
 ```json
-# This is a valid Grace program
 {
   "clients": [
     {
@@ -674,6 +673,14 @@ You can also use anonymous sums instead:
 forall (a : Alternatives) . List < Just: Natural | Nothing: { } | a >
 ```
 
+Or use whatever constructor names you want:
+
+```haskell
+>>> :type [ Present 1, Absent { } ]
+```
+
+They're cheap to rename!  No need for a datatype definition.
+
 ## No type classes
 
 Grace doesn't support Haskell-style type classes
@@ -711,6 +718,14 @@ This means:
 
 This is downside of all types being "anonymous"
 
+## Limited builtin functions
+
+Grace has a limited set of builtin functions / operators
+
+(Just like Dhall)
+
+The intention is you fork Grace to add what you need
+
 # Outline
 
 - Introduction to Fall-from-Grace
@@ -719,10 +734,10 @@ This is downside of all types being "anonymous"
 
 ## "Content-oriented" languages
 
-I define a "content-oriented" programming language like this:
+Grace as a "content-oriented" language, defined as:
 
-> A content-oriented program evaluates to a result (the "content"), but does
-> not specify what to do with that result.
+> A content-oriented language is a purely functional programming language
+> without `IO`
 
 The goal is to [separate content and presentation](https://en.wikipedia.org/wiki/Separation_of_content_and_presentation)
 
@@ -730,7 +745,7 @@ The goal is to [separate content and presentation](https://en.wikipedia.org/wiki
 
 - **Calculators**
 
-  Calculations don't specify how to use their results
+  Calculations don't include logic for how to read or write values
 
 - **JSON configuration file**
 
@@ -740,13 +755,15 @@ The goal is to [separate content and presentation](https://en.wikipedia.org/wiki
 
   A Nix derivation is just a tree of records
 
-  Nix programs don't have logic for building derivations
+  Nix expressions don't "do" anything[^1]
+
+[^1]: There are some caveats here I won't go into
 
 ## Grace Browser
 
-Grace is a content-oriented language
+If Grace is the "content" then where is the "presentation"?
 
-Most notable example is the Grace Browser:
+One example "presentation" is the Grace Browser:
 
 [https://trygrace.dev](https://trygrace.dev)
 
@@ -754,11 +771,11 @@ The Grace browser separates "content" from "presentation":
 
 - The "content" is the input Grace expression
 
-- The "presentation" is the generated web form
+- The "presentation" is the generated HTML / web form
 
 The input Grace expression has no presentation logic
 
-## Separate content and presentation
+## Motivation behind separation
 
 Why do we want to [separate content and presentation](https://en.wikipedia.org/wiki/Separation_of_content_and_presentation)?
 
@@ -776,7 +793,7 @@ Why do we want to [separate content and presentation](https://en.wikipedia.org/w
 
 ## No `IO`
 
-Grace doesn't support `IO`¹
+Grace doesn't support `IO`[^1]
 
 This is because Grace is content-oriented
 
@@ -785,7 +802,19 @@ Most content-oriented languages work this way:
 - Content - `IO`-free logic
 - Presentation - `IO`-heavy logic
 
-¹ … except for language support for imports
+[1]: … except for language support for imports
+
+## The future of programming
+
+I believe high-level languages will eventually eliminate `IO`
+
+Similar in spirit to how:
+
+- Garbage-collected languages hide memory management details
+
+- Lazy languages hide evaluation order details
+
+See also: [The end of history for programming](https://www.haskellforall.com/2021/04/the-end-of-history-for-programming.html)
 
 # Conclusion
 
