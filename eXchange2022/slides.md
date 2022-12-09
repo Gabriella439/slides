@@ -736,6 +736,7 @@ Or use whatever constructor names you want:
 
 ```haskell
 >>> :type [ Present 1, Absent { } ]
+forall (a : Alternatives) . List < Present: Natural | Absent: { } | a >
 ```
 
 They're cheap to rename!  No need for a datatype definition.
@@ -793,7 +794,7 @@ The intention is you fork Grace to add what you need
 
 ## "Content-oriented" languages
 
-Grace as a "content-oriented" language, defined as:
+Grace is a "content-oriented" language, defined as:
 
 > A content-oriented language is a purely functional programming language
 > without `IO`
@@ -852,7 +853,7 @@ Why do we want to [separate content and presentation](https://en.wikipedia.org/w
 
 ## No `IO`
 
-Grace doesn't support `IO`[^1]
+Grace doesn't support `IO`[^2]
 
 This is because Grace is content-oriented
 
@@ -861,7 +862,7 @@ Most content-oriented languages work this way:
 - Content - `IO`-free logic
 - Presentation - `IO`-heavy logic
 
-[1]: … except for language support for imports
+[^2]: … except for language support for imports
 
 ## The future of programming
 
