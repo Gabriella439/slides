@@ -2,7 +2,11 @@
 % Gabriella Gonzalez
 % December 9, 2022
 
-# Background
+## About me
+
+Hi, I'm Gabby and I ❤️ "PLT crimes"
+
+I love building languages that break unspoken rules of PLT
 
 <style>
 .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5 {
@@ -31,6 +35,8 @@ code {
   max-height: none !important;
 }
 </style>
+
+## Background
 
 Fall-from-Grace was inspired by a prior talk of mine:
 
@@ -72,6 +78,8 @@ There are three things missing for Haskell to go viral:
 
 - Functional logic programming DSL for type-checking
 
+  - Perhaps Verse 😝
+
 # Outline
 
 - <span style="color:#ff2c2d">Introduction to Fall-from-Grace</span>
@@ -108,6 +116,8 @@ Easy-to-fork means:
 - High quality implementation (in **HASKELL**)
 - Clear code (as best as I can manage)
 - Clear instructions for extending the language
+
+Now y'all can stop making Dhall into something it's not 🙂
 
 ## Headline features
 
@@ -172,13 +182,45 @@ These features are particularly useful for configuration languages
 Here is the inferred type of that program:
 
 ```haskell
-{ clients: List
-             { isActive: Bool
-             , age: Natural
-             , name: Text
-             , email: Text
-             , phone: Text
-             }
+{ clients:
+    List
+      { isActive: Bool
+      , age: Natural
+      , name: Text
+      , email: Text
+      , phone: Text
+      }
+}
+```
+
+## Comparison to JSON Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "isActive": { "type": "boolean" },
+          "age": { "type": "number", "minimum": 0 },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" }
+        },
+        "required": [
+          "isActive",
+          "age",
+          "name",
+          "email",
+          "phone"
+        ]
+      }
+    }
+  },
+  "required": [ "clients" ]
 }
 ```
 
@@ -348,6 +390,23 @@ in  incomeTax
 ```json
 { "Tax": 35671.0 }
 ```
+
+## Weakly-typed JSON
+
+You can import weird JSON with a type annotation:
+
+```bash
+$ cat ./weird.json
+```
+```json
+[ 1, true ]
+```
+
+```haskell
+import ./weird.json : JSON
+```
+
+This way you don't have to modify the JSON
 
 ## Anonymous records
 
@@ -703,7 +762,7 @@ No easy way to type-check that in general
 
 💡 Solution: support only one recursive type: `JSON`
 
-## No user-defined type
+## No user-defined types
 
 Specifically:
 
@@ -718,7 +777,7 @@ This means:
 
 This is downside of all types being "anonymous"
 
-## Limited builtin functions
+## Limited builtin functionality
 
 Grace has a limited set of builtin functions / operators
 
