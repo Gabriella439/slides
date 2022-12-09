@@ -63,7 +63,7 @@ Haskell originated as a research vehicle for PLT:
 
 [A History of Haskell: Being Lazy with Class](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/history.pdf)
 
-This "founder effect" primed Haskell to be well-suited for implemented
+This "founder effect" primed Haskell to be well-suited for implementing
 programming languages
 
 ## The missing pieces 🧩
@@ -403,7 +403,7 @@ $ cat ./weird.json
 ```
 
 ```haskell
-import ./weird.json : JSON
+./weird.json : JSON
 ```
 
 This way you don't have to modify the JSON
