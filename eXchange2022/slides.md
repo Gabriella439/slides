@@ -446,7 +446,7 @@ Constructors are identifiers in uppercase or single quotes
 ```haskell
  # ./packages.ffg
 [ GitHub
-    { repository: "https://github.com/Gabriel439/Haskell-Turtle-Library"
+    { repository: "https://github.com/Gabriella439/Haskell-Turtle-Library"
     , revision: "ae5edf227b515b34c1cb6c89d9c58ea0eece12d5"
     }
 , Local { path: "~/proj/optparse-applicative" }
@@ -513,7 +513,7 @@ Analogous to this `LambdaCase` pattern match:
 >>> List/map ./render.ffg ./packages.ffg
 ```
 ```json
-[ "https://github.com/Gabriel439/Haskell-Turtle-Library/commit/ae5edf227b515b34c1cb6c89d9c58ea0eece12d5"
+[ "https://github.com/Gabriella439/Haskell-Turtle-Library/commit/ae5edf227b515b34c1cb6c89d9c58ea0eece12d5"
 , "~/proj/optparse-applicative"
 , "~/proj/discrimination"
 , "https://hackage.haskell.org/package/lens-4.15.4"
