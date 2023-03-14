@@ -8,6 +8,8 @@ This talk will cover how to author a Nix derivation to build a package
 
 I will translate `make` idioms to Nix idioms and compare and contrast the two
 
+You can leverage your intuition for `make` to better understand Nix
+
 **By the end of this talk you should be able to translate a `Makefile` to Nix**
 
 # Overview
@@ -172,6 +174,8 @@ $ readlink ./result  # For new build
 
 $ "${EDITOR}" file.nix  # Switch back to old build instructions
 
+$ nix build --file file.nix
+
 $ readlink ./result  # For old build
 /nix/store/i0c1p19mzrn7nj9xqp4jij9nrrms2c9a-hello.txt
 ```
@@ -227,10 +231,10 @@ Nix is more idiomatically used for "inter-project" builds
 For example, here is what a more realistic Nix package looks like:
 
 ```bash
-$ nix build --file '<nixpkgs>' libiconv
+$ nix build nixpkgs#libiconv
 
-$ tree result
-result
+$ tree ./result
+./result
 ├── bin
 │   └── iconv
 ├── include
@@ -243,7 +247,7 @@ result
 │   ├── libcharset.1.dylib -> libcharset.1.0.0.dylib
 │   ├── libcharset.dylib -> libcharset.1.0.0.dylib
 │   ├── libcharset.la
-│   ├── libiconv-nocharset.dylib -> libiconv.2.4.0.dylib
+│   ├── libiconv-nocharset.dylib
 │   ├── libiconv.2.4.0.dylib
 │   ├── libiconv.2.dylib -> libiconv.2.4.0.dylib
 │   ├── libiconv.dylib
@@ -281,9 +285,7 @@ let
 
 in
   pkgs.runCommand "slides.html" { } ''
-    mkdir $out
-
-    ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out/slides.html
+    ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out
   ''
 ```
 
@@ -336,12 +338,12 @@ $ nix build --file ./impure.nix
 [1 built, 0.0 MiB DL]
 
 $ cat result
-Tue Dec 10 00:32:31 UTC 2019
+Tue Mar 14 02:47:23 UTC 2023
 
 $ nix build --file ./impure.nix # The rebuild triggers a cache hit!
 
 $ cat result  # Still the same result
-Tue Dec 10 00:32:31 UTC 2019
+Tue Mar 14 02:47:23 UTC 2023
 ```
 
 Nix can't tell that our derivation is not deterministic
@@ -735,5 +737,5 @@ You can use Nix just as a "better `Make`":
 Nix fixes many of the design flaws in `make`:
 
 * More accurate rebuild detection
-* Better suitability for cross-project builds
+* Better suitability for inter-project builds
 * Nix is a real programming language (not covered)
