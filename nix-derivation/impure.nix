@@ -4,6 +4,6 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "impure" {} ''
+  pkgs.runCommand "impure" { } ''
     date > $out
   ''

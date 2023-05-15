@@ -4,7 +4,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "directory" {} ''
+  pkgs.runCommand "directory" { } ''
     mkdir $out
 
     echo 'Hello!' > $out/hello.txt

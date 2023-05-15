@@ -4,6 +4,6 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "example0" {} ''
+  pkgs.runCommand "example0" { } ''
     touch $out
   ''

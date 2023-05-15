@@ -1,12 +1,14 @@
 % How to write a Nix derivation
 % Gabriella Gonzalez
-% December 12, 2019
+% March 15, 2023
 
 # Goals
 
 This talk will cover how to author a Nix derivation to build a package
 
 I will translate `make` idioms to Nix idioms and compare and contrast the two
+
+You can leverage your intuition for `make` to better understand Nix
 
 **By the end of this talk you should be able to translate a `Makefile` to Nix**
 
@@ -29,7 +31,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "example0" {} ''
+  pkgs.runCommand "example0" { } ''
     touch $out
   ''
 ```
@@ -41,7 +43,7 @@ $ nix build --file ./example0.nix
 [1 built, 0.0 MiB DL]
 
 $ readlink result  # `nix-build` creates a symlink to the result named `result`
-/nix/store/k7bvyxz5rvkjqldrn2g50gk6zxza1455-example0
+/nix/store/pc4jk3xhhpmpyg4sk9lxcbw8gb7d4cm3-example0
 
 $ cat result
 
@@ -83,7 +85,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "hello.txt" {} ''
+  pkgs.runCommand "hello.txt" { } ''
     echo 'Hello, world!' > $out
   ''
 ```
@@ -96,6 +98,13 @@ $ nix build --file file.nix
 
 $ cat result
 Hello, world!
+```
+
+Note that the `result` symlink now points to a new Nix store path:
+
+```bash
+$ readlink ./result
+/nix/store/i0c1p19mzrn7nj9xqp4jij9nrrms2c9a-hello.txt
 ```
 
 # Non-empty file - Compare to `make`
@@ -138,7 +147,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "hello.txt" {} ''
+  pkgs.runCommand "hello.txt" { } ''
     echo 'Goodbye, world!' > $out
   ''
 ```
@@ -153,6 +162,28 @@ $ cat result
 Goodbye, world!
 ```
 
+# Caching old build products
+
+Moreover, Nix will still preserve the original build!
+
+This is because Nix isolates all build products:
+
+```bash
+$ readlink ./result  # For new build
+/nix/store/9k4il4ngc6165rvpcaqc03wx6411xznv-hello.txt
+
+$ "${EDITOR}" file.nix  # Switch back to old build instructions
+
+$ nix build --file file.nix
+
+$ readlink ./result  # For old build
+/nix/store/i0c1p19mzrn7nj9xqp4jij9nrrms2c9a-hello.txt
+```
+
+Old build products are kept around until you run a garbage collection
+
+`make` cannot do this because make stores build products "in tree"
+
 # Directory
 
 The output of a derivation can be a file or a directory
@@ -166,7 +197,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "directory" {} ''
+  pkgs.runCommand "directory" { } ''
     mkdir $out
 
     echo 'Hello!' > $out/hello.txt
@@ -193,21 +224,17 @@ Goodbye!
 
 # Directory - compare to `make`
 
-Each `make` recipe only produces a single file
+`make` is more idiomatically used for "intra-project" builds
 
-This limits `make`'s utility to building internally within a project
+Nix is more idiomatically used for "inter-project" builds
 
-Nix derivations can produce directory trees
-
-This broadens Nix's utility to specify dependencies between multiple projects
-
-For example, here is a derivation that produces an entire package:
+For example, here is what a more realistic Nix package looks like:
 
 ```bash
-$ nix build --file '<nixpkgs>' libiconv
+$ nix build nixpkgs#libiconv
 
-$ tree result
-result
+$ tree ./result
+./result
 ├── bin
 │   └── iconv
 ├── include
@@ -220,7 +247,7 @@ result
 │   ├── libcharset.1.dylib -> libcharset.1.0.0.dylib
 │   ├── libcharset.dylib -> libcharset.1.0.0.dylib
 │   ├── libcharset.la
-│   ├── libiconv-nocharset.dylib -> libiconv.2.4.0.dylib
+│   ├── libiconv-nocharset.dylib
 │   ├── libiconv.2.4.0.dylib
 │   ├── libiconv.2.dylib -> libiconv.2.4.0.dylib
 │   ├── libiconv.dylib
@@ -257,10 +284,8 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "slides.html" {} ''
-    mkdir $out
-
-    ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out/slides.html
+  pkgs.runCommand "slides.html" { } ''
+    ${pkgs.pandoc}/bin/pandoc -t slidy -s ${./slides.md} -o $out
   ''
 ```
 
@@ -299,7 +324,7 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.runCommand "impure" {} ''
+  pkgs.runCommand "impure" { } ''
     date > $out
   ''
 ```
@@ -313,12 +338,12 @@ $ nix build --file ./impure.nix
 [1 built, 0.0 MiB DL]
 
 $ cat result
-Tue Dec 10 00:32:31 UTC 2019
+Tue Mar 14 02:47:23 UTC 2023
 
 $ nix build --file ./impure.nix # The rebuild triggers a cache hit!
 
 $ cat result  # Still the same result
-Tue Dec 10 00:32:31 UTC 2019
+Tue Mar 14 02:47:23 UTC 2023
 ```
 
 Nix can't tell that our derivation is not deterministic
@@ -367,7 +392,7 @@ in
 $ nix build --file ./hello.nix
 [2 built, 16 copied (9.1 MiB), 2.8 MiB DL]
 
-$ nix-store --read-log result
+$ nix log ./result
 @nix { "action": "setPhase", "phase": "unpackPhase" }
 unpacking sources
 unpacking source archive /nix/store/1n9ylz93pib1283xqy20a0146m4w4vq4-2.10.tar.gz
@@ -375,9 +400,13 @@ source root is hello-2.10
 setting SOURCE_DATE_EPOCH to timestamp 1416139241 of file hello-2.10/ChangeLog
 @nix { "action": "setPhase", "phase": "patchPhase" }
 patching sources
+@nix { "action": "setPhase", "phase": "updateAutotoolsGnuConfigScriptsPhase" }
+updateAutotoolsGnuConfigScriptsPhase
+Updating Autotools / GNU config script to a newer upstream version: ./build-aux>
+Updating Autotools / GNU config script to a newer upstream version: ./build-aux>
 @nix { "action": "setPhase", "phase": "configurePhase" }
 configuring
-configure flags: --disable-dependency-tracking --prefix=/nix/store/30xjvvcyp1c7psk7h517xpysb3irmyzw-hello
+configure flags: --disable-dependency-tracking --prefix=/nix/store/w7rdxr088nxv>
 ...
 
 $ tree result
@@ -398,10 +427,10 @@ result
 
 Nix provides a default build script if you don't specify one
 
-This script basically an Autotools-style build (i.e. C/C++ project):
+This script basically an autotools-style build (e.g. like a C/C++ project):
 
 ```bash
-$ tar xzf $src
+$ tar --extract --file $src
 $ cd $sourceRoot
 $ ./configure --prefix=$out
 $ make
@@ -414,6 +443,21 @@ I'm oversimplifying, but that gives the general idea
 The real implementation is in:
 
 * [https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/setup.sh](https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/setup.sh)
+
+# Phases
+
+The standard build environment works in terms of
+[phases](https://nixos.org/manual/nixpkgs/stable/#sec-stdenv-phases):
+
+- `unpackPhase` - Unpack the source archive
+- `patchPhase` - Apply patches
+- `configurePhase` - Run `./configure` script
+- `buildPhase` - Run `make`
+- `checkPhase` - Run `make check`
+- `installPhase` - Run `make install`
+- `fixupPhase` - Nix-specific post-processing
+- `installCheckPhase` - Run `make installcheck`
+- `distPhase` - Run `make dist`
 
 # Customizing the standard build
 
@@ -433,10 +477,19 @@ The default script also has several useful utilities in scope:
 
 # Stepping through a build
 
+Option 1: replay the whole build (until it fails or succeeds)
+
 ```bash
 $ nix-shell hello.nix
 
-$ cd /tmp
+$ genericBuild
+…
+```
+
+Option 2: step by step
+
+```bash
+$ nix-shell hello.nix
 
 $ unpackPhase
 unpacking source archive /nix/store/1n9ylz93pib1283xqy20a0146m4w4vq4-2.10.tar.gz
@@ -684,7 +737,5 @@ You can use Nix just as a "better `Make`":
 Nix fixes many of the design flaws in `make`:
 
 * More accurate rebuild detection
-* Better suitability for cross-project builds
+* Better suitability for inter-project builds
 * Nix is a real programming language (not covered)
-
-![](awake-blue.png)
