@@ -1,6 +1,6 @@
 % How to write a Nix derivation
 % Gabriella Gonzalez
-% March 12, 2023
+% March 15, 2023
 
 # Goals
 
