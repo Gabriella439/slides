@@ -156,6 +156,86 @@ Using `MaybeT` is **<span style="color:#F5A9B8">NOT</span>** shorter
 
 … but in a sec I will argue it's <span style="color:#5BCEFA">still better</span>
 
+## What is the pattern?
+
+- Take some code of interest (e.g. `readInt`)
+
+- Wrap that in a monad transformer (e.g. `MaybeT`)
+
+- **<span style="color: #FFFFFF">Unlock new functionality (e.g. `do` notation, `(<|>)`)</span>**
+
+- Unwrap the monad transformer (e.g. `runMaybeT`)
+
+The third step is the key bit!
+
+## Another example
+
+```haskell
+{-# LANGUAGE BlockArguments #-}
+
+module Example where
+
+newtype Parser a = Parser { runParser :: String -> [(a, String)] }
+
+char :: Char -> Parser ()
+char c = Parser \string -> case string of
+    s : tring | c == s -> [((), tring)]
+    _                  -> []
+
+string :: String -> Parser ()
+string = mapM_ char
+
+example :: Parser ()
+example = do
+    string "i like "
+    string "cats" <|> string "dogs"
+```
+
+## Instances
+
+```haskell
+import Control.Applicative (Alternative(..))
+import Control.Monad (ap, liftM)
+
+instance Functor Parser where
+    fmap = liftM
+
+instance Applicative Parser where
+    pure a = Parser (\string -> [(a, string)])
+
+    (<*>) = ap
+
+instance Monad Parser where
+    m >>= f = Parser \string -> do
+        (a, remainder) <- runParser m string
+        runParser (f a) remainder
+
+instance Alternative Parser where
+    empty = Parser mempty
+
+    Parser l <|> Parser r = Parser (l <> r)
+```
+
+## With StateT
+
+```haskell
+{-# LANGUAGE DerivingVia #-}
+
+import Control.Applicative (Alternative(..))
+import Control.Monad.Trans.State (StateT(..))
+
+newtype Parser a = Parser { runParser :: String -> [(a, String)] }
+    deriving (Functor, Applicative, Monad, Alternative)
+        via (StateT String [])
+```
+
+<ul>
+<li class="fragment">Take some code of interest (e.g. `Parser`)</li>
+<li class="fragment">Wrap that in a monad transformer (e.g. `StateT`)</li>
+<li class="fragment">**<span style="color: #FFFFFF">Unlock new functionality (e.g. instances)</span>**</li>
+<li class="fragment">Unwrap the monad transformer</li>
+</ul>
+
 # TODO
 
 - Explain the difference between `transformers` and `mtl`
