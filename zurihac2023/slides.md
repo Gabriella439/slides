@@ -564,8 +564,8 @@ newtype IdentityT m a = IdentityT{ runIdentityT :: m a }
 -- We can only do whatever the base monad can do (using `lift`)
 example :: IdentityT IO ()
 example = do
-    lift (print 2)  -- 2
-    lift (print 3)  -- 3
+    lift (print 2)  -- Output: 2
+    lift (print 3)  -- Output: 3
 
 main :: IO ()
 main = runIdentityT example
@@ -584,7 +584,7 @@ ask = ReaderT return
 example :: ReaderT Int IO ()
 example = do
     n <- ask        -- Now we can do something new!
-    lift (print n)  -- 2
+    lift (print n)  -- Output: 2
 
 main :: IO ()
 main = runReaderT example 2
@@ -603,13 +603,13 @@ tell w = WriterT (return ((), w))
 example :: WriterT [Int] IO ()
 example = do
     tell [2, 3]
-    lift (print 1)  -- 1
+    lift (print 1)  -- Output: 1
     tell [5]
 
 main :: IO ()
 main = do
     ((), numbers) <- runWriterT example
-    print numbers  -- [ 2, 3, 5 ]
+    print numbers  -- Output: [ 2, 3, 5 ]
 ```
 
 ## StateT
@@ -627,13 +627,43 @@ get = StateT (\s -> return (s, s))
 example :: StateT Int IO ()
 example = do
     n <- get
-    lift (print n)  -- 2
+    lift (print n)  -- Output: 2
     put (n + 1)
 
 main :: IO ()
 main = do
     m <- runStateT example 2
     print m  -- 3
+```
+
+## ExceptT
+
+```haskell
+-- Commonly used for throwing and catching errors
+newtype ExceptT e m a = ExceptT{ runExceptT :: m (Either e a) }
+
+throwE :: Monad m => e -> ExceptT e m a
+throwE e = ExceptT (return (Left e))
+
+catchE
+    :: Monad m
+    => ExceptT e m a -> (e -> ExceptT e' m a) -> ExceptT e' m a
+m `catchE` f = ExceptT do
+    e <- runExceptT m
+    case e of
+        Left  l -> runExceptT (f l)
+        Right r -> return (Right r)
+
+example :: ExceptT String IO ()
+example = do
+    liftIO (print 1)  -- Output: 1
+    throwE "Oops!"
+    liftIO (print 2)  -- Not reachable
+
+main :: IO ()
+main = do
+    e <- runExceptT example
+    print e  -- Output: "Oops!"
 ```
 
 ## Similarity
@@ -706,9 +736,186 @@ Some exceptions:
 
 So far, everything we've covered is from the `transformers` package:
 
-- Concrete monad transformers (e.g. `MaybeT` / `StateT`)
-- Their simpler analogs (e.g. `type State s = StateT s Identity`)
-- The `MonadTrans` class
+- Concrete monad transformers (e.g. `MaybeT`)
+- Their simpler analogs (e.g. `State`)
+- Useful utilities for each transformer (e.g. `ask`)
+- The `MonadTrans` class (i.e. `lift`)
+
+So why is there another package called `mtl`?
+
+Which package is the "real" monad transformers package?
+
+## Motivating mtl
+
+Monad transformers are awkward to nest
+
+```haskell
+example :: StateT Int (ExceptT String IO) ()
+example = do
+    n <- get
+
+    if n < 0
+        then lift (throwE "Oh no!")
+        else lift (lift (print "Hooray!"))
+```
+
+We have to add a `lift` for every layer we "dig down"
+
+- 0 layers down (`get` / `StateT`) - 0 `lift` requireds
+- 1 layer down (`throwE` / `ExceptT`) - 1 `lift` required
+- 2 layers down (`print` / `IO`) - 2 `lift`s required
+
+## MonadIO
+
+The `mtl` package solves this problem using typeclasses
+
+```haskell
+class Monad m => MonadIO m where
+    liftIO :: IO a -> m a
+
+instance MonadIO IO where
+    liftIO io = io
+
+instance MonadIO m => MonadIO (ReaderT r m) where
+    liftIO io = lift (liftIO io)
+
+instance (Monoid w, MonadIO m) => MonadIO (WriterT w m) where
+    liftIO io = lift (liftIO io)
+
+instance MonadIO m => MonadIO (StateT s m) where
+    liftIO io = lift (liftIO io)
+
+instance MonadIO m => MonadIO (MaybeT e m) where
+    liftIO io = lift (liftIO io)
+
+instance MonadIO m => MonadIO (ExceptT e m) where
+    liftIO io = lift (liftIO io)
+```
+
+## MonadIO - Example
+
+```haskell
+example :: StateT Int (ExceptT String IO) ()
+example = do
+    n <- get
+
+    if n < 0
+        then lift (throwE "Oh no!")
+        else liftIO (print "Hooray!")
+          -- ↑ Now we only need a single `liftIO`
+```
+
+## MonadState
+
+```haskell
+class Monad m => MonadState s m | m -> s where
+    get :: m s
+    put :: s -> m ()
+
+instance Monad m => MonadState s (StateT s m) where
+    get = Control.Monad.Trans.State.get  -- From `transformers`
+    put = Control.Monad.Trans.State.put  -- From `transformers`
+
+instance MonadState s m => MonadState s (ReaderT r m) where
+    get = lift get
+    put s = lift (put s)
+
+instance (Monoid w, MonadState s m) => MonadState s (Writer w m) where
+    get = lift get
+    put s = lift (put s)
+
+instance MonadState s m => MonadState s (MaybeT m) where
+    get = lift get
+    put s = lift (put s)
+
+instance MonadState s m => MonadState s (ExceptT m) where
+    get = lift get
+    put s = lift (put s)
+```
+
+## MonadState - Example
+
+```haskell
+example :: StateT Int (ExceptT String IO) ()
+example = do
+    n <- get
+      -- ↑ No change.  It wasn't lifted anyway
+
+    if n < 0
+        then lift (throwE "Oh no!")
+        else liftIO (print "Hooray!")
+```
+
+## MonadError
+
+```haskell
+class Monad m => MonadError e m where
+    throwError :: e -> m a
+    catchError :: m a -> (e -> m a) -> m a 
+
+instance Monad m => MonadError e (ExceptT e m) where
+    throwError = Control.Monad.Trans.Except.throwE
+    catchError = Control.Monad.Trans.Except.catchE
+
+-- But wait, now it gets more tricky!
+instance MonadError e m => MonadError e (ReaderT r m) where
+    throwError e = lift (throwError e)
+    catchError = Control.Monad.Trans.Reader.liftCatch catchError
+
+instance (Monoid w, MonadError e m) => MonadError e (WriterT w m) where
+    throwError e = lift (throwError e)
+    catchError = Control.Monad.Trans.Writer.liftCatch catchError
+
+instance MonadError e m => MonadError e (StateT s m) where
+    throwError e = lift (throwError e)
+    catchError = Control.Monad.Trans.State.liftCatch catchError
+
+instance MonadError e m => MonadError e (MaybeT m) where
+    throwError e = lift (throwError e)
+    catchError = Control.Monad.Trans.Maybe.liftCatch catchError
+```
+
+## MonadError - Example
+
+```haskell
+example :: StateT Int (ExceptT String IO) ()
+example = do
+    n <- get
+
+    if n < 0
+        then throwE "Oh no!"
+        -- ↑ No change.  It wasn't lifted anyway
+        else liftIO (print "Hooray!")
+```
+
+We can't get rid of the `liftIO` as easily as `lift`
+
+We'd have to generalize `IO` utilities to use `liftIO`
+
+There is a package that does this! (`unliftio`)
+
+## `MaybeT`
+
+Why does the `mtl` not have a `MonadMaybe` class?
+
+Why isn't there a `Control.Monad.Maybe`?
+
+`Alternative`/`MonadPlus` is already that class!
+
+```haskell
+class Applicative f => Alternative f where
+    empty :: f a
+    (<|>) :: f a -> f a -> f a
+
+class Monad m => MonadPlus m where
+    mzero :: m a
+    mplus :: m a -> m a -> m a
+
+instance Monad m => MonadPlus (MaybeT m) where …
+instance MonadPlus m => MonadPlus (ReaderT r m) where
+instance (Monoid w, MonadPlus m) => MonadPlus (WriterT w m) where
+instance MonadPlus m => MonadPlus (StateT s m) where
+```
 
 # Outline
 
