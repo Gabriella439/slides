@@ -166,10 +166,6 @@ ensureInt = runMaybeT loop
     loop = MaybeT readInt <|> loop
 ```
 
-Using `MaybeT` is **<span style="color:#F5A9B8">NOT</span>** shorter
-
-… but in a sec I will argue it's *still better*
-
 ## What is the pattern?
 
 - Take some code of interest (e.g. `readInt`)
@@ -732,7 +728,7 @@ Some exceptions:
 * **<span style="color:#FFFFFF">`transformers` versus `mtl`</span>**
 * Common misconceptions
 
-## `transformers`
+## transformers
 
 So far, everything we've covered is from the `transformers` package:
 
@@ -894,7 +890,7 @@ We'd have to generalize `IO` utilities to use `liftIO`
 
 There is a package that does this! (`unliftio`)
 
-## `MaybeT`
+## MaybeT
 
 Why does the `mtl` not have a `MonadMaybe` class?
 
@@ -917,6 +913,59 @@ instance (Monoid w, MonadPlus m) => MonadPlus (WriterT w m) where
 instance MonadPlus m => MonadPlus (StateT s m) where
 ```
 
+## What is the mtl?
+
+The `mtl` is just an extension to the `transformers` package
+
+The `mtl` re-exports most of the `transformers` package
+
+Pedantically both packages are "monad transformers"
+
+It's better to refer to the packages by name to avoid confusion
+
+## Differences
+
+The main differences between the two packages are:
+
+- `mtl` utilities use type classes
+
+  ```haskell
+  -- transformers
+  ask :: Monad m => ReaderT r m r
+
+  -- `mtl`
+  ask :: MonadReader r m => m r
+  ```
+
+- `mtl` module names are shorter
+
+  e.g. `Control.Monad.State` instead of `Control.Monad.Trans.State`
+
+## Use cases
+
+`transformers` often used in short / localized way
+
+```haskell
+readThreeInts :: IO (Maybe (Int, Int, Int))
+readThreeInts = runMaybeT do
+    int0 <- MaybeT readInt
+    int1 <- MaybeT readInt
+    int2 <- MaybeT readInt
+    return (int0, int1, int2)
+```
+
+`mtl` often used in long-lived / global way
+
+```haskell
+newtype App a = App{ runApp :: ReaderT Config (MaybeT IO) a }
+    deriving
+        ( Functor, Applicative, Monad
+        , Alternative, MonadPlus  -- lifted from MaybeT
+        , MonadIO                 -- lifted from IO
+        , MonadReader Config      -- lifted from ReaderT
+        )
+```
+
 # Outline
 
 * What are monad transformers for?
@@ -924,6 +973,46 @@ instance MonadPlus m => MonadPlus (StateT s m) where
 * Tour of common transformers
 * `transformers` versus `mtl`
 * **<span style="color:#FFFFFF">Common misconceptions</span>**
+
+## "Monad transformers are slow"
+
+This originates from Alexis's [Effects for less](https://www.youtube.com/watch?v=0jI-AlWEwYI)
+
+Most people misunderstood the actual claim she made
+
+`mtl` slower than `eff` if you don't mark code `INLINABLE`
+
+`mtl` fastest if you mark code `INLINABLE`
+
+… according to her own benchmarks
+
+In other words, `mtl` has highest performance ceiling!
+
+## "Never use X monad transformer"
+
+… where `X = { ExceptT, StateT, WriterT }`
+
+This advice is (IMO) correct if your base monad is `IO`
+
+… but they're still useful with other base monads!
+
+```haskell
+newtype Parser a = Parser { runParser :: String -> [(a, String)] }
+    deriving (Functor, Applicative, Monad, Alternative)
+        via (StateT String [])
+```
+
+## "All we need are Reader/Writer/State/Except"
+
+Algebraic effects discussions often ignore these important monad transformers:
+
+- `ListT` "done right" - list monad transformer
+- `FreeT` (free monad transformer)
+- `ContT` (continuation monad transformer)
+
+… because they're inconvenient for them to model
+
+`transformers` and `mtl` handle them just fine!
 
 # TODO
 
