@@ -38,7 +38,6 @@ The goals behind this talk are to:
 
 - motivate monad transformers
 - explain how to use them
-- compare them to alternatives
 - dispel some common myths
 
 ## Motivation
@@ -75,7 +74,8 @@ It's pretty hip to dunk on monad transformers
 
 * **<span style="color:#FFFFFF">What are monad transformers for?</span>**
 * Tutorial
-* Comparison against algebraic effects
+* Tour of common transformers
+* `transformers` versus `mtl`
 * Common misconceptions
 
 ## Monad transformers by example
@@ -275,7 +275,8 @@ newtype Parser a = Parser { runParser :: String -> [(a, String)] }
 
 * What are monad transformers for?
 * **<span style="color:#FFFFFF">Tutorial</span>**
-* Comparison against algebraic effects
+* Tour of common transformers
+* `transformers` versus `mtl`
 * Common misconceptions
 
 ## Revisiting MaybeT example
@@ -393,7 +394,7 @@ readThreeInts = do
 
 `MaybeT` is called a "monad transformer"
 
-A "monad transformer" is like a function:
+A "monad transformer" is like a type-level function:
 
 - the input is a simpler `Monad` (e.g. `m`)
 - the output is a more complex `Monad` (e.g. `MaybeT m`)
@@ -536,30 +537,108 @@ This is the way all monad transformers work:
 - Add a `Monad` instance (so `do` notation still works)
 - Add a `MonadTrans` instance (for `lift`)
 
+# Outline
+
+* What are monad transformers for?
+* Tutorial
+* **<span style="color:#FFFFFF">Tour of common transformers</span>**
+* `transformers` versus `mtl`
+* Common misconceptions
+
+## The Unix philosophy
+
+Each standard monad transformer *<span style="color:#F5A9B8">does one thing and does it well</span>*
+
+They each add some new feature to the underlying ("base") `Monad`
+
+You can stack as many of them as you want to keep adding new features
+
+## IdentityT
+
+```haskell
+-- The simplest monad transformer of them all
+--
+-- Does not extend the base monad with any new features
+newtype IdentityT m a = IdentityT{ runIdentityT :: m a }
+
+-- We can only do whatever the base monad can do (using `lift`)
+example :: IdentityT IO ()
+example = do
+    lift (print 2)  -- 2
+    lift (print 3)  -- 3
+
+main :: IO ()
+main = runIdentityT example
+```
+
+## ReaderT
+
+```haskell
+-- Commonly used for threading a read-only configuration (`r`)
+newtype ReaderT r m a = ReaderT{ runReaderT :: r -> m a }
+
+-- We can query the read-only configuration using `ask`
+ask :: Monad m => ReaderT r m r
+ask = ReaderT return
+
+example :: ReaderT Int IO ()
+example = do
+    n <- ask        -- Now we can do something new!
+    lift (print n)  -- 2
+
+main :: IO ()
+main = runReaderT example 2
+```
+
+## WriterT
+
+```haskell
+-- Commonly used for outputting write-only `Monoid` (`w`)
+newtype WriterT w m a = WriterT{ runWriterT :: m (a, w) }
+
+-- We can output a write-only value using `tell`
+tell :: Monad m => w -> WriterT w m ()
+tell w = WriterT (return ((), w))
+
+example :: WriterT [Int] IO ()
+example = do
+    tell [2, 3]
+    lift (print 1)  -- 1
+    tell [5]
+
+main :: IO ()
+main = do
+    ((), numbers) <- runWriterT example
+    print numbers  -- [ 2, 3, 5 ]
+```
+
+## StateT
+
+```haskell
+-- Used for a readable and writable state (`s`)
+newtype StateT s m a = StateT{ runStateT :: s -> m (a, s) }
+
+put :: Monad m => s -> StateT s m ()
+put s = StateT (\_ -> return ((), s))
+
+get :: Monad m => StateT s m s
+get = StateT (\s -> return (s, s))
+
+example :: StateT Int IO ()
+example = do
+    n <- get
+    lift (print n)  -- 2
+    put (n + 1)
+
+main :: IO ()
+main = do
+    m <- runStateT example 2
+    print m  -- 3
+```
+
 ## Similarity
 
 Monad transformers resemble simpler analogs:
-
-```haskell
-instance Monad Maybe where
-    return x = Just x
-
-    m >>= f =
-        case m of
-            Nothing -> Nothing
-            Just x  -> f x
-
-instance Monad m => Monad (MaybeT m) where
-    return x = MaybeT (return (Just x))
-
-    m >>= f = MaybeT do
-        maybeX <- runMaybeT m
-        case maybeX of
-            Nothing -> return Nothing
-            Just x  -> runMaybeT (f x)
-```
-
-## State and StateT
 
 ```haskell
 {-# LANGUAGE BlockArguments #-}
@@ -619,14 +698,24 @@ Some exceptions:
 
 * What are monad transformers for?
 * Tutorial
-* **<span style="color:#FFFFFF">Comparison against algebraic effects</span>**
+* Tour of common transformers
+* **<span style="color:#FFFFFF">`transformers` versus `mtl`</span>**
 * Common misconceptions
+
+## `transformers`
+
+So far, everything we've covered is from the `transformers` package:
+
+- Concrete monad transformers (e.g. `MaybeT` / `StateT`)
+- Their simpler analogs (e.g. `type State s = StateT s Identity`)
+- The `MonadTrans` class
 
 # Outline
 
 * What are monad transformers for?
 * Tutorial
-* Comparison against algebraic effects
+* Tour of common transformers
+* `transformers` versus `mtl`
 * **<span style="color:#FFFFFF">Common misconceptions</span>**
 
 # TODO
