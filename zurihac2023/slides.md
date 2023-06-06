@@ -62,14 +62,6 @@ I'm **<span style="color:#F5A9B8">NOT</span>** assuming you know monad transform
 
 I'm going to teach monad transformers <span style="color:#5BCEFA">from scratch</span>
 
-## Title
-
-The title of this talk is tongue-in-cheek
-
-It's pretty hip to dunk on monad transformers
-
-… but monad transformers are good, actually!
-
 # Outline
 
 * **<span style="color:#FFFFFF">What are monad transformers for?</span>**
@@ -226,27 +218,6 @@ instance Alternative Parser where
     Parser l <|> Parser r = Parser (l <> r)
 ```
 
-## With StateT (Part I)
-
-```haskell
-instance Functor Parser where
-    fmap f (Parser k) = Parser (runStateT (fmap f (StateT k)))
-
-instance Applicative Parser where
-    pure a = Parser (runStateT (pure a))
-
-    Parser f <*> Parser x = Parser (runStateT (StateT f <*> StateT x))
-
-instance Monad Parser where
-    m >>= f =
-        Parser (runStateT (StateT (runParser m) >>= (StateT . runParser . f)))
-
-instance Alternative Parser where
-    empty = Parser (runStateT empty)
-
-    Parser l <|> Parser r = Parser (runStateT (StateT l <|> StateT r))
-```
-
 ## With StateT (Part II)
 
 ```haskell
@@ -385,6 +356,14 @@ readThreeInts = do
                         Just int2 -> do
                             return (Just (int0, int1, int2))
 ```
+
+## Monad transformers are "natural"
+
+Monad transformers arose from pre-existing code patterns found in the wild
+
+They factor out reusable code we would have otherwise written manually
+
+Other effect systems have more "alien" implementations
 
 ## Monad transformer (Part I)
 
@@ -994,7 +973,7 @@ In other words, `mtl` has highest performance ceiling!
 
 This advice is (IMO) correct if your base monad is `IO`
 
-… but they're still useful with other base monads!
+… but those effects are useful with other base monads!
 
 ```haskell
 newtype Parser a = Parser { runParser :: String -> [(a, String)] }
@@ -1014,9 +993,27 @@ Algebraic effects discussions often ignore these important monad transformers:
 
 `transformers` and `mtl` handle them just fine!
 
-# TODO
+# Conclusion
 
-- Explain the difference between `transformers` and `mtl`
-- Explain how not all `Monad`s can be turned into monad transformers
-  - and include some examples (e.g. `IO` / `STM`)
-- Link to social media
+The key take-aways are:
+
+- Monad transformers are "natural"
+- Monad transformers are composable
+- Monad transformers are widespread for a good reason
+
+If you like my work, you can find my various accounts at:
+
+[https://linktr.ee/Gabriella439](https://linktr.ee/Gabriella439)
+
+# Trans rights in the US
+
+Gender affirming healthcare is under attack in the US.
+
+Many trans people rely on stable access to hormone replacement therapy and
+legislators are actively fighting to take it away.
+
+If you are not trans I'm addressing you: please help defend trans people from
+this ongoing political assault.
+
+Those in the US can take direct action by visiting:
+[https://transequality.org/action-centers](https://transequality.org/action-centers)
