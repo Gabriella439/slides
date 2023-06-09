@@ -134,7 +134,7 @@ readInt = do
 
 ensureInt :: IO (Maybe Int)
 ensureInt = do
-    maybeInt <- ensureInt
+    maybeInt <- readInt
     case maybeInt of
         Nothing -> ensureInt
         Just n  -> return (Just n)
@@ -365,7 +365,7 @@ They factor out reusable code we would have otherwise written manually
 
 Other effect systems have more "alien" implementations
 
-## Monad transformer (Part I)
+## Monad transformer
 
 `MaybeT` is called a "monad transformer"
 
@@ -373,25 +373,6 @@ A "monad transformer" is like a type-level function:
 
 - the input is a simpler `Monad` (e.g. `m`)
 - the output is a more complex `Monad` (e.g. `MaybeT m`)
-
-## Monad transformer (Part II)
-
-In fact, `MaybeT` is (essentially) a type-level function:
-
-```haskell
-MaybeT :: (* -> *) -> (* -> *)
---         ↑↑↑↑↑↑      ↑↑↑↑↑↑
---         Input       Output
-
-m        :: * -> *  -- `m` is a `Monad`
-
-MaybeT m :: * -> *  -- `MaybeT m` is also a `Monad`
-
-instance Monad m => Monad (MaybeT m)
-```
-
-`MaybeT` is a function from a simpler `Monad` (`m`) to a more complex `Monad`
-(`MaybeT m`)
 
 ## Monad transformer class
 
@@ -631,14 +612,14 @@ m `catchE` f = ExceptT do
 
 example :: ExceptT String IO ()
 example = do
-    liftIO (print 1)  -- Output: 1
+    lift (print 1)  -- Output: 1
     throwE "Oops!"
-    liftIO (print 2)  -- Not reachable
+    lift (print 2)  -- Not reachable
 
 main :: IO ()
 main = do
     e <- runExceptT example
-    print e  -- Output: "Oops!"
+    print e  -- Output: Left "Oops!"
 ```
 
 ## Similarity
@@ -683,7 +664,7 @@ Many monads are special cases of a transformer:
 type Reader    r = ReaderT   w Identity
 type Writer    w = WriterT   w Identity
 type Cont      r = ContT     r Identity
-type ParsecT e s = ParsecT e s Identity
+type Parsec  e s = ParsecT e s Identity
 ```
 
 ## Exceptions - Ergonomics
@@ -711,9 +692,9 @@ Some exceptions:
 
 So far, everything we've covered is from the `transformers` package:
 
-- Concrete monad transformers (e.g. `MaybeT`)
+- Concrete monad transformers (e.g. `StateT`)
 - Their simpler analogs (e.g. `State`)
-- Useful utilities for each transformer (e.g. `ask`)
+- Useful utilities for each transformer (e.g. `put`)
 - The `MonadTrans` class (i.e. `lift`)
 
 So why is there another package called `mtl`?
@@ -858,8 +839,7 @@ example = do
     n <- get
 
     if n < 0
-        then throwE "Oh no!"
-        -- ↑ No change.  It wasn't lifted anyway
+        then throwError "Oh no!"
         else liftIO (print "Hooray!")
 ```
 
@@ -959,13 +939,13 @@ This originates from Alexis's [Effects for less](https://www.youtube.com/watch?v
 
 Most people misunderstood the actual claim she made
 
-`mtl` slower than `eff` if you don't mark code `INLINABLE`
-
-`mtl` fastest if you mark code `INLINABLE`
+`mtl` fastest effect system if you mark code `INLINABLE`
 
 … according to her own benchmarks
 
 In other words, `mtl` has highest performance ceiling!
+
+`transformers` also doesn't have either problem
 
 ## "Never use X monad transformer"
 
