@@ -2,7 +2,7 @@
 % Gabriella Gonzalez
 % June 12, 2023
 
-# Goals
+# Outline
 
 <style>
 .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5 {
@@ -33,36 +33,6 @@ code:not(.sourceCode) {
   color: #5BCEFA !important;
 }
 </style>
-
-The goals behind this talk are to:
-
-- motivate monad transformers
-- explain how to use them
-- dispel some common myths
-
-## Motivation
-
-My audience will likely have two types of listeners:
-
-- **<span style="color:#FFFFFF">those who have never heard of monad transformers</span>**
-
-  Lots of professional haskellers in this category!
-
-- **<span style="color:#FFFFFF">those who assume everyone's heard of them<span>**
-
-  This was me for the longest time 😅
-
-Hopefully fewer people in both categories after today
-
-## Prior knowledge
-
-I'm assuming prior knowledge of Haskell basics
-
-I'm **<span style="color:#F5A9B8">NOT</span>** assuming you know monad transformers
-
-I'm going to teach monad transformers <span style="color:#5BCEFA">from scratch</span>
-
-# Outline
 
 * **<span style="color:#FFFFFF">What are monad transformers for?</span>**
 * Tutorial
@@ -95,10 +65,6 @@ readThreeInts = do
                         Nothing -> return Nothing
                         Just int2 -> do
                             return (Just (int0, int1, int2))
-main :: IO ()
-main = do
-    maybeThreeInts <- readThreeInts
-    print maybeThreeInts
 ```
 
 ## Using MaybeT
@@ -588,7 +554,7 @@ example = do
 
 main :: IO ()
 main = do
-    m <- runStateT example 2
+    ((), m) <- runStateT example 2
     print m  -- 3
 ```
 
@@ -939,13 +905,7 @@ This originates from Alexis's [Effects for less](https://www.youtube.com/watch?v
 
 Most people misunderstood the actual claim she made
 
-`mtl` fastest effect system if you mark code `INLINABLE`
-
-… according to her own benchmarks
-
-In other words, `mtl` has highest performance ceiling!
-
-`transformers` also doesn't have either problem
+`mtl` has highest performance ceiling if you mark code `INLINABLE`
 
 ## "Never use X monad transformer"
 
